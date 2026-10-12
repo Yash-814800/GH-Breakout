@@ -1,0 +1,49 @@
+name: source-test
+
+# Manual only. Measures hourly-archive sources (OpenDigger vs data.gharchive.org) from a runner:
+# throughput, manifest availability, event counts by type, WatchEvent counts. ADR-009/ADR-010.
+on:
+  workflow_dispatch:
+    inputs:
+      hours:
+        description: "Comma list YYYY-MM-DD-H (UTC, unpadded hour); empty = 3 most recent complete hours"
+        required: false
+        default: ""
+      max_seconds:
+        description: "Per-file download cap in seconds"
+        required: false
+        default: "900"
+
+permissions:
+  contents: read
+
+jobs:
+  source-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v7
+      - name: Runner facts
+        run: |
+          uname -a
+          curl -s https://ipinfo.io/json | python3 -c 'import sys,json; d=json.load(sys.stdin); print({k:d.get(k) for k in ("country","region","org")})' || true
+      - name: Run source test
+        env:
+          HOURS: ${{ inputs.hours }}
+          MAX_SECONDS: ${{ inputs.max_seconds }}
+        run: python3 scripts/source_test.py --hours "$HOURS" --max-seconds "$MAX_SECONDS" --out source_test_out
+      - name: Summary
+        if: always()
+        run: |
+          python3 - <<'PY'
+          import json, os
+          p = "source_test_out/summary.json"
+          if os.path.exists(p):
+              print(json.dumps(json.load(open(p)), indent=1)[:6000])
+          PY
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: source-test-${{ github.run_id }}
+          path: source_test_out/
+          retention-days: 14
