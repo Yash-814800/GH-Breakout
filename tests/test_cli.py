@@ -7,6 +7,7 @@ from breakout.cli import app
 
 runner = CliRunner()
 GROUPS = ["ingest", "backfill", "lake", "enrich", "build", "ml", "daily", "publish", "ops"]
+STUB_GROUPS = [g for g in GROUPS if g != "ingest"]  # ingest is real since Phase 1
 
 
 def test_help_lists_groups():
@@ -16,11 +17,18 @@ def test_help_lists_groups():
         assert group in result.output
 
 
-@pytest.mark.parametrize("group", GROUPS)
+@pytest.mark.parametrize("group", STUB_GROUPS)
 def test_stub_groups(group):
     result = runner.invoke(app, [group])
     assert result.exit_code == 0
     assert "not implemented yet (Phase" in result.output
+
+
+def test_ingest_group_lists_commands():
+    result = runner.invoke(app, ["ingest", "--help"])
+    assert result.exit_code == 0
+    for command in ("hour", "day", "range", "audit"):
+        assert command in result.output
 
 
 def test_info_empty_env(temp_config):

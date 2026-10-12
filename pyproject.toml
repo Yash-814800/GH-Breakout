@@ -32,6 +32,10 @@ src = ["src", "tests"]
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "SIM"]
 
+[tool.ruff.lint.per-file-ignores]
+# the audit report embeds wide markdown tables as string constants
+"src/breakout/ingest/audit.py" = ["E501"]
+
 [tool.mypy]
 python_version = "3.12"
 files = ["src"]
@@ -51,3 +55,7 @@ dev = [
     "ruff>=0.17.0",
     "types-pyyaml>=6.0.12.20260906",
 ]
+
+[[tool.mypy.overrides]]
+module = ["pyarrow", "pyarrow.*"]
+ignore_missing_imports = true
