@@ -7,7 +7,7 @@ from breakout.cli import app
 
 runner = CliRunner()
 GROUPS = ["ingest", "backfill", "lake", "enrich", "build", "ml", "daily", "publish", "ops"]
-STUB_GROUPS = [g for g in GROUPS if g != "ingest"]  # ingest is real since Phase 1
+STUB_GROUPS = [g for g in GROUPS if g not in ("ingest", "backfill")]  # real groups
 
 
 def test_help_lists_groups():
@@ -28,6 +28,13 @@ def test_ingest_group_lists_commands():
     result = runner.invoke(app, ["ingest", "--help"])
     assert result.exit_code == 0
     for command in ("hour", "day", "range", "audit"):
+        assert command in result.output
+
+
+def test_backfill_group_lists_commands():
+    result = runner.invoke(app, ["backfill", "--help"])
+    assert result.exit_code == 0
+    for command in ("survey", "plan"):
         assert command in result.output
 
 

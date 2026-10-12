@@ -230,9 +230,9 @@ def parse_hour_file(
             [source, now, *raw_types],
         ).to_arrow_table()
         push = con.execute(
-            "SELECT event_id, repo_id, actor_id, created_at, repo_name FROM dedup "
+            "SELECT event_id, repo_id, actor_id, created_at, repo_name, ? AS source FROM dedup "
             "WHERE etype = ? ORDER BY repo_id, created_at, event_id",
-            [PUSH_TYPE],
+            [source, PUSH_TYPE],
         ).to_arrow_table()
     finally:
         con.close()

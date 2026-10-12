@@ -126,10 +126,10 @@ def test_error_hours_are_retried(cfg: Config) -> None:
     fx = fixture_for("2024-06-03")
     good = FakeDownloader(fx)
 
-    def flaky(ts, dest):
+    def flaky(ts, dest, sources=None):
         if ts.hour == 7:
             return DownloadResult("error", error="boom", attempts=5)
-        return good(ts, dest)
+        return good(ts, dest, sources)
 
     s = ingest_day(DAY, cfg=cfg, now=NOW, downloader=flaky)
     assert s.error_hours == [7] and s.hours_ok == 23

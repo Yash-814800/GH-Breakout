@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import os
 import re
-from datetime import date
+from datetime import date, timedelta
 from functools import lru_cache
 from pathlib import Path
 from typing import Any
@@ -41,6 +41,48 @@ class HistoryCfg(_Section):
     start_date: date
     cutover_date: date | None = None
     detail_start_date: date | None = None
+    trusted_end: date
+    degraded_end: date | None = None
+
+    @model_validator(mode="after")
+    def _check_eras(self) -> HistoryCfg:
+        if self.trusted_end < self.start_date:
+            raise ValueError("history.trusted_end must be >= history.start_date")
+        if self.degraded_end is not None and self.degraded_end <= self.trusted_end:
+            raise ValueError("history.degraded_end must be > history.trusted_end")
+        return self
+
+
+class SourceCfg(_Section):
+    name: str
+    base_url: str
+    available_from: date | None = None
+    has_manifest: bool = False
+    # dotted JSON paths inside the manifest: {"sha256": ..., "events": ...}. Left null until a real
+    # manifest has been observed (OpenDigger manifests returned 404 on 2026-10-12, ADR-009).
+    manifest_keys: dict[str, str] | None = None
+    enabled: bool = True
+
+
+class IngestCfg(_Section):
+    sources: list[SourceCfg]
+
+    @model_validator(mode="after")
+    def _check_sources(self) -> IngestCfg:
+        names = [s.name for s in self.sources]
+        if len(set(names)) != len(names):
+            raise ValueError("ingest.sources names must be unique")
+        if not any(s.enabled for s in self.sources):
+            raise ValueError("ingest.sources needs at least one enabled source")
+        return self
+
+    def sources_for(self, day: date) -> list[SourceCfg]:
+        """Enabled sources that exist for ``day``, in priority order."""
+        return [
+            s
+            for s in self.sources
+            if s.enabled and (s.available_from is None or day >= s.available_from)
+        ]
 
 
 class EventsCfg(_Section):
@@ -153,6 +195,7 @@ class Config(_Section):
     project: ProjectCfg
     history: HistoryCfg
     events: EventsCfg
+    ingest: IngestCfg
     bigquery: BigQueryCfg
     huggingface: HuggingFaceCfg
     lake: LakeCfg
@@ -169,6 +212,24 @@ class Config(_Section):
         if self.training.embargo_days < self.labels.horizon_days:
             raise ValueError("training.embargo_days must be >= labels.horizon_days")
         return self
+
+    def latest_trusted_snapshot(self) -> date:
+        """Last snapshot date D whose label window [D, D+h) ends on or before ``trusted_end``.
+
+        Features for D use events < D, so the feature window ends earlier than the label window.
+        """
+        return self.history.trusted_end - timedelta(days=self.labels.horizon_days - 1)
+
+    def is_trusted_snapshot(self, snapshot: date) -> bool:
+        return snapshot <= self.latest_trusted_snapshot()
+
+    def era(self, day: date) -> str:
+        """``trusted`` (<= trusted_end), ``degraded`` (<= degraded_end) or ``live``."""
+        if day <= self.history.trusted_end:
+            return "trusted"
+        if self.history.degraded_end is not None and day <= self.history.degraded_end:
+            return "degraded"
+        return "live"
 
 
 def _expand(value: Any) -> Any:

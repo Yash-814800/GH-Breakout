@@ -10,10 +10,11 @@ from __future__ import annotations
 import pyarrow as pa
 
 SCHEMA_VERSION = 1
-PARSER_VERSION = 1
+PARSER_VERSION = 2  # 2: staged push rows carry `source` (ADR-009)
 
 SOURCE_BQ = "bq"
-SOURCE_HOURLY = "hourly"
+SOURCE_HOURLY = "hourly"  # data.gharchive.org hourly files
+SOURCE_OPENDIGGER = "opendigger"  # OpenDigger mirror; excluded from public publish (ADR-009)
 
 # (name, duckdb type, nullable, pyarrow type)
 _EVENTS_COLUMNS: list[tuple[str, str, bool, pa.DataType]] = [
@@ -57,6 +58,7 @@ _PUSH_ROWS_COLUMNS: list[tuple[str, str, bool, pa.DataType]] = [
     ("actor_id", "BIGINT", False, pa.int64()),
     ("created_at", "TIMESTAMP", False, pa.timestamp("us")),
     ("repo_name", "VARCHAR", True, pa.string()),
+    ("source", "VARCHAR", False, pa.string()),
 ]
 
 

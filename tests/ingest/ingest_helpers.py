@@ -35,11 +35,11 @@ class FakeDownloader:
         self.missing = missing or set()
         self.calls: list[datetime] = []
 
-    def __call__(self, ts: datetime, dest_dir: Path) -> DownloadResult:
+    def __call__(self, ts: datetime, dest_dir: Path, sources: list | None = None) -> DownloadResult:
         self.calls.append(ts)
         if ts.hour in self.missing:
-            return DownloadResult("missing")
+            return DownloadResult("missing", source_host="gharchive")
         dest_dir.mkdir(parents=True, exist_ok=True)
         dest = dest_dir / hour_filename(ts)
         shutil.copy(self.fixture, dest)
-        return DownloadResult("ok", dest, "0" * 64, dest.stat().st_size)
+        return DownloadResult("ok", dest, "0" * 64, dest.stat().st_size, source_host="gharchive")

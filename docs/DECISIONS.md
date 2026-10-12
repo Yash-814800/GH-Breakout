@@ -88,3 +88,63 @@ before any labels are built on post-2026-03 data.
 years; the daily pipeline's candidates/labels would be starved. Options for the human: accept
 (model on <= 2026-02 data, treat live scoring as degraded), switch the star source for recent
 data (GitHub API stargazers with timestamps for candidate repos), or investigate with GH Archive.
+
+## ADR-009: Trusted era, capture-quality findings, and source strategy after the 2025-26 star-capture collapse (2026-10-12)
+**Context:** ADR-008 found WatchEvent volume collapsing in GH Archive. Measured from BigQuery
+(`reports/capture_quality.md`, 1,015 days, 53.8 GB scanned, `type` column only): stars per day
+versus the same weekday's 2024 median is 0.97-1.16 through 2025-05-23, drops abruptly to 0.71 on
+**2025-05-24**, sits at 0.55-0.75 through 2025-09, ~0.44 in 2025-10..2026-01, 0.30-0.37 in 2026-02..04,
+0.12 in 2026-05 and 0.01 in 2026-07/08. Other event types stay near baseline (all-events ratio
+0.68-0.76), so this is star capture, not overall volume. In September 2026 stars partially recover for
+short stretches (0.48-0.74 on 2026-09-04..06) and collapse again. Upstream issue
+igrigorik/gharchive.org#320 independently reports ~90-100% capture before June 2025 falling below 20%
+in 2026 against the stargazers API; #323 announces the OpenDigger mirror (hourly files since
+2026-09-06).
+**Decision (human, 2026-10-12):**
+1. `history.trusted_end = 2025-05-31`; `history.degraded_end = 2026-09-05`. Training, rolling-origin CV
+   and backtests use only snapshots D with `D <= trusted_end - horizon_days + 1`
+   (`Config.latest_trusted_snapshot()`, = 2025-05-02 for a 30-day horizon). 2025-06..2026-09-05 is the
+   "degraded" era: data is kept, never trained or evaluated on.
+2. BigQuery plan: full detail targets the 24 trusted months 2023-06..2025-05. The Phase 2 default of
+   "most recent 24 months" is superseded.
+3. `ingest.sources` is an ordered config list `[opendigger, gharchive]`; each hour's manifest row records
+   `source_host`, `expected_events`, `expected_sha256`, `integrity`. Rows from OpenDigger carry
+   `source = 'opendigger'` (events and push_daily) so they can be excluded from any public publish.
+4. The GitHub API is a cross-check, not the discovery source: daily, for the top-200 candidates, store
+   `api_stars_7d` next to event-based `stars_7d`, show the ratio on the status page, alert when the
+   median ratio drops below 0.8. Realized outcomes on the live track record use API-verified stars.
+   Methodology page must say: live labels use API stars; historical labels use GH Archive in the
+   trusted era.
+**Findings that qualify the decision (reported to the human, not silently changed):**
+- Measured degradation onset is 2025-05-24, eight days before `trusted_end`. May 24-31 runs at 0.60-0.73
+  of baseline. The configured value follows the human decision; moving it to 2025-05-23 is a one-line
+  change (`latest_trusted_snapshot` would become 2025-04-24).
+- Full mode costs 10.5 TB scanned for the 24 trusted months vs 994 GB for spine over all history
+  (`docs/bigquery_cost_plan.md`): about 12 sandbox quota months for detail via BigQuery alone, 16 when
+  packed greedily after spine. Recommended: BigQuery for spine (two calendar months), hourly files from
+  data.gharchive.org for detail (about 1.5 TB download, same parser as live). Awaiting approval; nothing
+  beyond dry runs and the capture query has been run.
+- OpenDigger: files exist from 2026-09-06 at 214-446 MB/hour (8x the events of gharchive.org per #323).
+  The documented per-hour manifests (`...-H.manifest.json`) returned 404 for every hour probed (2026-09-06
+  hours 0,1,2,12,23, and five later hours up to 2026-10-11), so integrity/gap checks are wired but
+  inert: `ingest.sources[].manifest_keys` stays null until a real manifest is observed (field names are
+  not guessed). Throughput from the developer machine was ~6 KB/s, versus ~4.5 MB/s for
+  data.gharchive.org, which makes OpenDigger unusable from here and unverified from GitHub Actions.
+  It is therefore configured but `enabled: false`; the switch is gated on `reports/source_validation.md`.
+- License: the OpenDigger repository is Apache-2.0 "for the code part"; no license or terms were found
+  for the mirrored data (host index page, #323, README). Per the decision, OpenDigger-sourced rows are
+  not to be republished in the public Hugging Face dataset until the human answers.
+- The configured `GH_ENRICH_TOKEN` (fine-grained, public read-only) cannot list stargazers (HTTP 403 on
+  REST and GraphQL); a classic no-scope PAT, or `GITHUB_TOKEN` in Actions, is required. docs/HUMAN_SETUP.md
+  step 4 is corrected.
+**Consequences:**
+- Train/serve skew risk: the model is trained on pre-2025-06 data, but live scoring reads post-2025-10-07
+  payloads in which PR author, PR created time and merged flag are NULL (ADR-007). Tier-B features that
+  use those fields must be excluded from the live model or trained with them masked; `era_post_2025_10`
+  (ADR-003) is moot for training since no post-trim snapshot is ever trained on.
+- Live features whose look-back reaches before 2026-09-06 (up to `daily.recent_window_days` = 160 days)
+  read degraded GH Archive stars and are biased low until about 2027-02. The API cross-check ratio is the
+  monitor for this; early live scores should be labelled "provisional".
+- `PARSER_VERSION = 2`: staged push rows carry `source`. Existing staged/manifest data re-ingests.
+- New code: `breakout.ingest.bq.{sql,survey,plan,report,capture}`, `breakout.ops.capture_quality`,
+  `breakout.enrich.stargazers` (REST client keyed on repo id), `download_from_sources`.

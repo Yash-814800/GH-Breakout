@@ -24,7 +24,6 @@ ENV_VARS = (
 )
 
 _STUBS = {
-    "backfill": 2,
     "lake": 3,
     "enrich": 4,
     "build": 5,
@@ -47,6 +46,67 @@ def _make_stub(name: str, phase: int) -> typer.Typer:
 
 for _name, _phase in _STUBS.items():
     app.add_typer(_make_stub(_name, _phase), name=_name)
+
+backfill_app = typer.Typer(help="BigQuery historical backfill (Phase 2).", no_args_is_help=True)
+app.add_typer(backfill_app, name="backfill")
+
+
+@backfill_app.command("survey")
+def backfill_survey_cmd(
+    ctx: typer.Context,
+    last: Annotated[str, typer.Option(help="last day to survey, YYYY-MM-DD")] = "2026-09-05",
+) -> None:
+    """Dry-run every month (free) and save data/manifests/bq_cost_survey.json."""
+    from datetime import date
+
+    from breakout.ingest.bq.survey import run_survey
+
+    cfg = get_config(ctx.obj["config"])
+    out = P.MANIFEST_DIR / "bq_cost_survey.json"
+    survey = run_survey(
+        cfg.history.start_date,
+        date.fromisoformat(last),
+        cfg.events.raw_types,
+        out,
+        project=cfg.bigquery.require_project_id(),
+    )
+    typer.echo(f"surveyed {len(survey['months'])} months -> {out}")
+    typer.echo(f"missing day tables: {len(survey['missing_day_tables'])}")
+
+
+@backfill_app.command("plan")
+def backfill_plan_cmd(
+    ctx: typer.Context,
+    cutover: Annotated[str, typer.Option(help="proposed cutover date")] = "2026-09-06",
+    spent_gb: Annotated[float, typer.Option(help="GB already used this calendar month")] = 0.0,
+    out: Annotated[Path, typer.Option(help="markdown output")] = P.ROOT
+    / "docs"
+    / "bigquery_cost_plan.md",
+) -> None:
+    """Pack the surveyed work into free quota months and write docs/bigquery_cost_plan.md."""
+    import json
+    from datetime import UTC, date, datetime
+
+    from breakout.ingest.bq import report
+
+    cfg = get_config(ctx.obj["config"])
+    survey = json.loads((P.MANIFEST_DIR / "bq_cost_survey.json").read_text())
+    est_path = P.MANIFEST_DIR / "hourly_download_estimate.json"
+    est = json.loads(est_path.read_text()) if est_path.exists() else None
+    today = datetime.now(UTC).date()
+    md = report.render(
+        survey,
+        trusted_end=cfg.history.trusted_end,
+        cutover=date.fromisoformat(cutover),
+        budget=cfg.bigquery.monthly_budget_bytes,
+        spent_first=int(spent_gb * 1e9),
+        first_calendar_month=f"{today:%Y-%m}",
+        hourly_estimate=est,
+        generated=today,
+    )
+    out.write_text(md, encoding="utf-8")
+    typer.echo(f"wrote {out}")
+
 
 ingest_app = typer.Typer(help="Hourly GH Archive ingest (Phase 1).", no_args_is_help=True)
 app.add_typer(ingest_app, name="ingest")

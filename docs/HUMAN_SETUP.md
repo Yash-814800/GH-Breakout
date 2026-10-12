@@ -26,9 +26,16 @@ step 7 before Phase 4, step 8 before Phase 10, step 9 only if you enable the Blu
 
 ## 4. GitHub token for metadata enrichment
 
-Create a **fine-grained personal access token**: Resource owner = you, Repository access =
-"Public repositories (read-only)", no extra permissions. This gives 5,000 REST requests/hour
-and GraphQL access for public data.
+Create a **classic personal access token with no scopes ticked** (Settings → Developer settings →
+Personal access tokens → Tokens (classic)). With no scopes it can only read public data, and it gives
+5,000 REST requests/hour plus GraphQL.
+
+Do **not** use a fine-grained token with "Public repositories (read-only)": measured on 2026-10-12,
+such a token gets HTTP 403 "Resource not accessible by personal access token" on
+`GET /repos/{owner}/{repo}/stargazers` (REST) and on `stargazers` in GraphQL, which the capture-rate
+validation and the daily star cross-check (ADR-009) need. Search, repo metadata and forks do work with it.
+Inside GitHub Actions, the automatic `GITHUB_TOKEN` can also list stargazers of public repos
+(1,000 requests/hour/repo), so the daily cross-check does not need a PAT secret.
 
 ## 5. Secrets and local `.env`
 

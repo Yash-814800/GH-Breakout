@@ -27,7 +27,7 @@ import pyarrow.parquet as pq
 from breakout.config import Config, get_config
 from breakout.duck import connect
 from breakout.ingest import manifest as mf
-from breakout.ingest.gharchive import DownloadResult, download_hour
+from breakout.ingest.gharchive import DownloadResult, download_from_sources
 from breakout.ingest.parse import PUSH_TYPE, parse_hour_file
 from breakout.lake import layout
 from breakout.logging import get_logger
@@ -37,11 +37,13 @@ from breakout.schema import (
     PUSH_DAILY_SCHEMA,
     PUSH_ROWS_SCHEMA,
     SOURCE_HOURLY,
+    SOURCE_OPENDIGGER,
 )
 
 log = get_logger(__name__)
 
-Downloader = Callable[[datetime, Path], DownloadResult]
+# (hour, dest_dir, sources in priority order) -> DownloadResult
+Downloader = Callable[[datetime, Path, list], DownloadResult]
 ROW_GROUP_SIZE = 131_072
 
 
@@ -84,20 +86,35 @@ def _process_hour(
 ) -> mf.ManifestRow:
     day = ts.date()
     raw_dir = layout.raw_dir(cfg) / day.isoformat()
-    res = downloader(ts, raw_dir)
+    res = downloader(ts, raw_dir, cfg.ingest.sources_for(day))
     stamp = now.replace(tzinfo=None, microsecond=0)
     if res.status == "missing":
         status = mf.status_for_404(ts, now.replace(tzinfo=None), cfg.daily.late_hour_retry_days)
-        return mf.ManifestRow(ts, status, 0, 0, None, res.attempts, stamp, PARSER_VERSION)
+        return mf.ManifestRow(
+            ts, status, 0, 0, None, res.attempts, stamp, PARSER_VERSION, res.source_host
+        )
     if res.status != "ok" or res.path is None:
-        return mf.ManifestRow(ts, mf.ERROR, None, None, None, res.attempts, stamp, PARSER_VERSION)
+        return mf.ManifestRow(
+            ts,
+            mf.ERROR,
+            None,
+            res.size_bytes or None,
+            res.sha256,
+            res.attempts,
+            stamp,
+            PARSER_VERSION,
+            res.source_host,
+            res.expected_events,
+            res.expected_sha256,
+            res.integrity,
+        )
     try:
         parsed = parse_hour_file(
             res.path,
             ts,
             raw_types=cfg.events.raw_types,
             aggregated_types=cfg.events.aggregated_types,
-            source=SOURCE_HOURLY,
+            source=SOURCE_OPENDIGGER if res.source_host == "opendigger" else SOURCE_HOURLY,
             ingested_at=now,
         )
         ev_path, push_path = _hour_paths(cfg, day, ts.hour)
@@ -106,7 +123,15 @@ def _process_hour(
     except Exception as exc:  # parse failure must not abort the day; retried next run
         log.exception("parse failed for %s: %s", ts, exc)
         return mf.ManifestRow(
-            ts, mf.ERROR, None, res.size_bytes, res.sha256, res.attempts, stamp, PARSER_VERSION
+            ts,
+            mf.ERROR,
+            None,
+            res.size_bytes,
+            res.sha256,
+            res.attempts,
+            stamp,
+            PARSER_VERSION,
+            res.source_host,
         )
     finally:
         if not keep_raw and res.path is not None:
@@ -121,8 +146,27 @@ def _process_hour(
         s.bad_ids,
         s.duplicates,
     )
+    if res.expected_events is not None and res.expected_events != s.lines_read:
+        log.warning(
+            "%s: manifest says %d events, file has %d lines (%s)",
+            ts.isoformat(timespec="hours"),
+            res.expected_events,
+            s.lines_read,
+            res.source_host,
+        )
     return mf.ManifestRow(
-        ts, mf.OK, s.rows_kept, res.size_bytes, res.sha256, res.attempts, stamp, PARSER_VERSION
+        ts,
+        mf.OK,
+        s.rows_kept,
+        res.size_bytes,
+        res.sha256,
+        res.attempts,
+        stamp,
+        PARSER_VERSION,
+        res.source_host,
+        res.expected_events,
+        res.expected_sha256,
+        res.integrity,
     )
 
 
@@ -209,13 +253,19 @@ def build_day_files(cfg: Config, day: date, now: datetime) -> tuple[list[Path], 
             sql = (
                 "SELECT repo_id, actor_id, day, CAST(count(*) AS INTEGER) AS n_pushes, "
                 "arg_max(repo_name, event_id) AS repo_name, "
-                "CAST(? AS VARCHAR) AS source, CAST(? AS TIMESTAMP) AS ingested_at FROM ("
-                "  SELECT DISTINCT ON (event_id) event_id, repo_id, actor_id, repo_name, "
+                "CASE WHEN bool_or(source = ?) THEN ? ELSE ? END AS source, "
+                "CAST(? AS TIMESTAMP) AS ingested_at FROM ("
+                "  SELECT DISTINCT ON (event_id) event_id, repo_id, actor_id, repo_name, source, "
                 "         CAST(created_at AS DATE) AS day "
                 "  FROM read_parquet(?) WHERE CAST(created_at AS DATE) = ? ORDER BY event_id"
                 ") GROUP BY repo_id, actor_id, day ORDER BY repo_id, actor_id, day"
             )
-            _copy_sorted(con, sql, [SOURCE_HOURLY, stamp, flist, day], dest)
+            _copy_sorted(
+                con,
+                sql,
+                [SOURCE_OPENDIGGER, SOURCE_OPENDIGGER, SOURCE_HOURLY, stamp, flist, day],
+                dest,
+            )
             # keep the schema contract honest
             t = pq.read_table(dest)
             if t.schema.names != PUSH_DAILY_SCHEMA.names:
@@ -240,7 +290,7 @@ def ingest_day(
 ) -> DaySummary:
     cfg = cfg or get_config()
     now = (now or datetime.now(UTC)).replace(tzinfo=None)
-    dl: Downloader = downloader or download_hour
+    dl: Downloader = downloader or download_from_sources
     summary = DaySummary(day)
     manifest = mf.HourlyManifest(layout.hourly_manifest_path(cfg))
     start = datetime(day.year, day.month, day.day)
@@ -254,6 +304,9 @@ def ingest_day(
         min_hour_lag=cfg.daily.min_hour_lag,
         late_hour_retry_days=cfg.daily.late_hour_retry_days,
         force=force,
+        preferred_host=lambda h: (
+            srcs[0].name if (srcs := cfg.ingest.sources_for(h.date())) else None
+        ),
     )
     if only_hours is not None:
         todo = [h for h in todo if h.hour in only_hours]
