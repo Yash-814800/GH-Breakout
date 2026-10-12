@@ -47,6 +47,7 @@ measured (row counts, sizes, runtimes, metrics). Future sessions rely on it.
 - (ADR-009) Hourly-file download for those 24 months ~1.5 TB (sampled Content-Length)
 - (ADR-009/010) OpenDigger hour files 214-446 MB; ~6 KB/s from the dev machine, ~10 KB/s from a GitHub Actions runner (US), vs 4.5 MB/s (dev) and 54 MB/s (runner) for data.gharchive.org; manifests 404
 - (ADR-010) BigQuery spine 2015-01..2023-05: 522.4 GB, 101 months, 9 missing day tables (4 recoverable from hourly files)
+- (ADR-010) Measured day 2024-06-03 via the hourly path (2 hour-workers): 5 min 6 s wall, ~3.1 GB download, 24/24 ok, 2.67 M rows kept (Watch 208,983), lake +59 MB, staging 112 MB. Extrapolation for ~723 trusted days: ~30 h wall at 2 workers, ~45 GB lake, ~80 GB staging if kept
 - (ADR-010) data.gharchive.org WatchEvents per hour 2026-10-11 21-23 UTC: 169, 179, 213
 - (Phase 2) Bytes per month, spine-only vs full: see docs/bigquery_cost_plan.md
 - (Phase 2) cutover_date:

@@ -95,7 +95,7 @@ def render(
             f"- Estimated download (sampled `Content-Length`, compressed): trusted era ~{gb(trusted_months):,.0f} GB (2023-06..2025-04) plus May 2025 up to the 23rd; degraded era ~{gb(degraded):,.0f} GB. Order of magnitude: **~2 TB total**."
         )
     add(
-        "- Disk: day files are ZSTD parquet; staging is currently kept (about 2x the day file). A measured day is recorded in `docs/PROGRESS.md`. Plan on a few hundred GB with staging, or add staging cleanup after the day build before running the full range."
+        "- Disk: day files are ZSTD parquet; staging is currently kept (about 2x the day file). Measured on 2024-06-03: 5 min wall, ~3.1 GB download, +59 MB lake, 112 MB staging; extrapolated to the ~723 trusted days that is ~30 h wall at 2 workers, ~45 GB lake and ~80 GB staging if kept. Consider staging cleanup before the full run."
     )
     add("")
     add("## 3. Resulting coverage")

@@ -32,7 +32,7 @@ Generated 2026-10-12. Supersedes the Phase 2 default and the earlier schedules i
 - Order: trusted era 2023-06-01..2025-05-23 first, then the degraded era the day after 2025-05-23 .. last complete day (kept, flagged, never trained or evaluated on). Within an era oldest to newest.
 - `breakout backfill hourly [--dry]`: resumable through the hourly manifest (hours already `ok` at the current parser version are skipped), at most 4 concurrent downloads (`--workers`, default 2).
 - Estimated download (sampled `Content-Length`, compressed): trusted era ~1,457 GB (2023-06..2025-04) plus May 2025 up to the 23rd; degraded era ~532 GB. Order of magnitude: **~2 TB total**.
-- Disk: day files are ZSTD parquet; staging is currently kept (about 2x the day file). A measured day is recorded in `docs/PROGRESS.md`. Plan on a few hundred GB with staging, or add staging cleanup after the day build before running the full range.
+- Disk: day files are ZSTD parquet; staging is currently kept (about 2x the day file). Measured on 2024-06-03: 5 min wall, ~3.1 GB download, +59 MB lake, 112 MB staging; extrapolated to the ~723 trusted days that is ~30 h wall at 2 workers, ~45 GB lake and ~80 GB staging if kept. Consider staging cleanup before the full run.
 
 ## 3. Resulting coverage
 
