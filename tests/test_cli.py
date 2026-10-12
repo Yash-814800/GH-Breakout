@@ -7,7 +7,7 @@ from breakout.cli import app
 
 runner = CliRunner()
 GROUPS = ["ingest", "backfill", "lake", "enrich", "build", "ml", "daily", "publish", "ops"]
-STUB_GROUPS = [g for g in GROUPS if g not in ("ingest", "backfill")]  # real groups
+STUB_GROUPS = [g for g in GROUPS if g not in ("ingest", "backfill", "lake")]  # real groups
 
 
 def test_help_lists_groups():

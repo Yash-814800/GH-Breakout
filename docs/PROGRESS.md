@@ -20,18 +20,23 @@ measured (row counts, sizes, runtimes, metrics). Future sessions rely on it.
 | 12 | Distribution (RSS, badges, digest, Bluesky) | ☐ | | |
 | 13 | Portfolio polish, dbt docs, ClickHouse benchmark, final audit | ☐ | | |
 
-## Amendments after Phase 1 (ADR-009, 2026-10-12)
+## Amendments after Phase 1 (ADR-009, ADR-010, 2026-10-12)
 
 | Item | Status | Notes |
 |---|---|---|
-| `history.trusted_end` / `degraded_end` + `Config.latest_trusted_snapshot()` | ☑ | trusted_end 2025-05-31 as decided; measured onset is 2025-05-24 (open issue below) |
-| Capture-quality table + chart (`reports/capture_quality.md`) | ☑ | from BigQuery day tables (the lake only holds one day), 53.8 GB scanned |
-| BigQuery re-plan (`docs/bigquery_cost_plan.md`) | ☑ planned, ☐ approved | 564 dry runs; nothing beyond them has run. Needs human decision |
-| Multi-source hourly ingest (`ingest.sources`, `source_host`, manifest integrity hooks) | ☑ code, ☐ enabled | OpenDigger `enabled: false` until validation passes |
-| Capture-rate validation vs stargazers API (`reports/source_validation.md`) | ☐ blocked | `GH_ENRICH_TOKEN` cannot list stargazers; see open issues |
-| OpenDigger license/terms | ☑ searched, ☐ answered | none found for the data; rows tagged `source='opendigger'`, not to be published |
-| Daily top-200 API star cross-check + status page alert | ☐ | needs Phase 6/9/10 pieces; client exists (`breakout.enrich.stargazers`) |
-| Comment on gharchive.org#320 | ☑ | https://github.com/igrigorik/gharchive.org/issues/320#issuecomment-6116371241 |
+| `GH_ENRICH_TOKEN` classic no-scope PAT, 1-year expiry | ☑ set locally; ☐ Actions secret | `.env` updated and verified (5,000 req/h, no scopes). Actions secret is yours to set. Rotation reminder in `docs/runbook.md` (expires 2027-10-12) |
+| `history.trusted_end = 2025-05-23`, `latest_trusted_snapshot` 2025-04-24 | ☑ | `degraded_end` removed; degraded era runs to `live.source_start` (null) |
+| `history.cutover_date = 2023-06-01`, `detail_start_date = 2023-06-01`, `hourly_gap_days` | ☑ | |
+| `live.source` / `live.source_start` | ☑ keys, both null | switch gated on source test + human approval |
+| BigQuery spine 2015-01..2023-05 dry run | ☑ 522.4 GB, ☐ approved to run | `docs/bigquery_cost_plan.md`; fits this calendar month with 55 GB already used |
+| `breakout backfill hourly` (trusted first, <= 4 downloads, resumable) | ☑ code, ☐ run | ~2 TB download (trusted ~1.5 TB, degraded ~0.5 TB) |
+| `breakout lake verify` + invariants | ☑ | ADR-010 |
+| `live_available` in `config/feature_dictionary.yaml` + validator | ☑ | entries arrive in Phase 7; the file already validates |
+| Provisional-window logic (`Config.window_is_provisional`) | ☑ | leaderboard flag + methodology wording land with Phase 7/10 |
+| Capture-quality report re-rendered for `trusted_end` 2025-05-23 | ☑ | `reports/capture_quality.md` |
+| Source test from a GitHub Actions runner | see `reports/source_validation.md` | run 38194688025 |
+| Stargazers API for per-repo ground truth | ✖ not available | GitHub restricted it to admins/collaborators in July 2026 (ADR-010) |
+| Live-source gate / item 5 | ☐ not started | waits for your review of the source test |
 
 ## Measured facts
 
@@ -51,18 +56,10 @@ measured (row counts, sizes, runtimes, metrics). Future sessions rely on it.
 
 ## Open issues / TODO for the human
 
-- **Star events collapse in GH Archive since ~2026-03** (ADR-008, `docs/schema_audit.md`
-  "Data-volume observations"): WatchEvent is ~25/hour on 2026-08-15 vs ~4,500/hour in 2025-09.
-  Decide how to handle before Phase 2 (cutover date) and Phase 6 (labels).
-- **Decide `trusted_end`**: measured degradation starts 2025-05-24 (stars 0.71 of baseline vs 0.90 the day
-  before), so 2025-05-24..31 sit inside the "trusted" era at ~0.6-0.7 capture. Keep 2025-05-31 or use
-  2025-05-23 (ADR-009).
-- **Approve the BigQuery schedule** (`docs/bigquery_cost_plan.md`, schedule C recommended) and
-  `history.cutover_date` (proposed 2026-09-06).
-- **GitHub token for stargazers**: the fine-grained public-read PAT in `GH_ENRICH_TOKEN` gets 403 on
-  stargazers (REST and GraphQL). Provide a classic no-scope PAT (or allow use of `gh auth token` for local
-  validation). Blocks `reports/source_validation.md` and the OpenDigger go/no-go.
-- **OpenDigger data license**: none found; confirm whether OpenDigger-sourced rows may be published to
-  the HF dataset (currently excluded). Also confirm OpenDigger is reachable at usable speed from GitHub
-  Actions (it was ~6 KB/s from the dev machine) before relying on it for the daily job.
+- Set the GitHub Actions secret `GH_ENRICH_TOKEN` (the PAT works locally; the runner test did not need it).
+- Approve running the 522.4 GB BigQuery spine extraction (this calendar month, 578 GB of 900 GB).
+- Review the source-test result and decide the live-source gate (ADR-010, item 5).
+- The stargazers listing is no longer available to us (ADR-010); the capture check and the daily
+  cross-check must use `stargazerCount` deltas instead.
+- OpenDigger data license: none found; its rows stay out of the public dataset.
 - Post-2025-10-07 PullRequest/Review events have no PR author, creation time or merged flag (ADR-007).

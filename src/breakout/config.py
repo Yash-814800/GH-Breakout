@@ -42,14 +42,30 @@ class HistoryCfg(_Section):
     cutover_date: date | None = None
     detail_start_date: date | None = None
     trusted_end: date
-    degraded_end: date | None = None
+    hourly_gap_days: list[date] = []
 
     @model_validator(mode="after")
     def _check_eras(self) -> HistoryCfg:
         if self.trusted_end < self.start_date:
             raise ValueError("history.trusted_end must be >= history.start_date")
-        if self.degraded_end is not None and self.degraded_end <= self.trusted_end:
-            raise ValueError("history.degraded_end must be > history.trusted_end")
+        if self.cutover_date is not None and self.cutover_date <= self.start_date:
+            raise ValueError("history.cutover_date must be > history.start_date")
+        for d in self.hourly_gap_days:
+            if self.cutover_date is not None and d >= self.cutover_date:
+                raise ValueError("history.hourly_gap_days must be before cutover_date")
+        return self
+
+
+class LiveCfg(_Section):
+    """Which source feeds live scoring. Null until a source is validated and approved."""
+
+    source: str | None = None
+    source_start: date | None = None
+
+    @model_validator(mode="after")
+    def _both_or_neither(self) -> LiveCfg:
+        if (self.source is None) != (self.source_start is None):
+            raise ValueError("live.source and live.source_start must be set together")
         return self
 
 
@@ -196,6 +212,7 @@ class Config(_Section):
     history: HistoryCfg
     events: EventsCfg
     ingest: IngestCfg
+    live: LiveCfg
     bigquery: BigQueryCfg
     huggingface: HuggingFaceCfg
     lake: LakeCfg
@@ -211,6 +228,10 @@ class Config(_Section):
     def _check_embargo(self) -> Config:
         if self.training.embargo_days < self.labels.horizon_days:
             raise ValueError("training.embargo_days must be >= labels.horizon_days")
+        if self.live.source is not None and self.live.source not in {
+            s.name for s in self.ingest.sources
+        }:
+            raise ValueError(f"live.source {self.live.source!r} is not in ingest.sources")
         return self
 
     def latest_trusted_snapshot(self) -> date:
@@ -224,12 +245,38 @@ class Config(_Section):
         return snapshot <= self.latest_trusted_snapshot()
 
     def era(self, day: date) -> str:
-        """``trusted`` (<= trusted_end), ``degraded`` (<= degraded_end) or ``live``."""
+        """``trusted`` (<= trusted_end), ``live`` (>= live.source_start, once a live source is
+        approved) or ``degraded`` (everything in between: kept and flagged, never trained on)."""
         if day <= self.history.trusted_end:
             return "trusted"
-        if self.history.degraded_end is not None and day <= self.history.degraded_end:
-            return "degraded"
-        return "live"
+        if self.live.source_start is not None and day >= self.live.source_start:
+            return "live"
+        return "degraded"
+
+    def is_trusted_day(self, day: date) -> bool:
+        """Star data for ``day`` comes from a trusted source (trusted GH Archive era or the
+        approved live source)."""
+        return self.era(day) != "degraded"
+
+    def window_is_provisional(self, start: date, end: date) -> bool:
+        """True when any day in ``[start, end]`` is not from a trusted source.
+
+        A live feature (or label window) whose look-back overlaps such days is flagged
+        ``provisional``: shown as such on the leaderboard and excluded from headline track-record
+        metrics (ADR-010).
+        """
+        if end < start:
+            raise ValueError("end must be >= start")
+        if start > self.history.trusted_end:
+            return self.live.source_start is None or start < self.live.source_start
+        # window starts in the trusted era: provisional iff it reaches into the degraded gap
+        gap_start = self.history.trusted_end + timedelta(days=1)
+        gap_end = (
+            self.live.source_start - timedelta(days=1)
+            if self.live.source_start is not None
+            else date.max
+        )
+        return end >= gap_start and start <= gap_end
 
 
 def _expand(value: Any) -> Any:

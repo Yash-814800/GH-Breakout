@@ -26,16 +26,18 @@ step 7 before Phase 4, step 8 before Phase 10, step 9 only if you enable the Blu
 
 ## 4. GitHub token for metadata enrichment
 
-Create a **classic personal access token with no scopes ticked** (Settings → Developer settings →
-Personal access tokens → Tokens (classic)). With no scopes it can only read public data, and it gives
-5,000 REST requests/hour plus GraphQL.
+Create a **classic personal access token with no scopes ticked** and a **1-year expiry**
+(Settings -> Developer settings -> Personal access tokens -> Tokens (classic)). With no scopes it can
+only read public data and gives 5,000 REST requests/hour plus GraphQL. Use this same token in GitHub
+Actions (the secret `GH_ENRICH_TOKEN`); do **not** rely on the automatic `GITHUB_TOKEN`, whose
+1,000 requests/hour is too low. Add a rotation reminder (see `docs/runbook.md`).
 
-Do **not** use a fine-grained token with "Public repositories (read-only)": measured on 2026-10-12,
-such a token gets HTTP 403 "Resource not accessible by personal access token" on
-`GET /repos/{owner}/{repo}/stargazers` (REST) and on `stargazers` in GraphQL, which the capture-rate
-validation and the daily star cross-check (ADR-009) need. Search, repo metadata and forks do work with it.
-Inside GitHub Actions, the automatic `GITHUB_TOKEN` can also list stargazers of public repos
-(1,000 requests/hour/repo), so the daily cross-check does not need a PAT secret.
+Do **not** use a fine-grained "Public repositories (read-only)" token: measured on 2026-10-12 it gets
+HTTP 403 on stargazers, and it lacks the metadata permission some endpoints need.
+
+Be aware: since July 2026 GitHub lists stargazers only for repository admins and collaborators, so
+no token of ours can list stargazers (or `starred_at`) of other people's repositories. Only counts
+(`stargazerCount`), search and metadata are available (ADR-010).
 
 ## 5. Secrets and local `.env`
 

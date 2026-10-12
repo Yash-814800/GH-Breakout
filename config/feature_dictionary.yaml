@@ -1,0 +1,23 @@
+# Feature dictionary (single source of truth for feature names, descriptions and SHAP sentences).
+# Populated in Phase 7. Every entry MUST declare `live_available` (ADR-010):
+#   true  = reproducible from the live source (post-2025-10-07 payloads, plus the API-first subset
+#           if that mode is adopted). The live champion trains only on these.
+#   false = needs fields that the live source does not carry (see LIVE_NULL_FIELDS in
+#           breakout.features_dict). Kept as a research feature; reported in reports/model_cv.md.
+# `requires` lists the slim-schema columns a feature reads, as {type: <event type>, column: <col>};
+# validation rejects `live_available: true` when a required column is NULL in live payloads.
+#
+# Example (illustrative; real entries arrive with Phase 7):
+#   stars_7d:
+#     tier: A
+#     description: "Stars received in the 7 days before the snapshot"
+#     requires: [{type: WatchEvent, column: created_at}]
+#     live_available: true
+#     sentence: "gained {value} stars in the last week"
+#   pr_merge_rate_30d:
+#     tier: B
+#     description: "Share of closed pull requests in the last 30 days that were merged"
+#     requires: [{type: PullRequestEvent, column: pr_merged}]
+#     live_available: false      # pr_merged is NULL in post-2025-10-07 payloads
+version: 1
+features: {}

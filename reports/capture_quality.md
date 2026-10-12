@@ -1,6 +1,6 @@
 # GH Archive star-capture quality
 
-Daily WatchEvent and total event counts from the public BigQuery dataset (`githubarchive.day.20*`, `type` column only, 53.8 GB billed), 2024-01-01 to 2026-10-11. Ratios compare each day with the median of the same weekday in 2024. Trusted era ends 2025-05-31; degraded era ends 2026-09-05.
+Daily WatchEvent and total event counts from the public BigQuery dataset (`githubarchive.day.20*`, `type` column only, 53.8 GB billed), 2024-01-01 to 2026-10-11. Ratios compare each day with the median of the same weekday in 2024. Trusted era ends 2025-05-23.
 
 ![capture quality](figures/capture_quality.png)
 
@@ -15,7 +15,7 @@ Daily WatchEvent and total event counts from the public BigQuery dataset (`githu
 
 ## Monthly medians
 
-| month | days | WatchEvents/day | stars ratio | stars-per-issue ratio | all-events ratio | era |
+| month | days | WatchEvents/day | stars ratio | stars/issue ratio | all-events ratio | era |
 |---|---:|---:|---:|---:|---:|---|
 | 2024-01 | 31 | 196,041 | 0.99 | 0.99 | 1.00 | trusted |
 | 2024-02 | 29 | 195,872 | 1.01 | 1.00 | 1.16 | trusted |
@@ -33,7 +33,7 @@ Daily WatchEvent and total event counts from the public BigQuery dataset (`githu
 | 2025-02 | 28 | 231,384 | 1.16 | 0.97 | 1.13 | trusted |
 | 2025-03 | 31 | 224,209 | 1.13 | 0.94 | 1.14 | trusted |
 | 2025-04 | 30 | 202,116 | 1.01 | 0.92 | 1.11 | trusted |
-| 2025-05 | 31 | 177,010 | 0.98 | 0.89 | 1.08 | trusted |
+| 2025-05 | 31 | 177,010 | 0.98 | 0.89 | 1.08 | trusted to 2025-05-23, then degraded |
 | 2025-06 | 30 | 127,006 | 0.64 | 0.82 | 0.72 | degraded |
 | 2025-07 | 31 | 133,842 | 0.66 | 0.85 | 0.72 | degraded |
 | 2025-08 | 31 | 125,060 | 0.62 | 0.56 | 0.74 | degraded |
@@ -50,7 +50,7 @@ Daily WatchEvent and total event counts from the public BigQuery dataset (`githu
 | 2026-07 | 31 | 2,516 | 0.01 | 0.25 | 0.76 | degraded |
 | 2026-08 | 31 | 2,231 | 0.01 | 0.22 | 0.62 | degraded |
 | 2026-09 | 30 | 30,737 | 0.06 | 0.18 | 0.40 | degraded |
-| 2026-10 | 11 | 9,391 | 0.05 | 0.16 | 0.38 | live |
+| 2026-10 | 11 | 9,391 | 0.05 | 0.16 | 0.38 | degraded |
 
 <details><summary>Daily table</summary>
 

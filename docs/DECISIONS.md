@@ -148,3 +148,55 @@ in 2026 against the stargazers API; #323 announces the OpenDigger mirror (hourly
 - `PARSER_VERSION = 2`: staged push rows carry `source`. Existing staged/manifest data re-ingests.
 - New code: `breakout.ingest.bq.{sql,survey,plan,report,capture}`, `breakout.ops.capture_quality`,
   `breakout.enrich.stargazers` (REST client keyed on repo id), `download_from_sources`.
+
+## ADR-010: Hourly-file backfill from 2023-06-01, trusted_end 2025-05-23, API-first constraints, live gate (2026-10-12)
+**Context:** ADR-009 left four open questions; the human decided on 2026-10-12. Two facts changed the
+design while implementing it: (1) GitHub restricted the stargazer-listing endpoints to repository
+admins and collaborators in July 2026 (changelog 2026-06-30 "Upcoming access restrictions to public
+API endpoints and UI views"; docs.github.com/en/rest/activity/starring), and (2) the BigQuery spine
+range 2015-01..2023-05 is only 522 GB.
+**Decisions (human):**
+1. `GH_ENRICH_TOKEN` is a classic PAT with no scopes and a 1-year expiry, used locally and in Actions
+   (not `GITHUB_TOKEN`). Rotation reminder in `docs/runbook.md`; HUMAN_SETUP step 4 corrected. Set up
+   2026-10-12, expires 2027-10-12. (Verified: valid, `x-oauth-scopes` empty, 5,000 req/h.)
+2. `history.trusted_end = 2025-05-23` inclusive (trusted data = `created_at < 2025-05-24`), matching the
+   measured onset on 2025-05-24 (ADR-009). `Config.latest_trusted_snapshot()` = 2025-04-24 for a
+   30-day horizon. The separate `degraded_end` key is removed: the degraded era is everything after
+   `trusted_end` until `live.source_start` (null until a live source is approved).
+3. Schedule: BigQuery spine only for 2015-01..2023-05 (dry run: **522.4 GB**, 101 months; with the
+   55 GB already spent it is 578 GB of the 900 GB budget, so it fits this calendar month; awaiting
+   approval to run). Everything from `history.cutover_date = 2023-06-01` comes from data.gharchive.org
+   hourly files via the Phase 1 parser (`breakout backfill hourly`: trusted era first, then degraded;
+   resumable; <= 4 concurrent downloads). `history.detail_start_date = 2023-06-01`. Four days that
+   BigQuery lacks but hourly files have are listed in `history.hourly_gap_days` (2015-12-31,
+   2021-05-08/10/11); five days exist in neither source (2020-08-22, 2021-08-26, 2021-10-26/27/28).
+   A separate `live.source` / `live.source_start` pair (both null) holds any future live-source switch.
+4. OpenDigger stays off by default and its rows (`source = 'opendigger'`) never go to the public HF
+   dataset. `breakout lake verify` lists files that contain them.
+5. Live-source gate (blocks Phase 9 scheduling): see "Live-source gate" below; not started.
+6. Every feature-dictionary entry declares `live_available`; the live champion trains only on those;
+   the full-feature model is a research result in `reports/model_cv.md`. `breakout.features_dict`
+   rejects `live_available: true` for features that read columns which are NULL in live payloads
+   (PR author, PR created time, merged flag).
+7. Provisional scores: a live feature or label window whose look-back overlaps days not from a
+   trusted source (`Config.window_is_provisional`) is flagged `provisional`, shown as such on the
+   leaderboard, and excluded from headline track-record metrics; the methodology page states why.
+**Lake verify invariants (`breakout lake verify`, `breakout.lake.verify`):** `bq-` files only for months
+entirely before the cutover; `day-` files only from the cutover (plus `hourly_gap_days`); rows lie
+within the file's month/day; `bq` files carry only `source='bq'` and `detail_level=0` before
+`detail_start_date`; hourly files carry `hourly`/`opendigger` and `detail_level=1`; `event_id` is
+unique per event type and month across all files; `push_daily` unique on (repo_id, actor_id, day);
+hive `event_type` agrees with the rows; OpenDigger files are enumerated.
+**Consequences:**
+- The stargazers API no longer provides `starred_at` for other people's repositories. This
+  invalidates (a) the per-repo capture validation against API timestamps asked for in ADR-009,
+  (b) the daily `api_stars_7d` cross-check as specified (it becomes a ratio of 7-day *count deltas*
+  from daily `stargazerCount` snapshots, net of unstars), and (c) item 5(b) of the NO-GO design
+  (starred_at for ~2,000 movers). Count snapshots (`stargazerCount` via GraphQL batches, search
+  `stargazers_count`, REST `stargazers_count`) remain available.
+- ADR-009's decisions 1 (`trusted_end`) and 2 (BigQuery plan) are superseded by this ADR; its
+  findings and the remaining decisions stand.
+- Backfill from hourly files is about 2 TB of download (trusted era ~1.5 TB, degraded era ~0.5 TB)
+  and a few hundred GB of disk while staging is kept.
+- Tier B features have no history before 2023-06-01; the first snapshot with a full 160-day detail
+  look-back is 2023-11-08.

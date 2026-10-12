@@ -135,8 +135,8 @@ def plot(
     ax[1].set_ylim(0, 2)
     for a in ax:
         a.axvline(trusted_end, color="#dc2626", ls="--", lw=1)
+        a.axvspan(trusted_end, degraded_end or days[-1], color="#fecaca", alpha=0.35)
         if degraded_end:
-            a.axvspan(trusted_end, degraded_end, color="#fecaca", alpha=0.35)
             a.axvline(degraded_end, color="#16a34a", ls=":", lw=1)
         a.grid(alpha=0.25)
     ax[1].legend(loc="upper right", fontsize=8)
@@ -193,11 +193,13 @@ def render_markdown(
     for m in months:
         y, mo = map(int, m["month"].split("-"))
         month_end = date(y + (mo == 12), mo % 12 + 1, 1)
-        era = (
-            "trusted"
-            if month_end.toordinal() - 1 <= trusted_end.toordinal()
-            else ("degraded" if degraded_end is None or date(y, mo, 1) <= degraded_end else "live")
-        )
+        month_start = date(y, mo, 1)
+        if month_end.toordinal() - 1 <= trusted_end.toordinal():
+            era = "trusted"
+        elif month_start > trusted_end:
+            era = "degraded" if degraded_end is None or month_start <= degraded_end else "live"
+        else:
+            era = f"trusted to {trusted_end}, then degraded"
         add(
             f"| {m['month']} | {m['days']} | {m['watch_per_day']:,.0f} | {m['ratio_watch']:.2f} "
             f"| {m['ratio_wpi']:.2f} | {m['ratio_total']:.2f} | {era} |"

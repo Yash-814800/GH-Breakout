@@ -24,7 +24,6 @@ ENV_VARS = (
 )
 
 _STUBS = {
-    "lake": 3,
     "enrich": 4,
     "build": 5,
     "ml": 6,
@@ -77,28 +76,33 @@ def backfill_survey_cmd(
 @backfill_app.command("plan")
 def backfill_plan_cmd(
     ctx: typer.Context,
-    cutover: Annotated[str, typer.Option(help="proposed cutover date")] = "2026-09-06",
     spent_gb: Annotated[float, typer.Option(help="GB already used this calendar month")] = 0.0,
+    dry: Annotated[Path, typer.Option(help="spine dry-run JSON")] = P.MANIFEST_DIR
+    / "bq_dry_run_spine_2015_2023-05.json",
     out: Annotated[Path, typer.Option(help="markdown output")] = P.ROOT
     / "docs"
     / "bigquery_cost_plan.md",
 ) -> None:
-    """Pack the surveyed work into free quota months and write docs/bigquery_cost_plan.md."""
+    """Write docs/bigquery_cost_plan.md from the dry-run JSON (no BigQuery call)."""
     import json
-    from datetime import UTC, date, datetime
+    from datetime import UTC, datetime
 
     from breakout.ingest.bq import report
 
     cfg = get_config(ctx.obj["config"])
+    if cfg.history.cutover_date is None:
+        raise typer.BadParameter("history.cutover_date is not set")
     survey = json.loads((P.MANIFEST_DIR / "bq_cost_survey.json").read_text())
     est_path = P.MANIFEST_DIR / "hourly_download_estimate.json"
     est = json.loads(est_path.read_text()) if est_path.exists() else None
     today = datetime.now(UTC).date()
     md = report.render(
         survey,
+        json.loads(dry.read_text()),
+        cutover=cfg.history.cutover_date,
         trusted_end=cfg.history.trusted_end,
-        cutover=date.fromisoformat(cutover),
         budget=cfg.bigquery.monthly_budget_bytes,
+        per_query_cap=cfg.bigquery.per_query_max_bytes_billed,
         spent_first=int(spent_gb * 1e9),
         first_calendar_month=f"{today:%Y-%m}",
         hourly_estimate=est,
@@ -106,6 +110,60 @@ def backfill_plan_cmd(
     )
     out.write_text(md, encoding="utf-8")
     typer.echo(f"wrote {out}")
+
+
+@backfill_app.command("hourly")
+def backfill_hourly_cmd(
+    ctx: typer.Context,
+    start: Annotated[str | None, typer.Option(help="first day (default cutover_date)")] = None,
+    end: Annotated[str | None, typer.Option(help="last day (default last complete day)")] = None,
+    workers: Annotated[int, typer.Option(min=1, max=4, help="concurrent downloads, <= 4")] = 2,
+    dry: Annotated[bool, typer.Option("--dry", help="print the plan and exit")] = False,
+    force: Annotated[bool, typer.Option("--force")] = False,
+) -> None:
+    """Resumable backfill from hourly files: trusted era first, then the degraded era."""
+    from datetime import date
+
+    from breakout.ingest.backfill import plan_days, run_hourly_backfill
+
+    cfg = get_config(ctx.obj["config"])
+    days = plan_days(
+        cfg,
+        start=date.fromisoformat(start) if start else None,
+        end=date.fromisoformat(end) if end else None,
+    )
+    by_era: dict[str, list] = {}
+    for pd in days:
+        by_era.setdefault(pd.era, []).append(pd.day)
+    for era, ds in by_era.items():
+        typer.echo(f"{era}: {len(ds)} days, {min(ds)} .. {max(ds)}")
+    if dry:
+        return
+
+    def report(pd, s) -> None:
+        typer.echo(
+            f"{pd.day} [{pd.era}] ok={s.hours_ok}/24 processed={s.hours_processed} "
+            f"missing={s.missing_hours} pending={s.pending_hours} error={s.error_hours}"
+        )
+
+    run_hourly_backfill(cfg, days, workers=workers, force=force, on_day=report)
+
+
+lake_app = typer.Typer(help="Lake maintenance (Phase 3).", no_args_is_help=True)
+app.add_typer(lake_app, name="lake")
+
+
+@lake_app.command("verify")
+def lake_verify_cmd(ctx: typer.Context) -> None:
+    """Check lake invariants (ADR-010); exit 1 on violations."""
+    from breakout.lake.verify import verify_lake
+
+    cfg = get_config(ctx.obj["config"])
+    report = verify_lake(cfg)
+    for line in report.summary_lines():
+        typer.echo(line)
+    if not report.ok:
+        raise typer.Exit(1)
 
 
 ingest_app = typer.Typer(help="Hourly GH Archive ingest (Phase 1).", no_args_is_help=True)

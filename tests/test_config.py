@@ -12,7 +12,7 @@ def test_loads_real_config_without_env(temp_config):
     cfg = load_config(temp_config)
     assert cfg.project.name == "gh-breakout"
     assert cfg.history.start_date == date(2015, 1, 1)
-    assert cfg.history.cutover_date is None
+    assert cfg.history.cutover_date == date(2023, 6, 1)
     assert cfg.training.first_snapshot == date(2016, 1, 4)
     assert cfg.labels.horizon_days == 30
 
@@ -56,23 +56,63 @@ def test_trusted_era_helpers():
     from datetime import date
 
     cfg = load_config()
-    assert cfg.history.trusted_end == date(2025, 5, 31)
-    # 30-day label window [D, D+30) must end on or before 2025-05-31
-    assert cfg.latest_trusted_snapshot() == date(2025, 5, 2)
-    assert cfg.is_trusted_snapshot(date(2025, 5, 2))
-    assert not cfg.is_trusted_snapshot(date(2025, 5, 3))
-    assert cfg.era(date(2025, 5, 31)) == "trusted"
-    assert cfg.era(date(2025, 6, 1)) == "degraded"
+    assert cfg.history.trusted_end == date(2025, 5, 23)
+    assert cfg.history.cutover_date == date(2023, 6, 1)
+    # 30-day label window [D, D+30) must end on or before 2025-05-23
+    assert cfg.latest_trusted_snapshot() == date(2025, 4, 24)
+    assert cfg.is_trusted_snapshot(date(2025, 4, 24))
+    assert not cfg.is_trusted_snapshot(date(2025, 4, 25))
+    assert cfg.era(date(2025, 5, 23)) == "trusted"
+    assert cfg.era(date(2025, 5, 24)) == "degraded"
+    assert cfg.era(date(2026, 10, 1)) == "degraded"  # no live source approved yet
+
+
+def test_live_source_defines_live_era(write_config):
+    from datetime import date
+
+    def enable(d):
+        d["ingest"]["sources"][0]["enabled"] = True
+        d["live"] = {"source": "opendigger", "source_start": "2026-09-06"}
+
+    cfg = load_config(write_config(enable))
     assert cfg.era(date(2026, 9, 5)) == "degraded"
     assert cfg.era(date(2026, 9, 6)) == "live"
+    assert cfg.is_trusted_day(date(2026, 9, 6)) and not cfg.is_trusted_day(date(2026, 9, 5))
 
 
-def test_degraded_end_must_follow_trusted_end(write_config):
+def test_live_config_validation(write_config):
     import pytest
 
-    path = write_config(lambda d: d["history"].update(degraded_end="2025-01-01"))
-    with pytest.raises(ValueError, match="degraded_end"):
-        load_config(path)
+    with pytest.raises(ValueError, match="together"):
+        load_config(write_config(lambda d: d["live"].update(source="gharchive")))
+    with pytest.raises(ValueError, match="not in ingest.sources"):
+        load_config(
+            write_config(lambda d: d["live"].update(source="nope", source_start="2026-09-06"))
+        )
+
+
+def test_provisional_windows():
+    from datetime import date
+
+    cfg = load_config()  # trusted_end 2025-05-23, no live source
+    assert not cfg.window_is_provisional(date(2025, 1, 1), date(2025, 5, 23))
+    assert cfg.window_is_provisional(date(2025, 5, 1), date(2025, 5, 24))  # reaches degraded day
+    assert cfg.window_is_provisional(date(2026, 10, 1), date(2026, 10, 10))  # all degraded
+
+
+def test_provisional_windows_with_live_source(write_config):
+    from datetime import date
+
+    def enable(d):
+        d["ingest"]["sources"][0]["enabled"] = True
+        d["live"] = {"source": "opendigger", "source_start": "2026-09-06"}
+
+    cfg = load_config(write_config(enable))
+    assert not cfg.window_is_provisional(date(2026, 9, 6), date(2026, 10, 10))
+    # a 90-day look-back from 2026-10-10 reaches into the degraded gap
+    assert cfg.window_is_provisional(date(2026, 7, 12), date(2026, 10, 9))
+    # a window entirely before trusted_end is fine even though it spans nothing degraded
+    assert not cfg.window_is_provisional(date(2024, 1, 1), date(2024, 12, 31))
 
 
 def test_sources_priority_and_availability(write_config):
