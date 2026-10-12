@@ -1,0 +1,95 @@
+# config/project.yaml — single source of truth for tunable parameters.
+# Loaded by src/breakout/config.py. ${VAR} values are read from the environment (.env locally,
+# GitHub Actions secrets/vars in CI). Values marked "set in Phase N" are filled by that phase.
+
+project:
+  name: gh-breakout
+  package: breakout
+  timezone: UTC
+
+history:
+  start_date: 2015-01-01          # GH Archive Events-API era begins here; never go earlier
+  cutover_date: null              # set in Phase 2: first UTC day owned by the daily pipeline (hourly files).
+                                  # BigQuery backfill covers [start_date, cutover_date); daily covers [cutover_date, ...)
+  detail_start_date: null         # set in Phase 2: earliest month with payload-derived (detail) columns
+
+events:
+  raw_types:                      # stored row-per-event
+    - WatchEvent                  # == a star (GitHub's legacy naming)
+    - ForkEvent
+    - IssuesEvent
+    - IssueCommentEvent
+    - PullRequestEvent
+    - PullRequestReviewEvent
+    - ReleaseEvent
+    - CreateEvent
+    - PublicEvent                 # repo switched private -> public ("birth" for many repos)
+  aggregated_types:               # stored as daily aggregates only, to save space
+    - PushEvent                   # -> push_daily(repo_id, actor_id, date, n_pushes)
+
+bigquery:
+  project_id: ${GCP_PROJECT_ID}
+  monthly_budget_bytes: 900000000000        # 900 GB of the 1 TB sandbox quota; leave headroom
+  per_query_max_bytes_billed: 250000000000  # hard cap per query (job fails instead of exceeding)
+  order: newest_first                       # backfill recent months first so modeling can start early
+  manifest_path: data/manifests/bq_backfill.json
+
+huggingface:
+  user: ${HF_USER}
+  events_repo: ${HF_USER}/gh-breakout-events        # public dataset: slim events lake
+  derived_repo: ${HF_USER}/gh-breakout-derived      # public dataset: features, enrichment, training tables
+  snapshots_repo: ${HF_USER}/gh-breakout-snapshots  # public dataset: frozen daily predictions (never squash)
+  models_repo: ${HF_USER}/gh-breakout-models        # public model repo
+  max_files_per_commit: 80
+
+lake:
+  local_root: data/lake
+  compression: zstd
+  target_file_mb: 128             # compact to roughly this size; never exceed 1 GB per file
+
+candidates:                       # SAME definition for training and live scoring
+  max_age_days: 90                # age = days since repo birth (see Phase 6 for birth definition)
+  max_stars_total: 200            # cumulative stars observed in GH Archive before D
+  min_stars_14d: 5                # stars in [D-14, D)
+  exclude_forks: true
+  exclude_bot_owned: true
+
+labels:
+  horizon_days: 30
+  primary: breakout_rel
+  relative_quantile: 0.995        # top 0.5% of forward 30d star gain among candidates at the same D
+  relative_floor_gain: 100        # ...and at least this many stars (guards quiet periods)
+  absolute_min_gain: 500          # secondary label breakout_abs
+
+training:
+  snapshot_weekday: 0             # 0 = Monday; weekly training snapshots
+  first_snapshot: 2016-01-04
+  embargo_days: 30                # must be >= labels.horizon_days
+  test_window_months: 3
+  min_train_years: 2
+  final_train_years: 4            # weekly retrain uses the most recent N years of matured snapshots
+  k_values: [10, 25, 50]
+
+features:
+  windows_days: [1, 3, 7, 14, 28]
+  stargazer_activity_lookback_days: 90
+  session_gap_minutes: 30
+
+daily:
+  run_hour_utc: 3                 # cron is approximate; GitHub may delay scheduled runs
+  min_hour_lag: 2                 # only ingest hours that ended >= 2h ago
+  late_hour_retry_days: 3         # keep retrying a missing hour for this long, then mark missing
+  recent_window_days: 160         # history the daily job needs locally. Why 160: tastemaker increments look at
+                                  # early stars up to ~67 days back on repos up to 90 days old at that time
+                                  # (67 + 90 = 157); stargazer activity needs 14 + 90 = 104 days.
+  max_runtime_minutes: 90
+
+site:
+  deploy_target: github_pages     # alternatives documented in Phase 10: cloudflare_pages, vercel
+  leaderboard_size: 50
+  detail_pages_days: 90           # build detail pages for any repo flagged in the last N days
+  explorer_max_mb: 40             # total Parquet served to DuckDB-WASM from the site itself
+
+optional:
+  hn_enabled: true
+  bluesky_enabled: false

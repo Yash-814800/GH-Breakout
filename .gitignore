@@ -1,0 +1,35 @@
+# Environment & secrets
+.env
+.env.*
+!.env.example
+
+# Local data lake & raw data (CLAUDE.md §7)
+data/
+*.parquet
+!tests/fixtures/**
+
+# DuckDB database files
+*.duckdb
+*.duckdb.wal
+
+# dbt
+dbt/target/
+dbt/logs/
+
+# Site builds
+site/node_modules/
+site/dist/
+site/public/data/
+
+# Python & virtual environment
+.venv/
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# OS artifacts
+.DS_Store
+Thumbs.db
