@@ -173,7 +173,7 @@ range 2015-01..2023-05 is only 522 GB.
    A separate `live.source` / `live.source_start` pair (both null) holds any future live-source switch.
 4. OpenDigger stays off by default and its rows (`source = 'opendigger'`) never go to the public HF
    dataset. `breakout lake verify` lists files that contain them.
-5. Live-source gate (blocks Phase 9 scheduling): see "Live-source gate" below; not started.
+5. Live-source gate (blocks Phase 9 scheduling): the source test returned NO-GO for OpenDigger (below); the API-first design note is not written, pending human review.
 6. Every feature-dictionary entry declares `live_available`; the live champion trains only on those;
    the full-feature model is a research result in `reports/model_cv.md`. `breakout.features_dict`
    rejects `live_available: true` for features that read columns which are NULL in live payloads
@@ -200,3 +200,10 @@ hive `event_type` agrees with the rows; OpenDigger files are enumerated.
   and a few hundred GB of disk while staging is kept.
 - Tier B features have no history before 2023-06-01; the first snapshot with a full 160-day detail
   look-back is 2023-11-08.
+
+**Source test result (run 38194688025, US/Arizona Azure runner, 3 hours 2026-10-11 21-23 UTC):**
+OpenDigger 8-11 KB/s sustained with 108-147 s to first byte (after 15 minutes only 1.7-2.6 % of a
+367-440 MB hour was received); data.gharchive.org 54 MB/s for 14.7-14.9 MB hours. OpenDigger and
+gharchive manifests: 0 of 48 hours exist. gharchive WatchEvents per hour: 169, 179, 213. Verdict:
+NO-GO on the >= 1 MB/s criterion; the stargazer-timestamp capture criterion is not measurable
+(stargazer lists restricted since July 2026). `reports/source_validation.md`.

@@ -34,7 +34,7 @@ measured (row counts, sizes, runtimes, metrics). Future sessions rely on it.
 | `live_available` in `config/feature_dictionary.yaml` + validator | ☑ | entries arrive in Phase 7; the file already validates |
 | Provisional-window logic (`Config.window_is_provisional`) | ☑ | leaderboard flag + methodology wording land with Phase 7/10 |
 | Capture-quality report re-rendered for `trusted_end` 2025-05-23 | ☑ | `reports/capture_quality.md` |
-| Source test from a GitHub Actions runner | see `reports/source_validation.md` | run 38194688025 |
+| Source test from a GitHub Actions runner | ☑ NO-GO | OpenDigger ~0.01 MB/s from the runner (needs >= 1), manifests 404; gharchive 54 MB/s. `reports/source_validation.md`, run 38194688025 |
 | Stargazers API for per-repo ground truth | ✖ not available | GitHub restricted it to admins/collaborators in July 2026 (ADR-010) |
 | Live-source gate / item 5 | ☐ not started | waits for your review of the source test |
 
@@ -45,7 +45,9 @@ measured (row counts, sizes, runtimes, metrics). Future sessions rely on it.
 - (ADR-009) Capture vs 2024 same-weekday median (stars): 2025-05-23 0.90, 2025-05-24 0.71; monthly medians 2025-06 0.64, 2025-10 0.44, 2026-02 0.37, 2026-05 0.12, 2026-07 0.01, 2026-09 0.06
 - (ADR-009) BigQuery dry runs: spine all history 994 GB; full all history 32.3 TB; full for 2023-06..2025-05 10.5 TB; 9 day tables missing
 - (ADR-009) Hourly-file download for those 24 months ~1.5 TB (sampled Content-Length)
-- (ADR-009) OpenDigger hour files 214-446 MB; throughput from dev machine ~6 KB/s vs 4.5 MB/s for data.gharchive.org; manifests 404
+- (ADR-009/010) OpenDigger hour files 214-446 MB; ~6 KB/s from the dev machine, ~10 KB/s from a GitHub Actions runner (US), vs 4.5 MB/s (dev) and 54 MB/s (runner) for data.gharchive.org; manifests 404
+- (ADR-010) BigQuery spine 2015-01..2023-05: 522.4 GB, 101 months, 9 missing day tables (4 recoverable from hourly files)
+- (ADR-010) data.gharchive.org WatchEvents per hour 2026-10-11 21-23 UTC: 169, 179, 213
 - (Phase 2) Bytes per month, spine-only vs full: see docs/bigquery_cost_plan.md
 - (Phase 2) cutover_date:
 - (Phase 2) detail_start_date:
@@ -58,7 +60,7 @@ measured (row counts, sizes, runtimes, metrics). Future sessions rely on it.
 
 - Set the GitHub Actions secret `GH_ENRICH_TOKEN` (the PAT works locally; the runner test did not need it).
 - Approve running the 522.4 GB BigQuery spine extraction (this calendar month, 578 GB of 900 GB).
-- Review the source-test result and decide the live-source gate (ADR-010, item 5).
+- Review the source-test result (NO-GO for OpenDigger) and tell me how to proceed with the live-source gate (ADR-010, item 5). I have not started item 5.
 - The stargazers listing is no longer available to us (ADR-010); the capture check and the daily
   cross-check must use `stargazerCount` deltas instead.
 - OpenDigger data license: none found; its rows stay out of the public dataset.
