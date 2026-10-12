@@ -5,7 +5,7 @@ measured (row counts, sizes, runtimes, metrics). Future sessions rely on it.
 
 | Phase | Title | Status | Date | Notes |
 |---|---|---|---|---|
-| 00 | Bootstrap & guardrails | ☑ (CI pending push) | 2026-10-12 | 26 tests pass; ruff, mypy, pre-commit (incl. gitleaks) green locally. CI green not yet confirmed: needs push to GitHub. |
+| 00 | Bootstrap & guardrails | ☑ | 2026-10-12 | 26 tests pass; ruff, mypy, pre-commit (incl. gitleaks) green locally. CI green on GitHub (run 38189757833). |
 | 01 | Schema audit, slim schema, hourly parser | ☐ | | |
 | 02 | BigQuery cost plan & historical backfill | ☐ | | |
 | 03 | Lake on Hugging Face (layout, upload, sync, compaction) | ☐ | | |
