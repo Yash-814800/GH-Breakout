@@ -31,7 +31,7 @@ measured (row counts, sizes, runtimes, metrics). Future sessions rely on it.
 | Capture-rate validation vs stargazers API (`reports/source_validation.md`) | ☐ blocked | `GH_ENRICH_TOKEN` cannot list stargazers; see open issues |
 | OpenDigger license/terms | ☑ searched, ☐ answered | none found for the data; rows tagged `source='opendigger'`, not to be published |
 | Daily top-200 API star cross-check + status page alert | ☐ | needs Phase 6/9/10 pieces; client exists (`breakout.enrich.stargazers`) |
-| Comment on gharchive.org#320 | see report | |
+| Comment on gharchive.org#320 | ☑ | https://github.com/igrigorik/gharchive.org/issues/320#issuecomment-6116371241 |
 
 ## Measured facts
 
