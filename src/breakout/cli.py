@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import os
 from pathlib import Path
 from typing import Annotated
@@ -110,6 +111,72 @@ def backfill_plan_cmd(
     )
     out.write_text(md, encoding="utf-8")
     typer.echo(f"wrote {out}")
+
+
+@backfill_app.command("run")
+def backfill_run_cmd(
+    ctx: typer.Context,
+    since: Annotated[
+        str | None, typer.Option(help="first month YYYY-MM (default start_date)")
+    ] = None,
+    until: Annotated[
+        str | None, typer.Option(help="last month YYYY-MM (default month before cutover)")
+    ] = None,
+    max_gb: Annotated[float | None, typer.Option(help="cap on GB scanned this run")] = None,
+    mode: Annotated[str, typer.Option(help="spine | full")] = "spine",
+    dry: Annotated[bool, typer.Option("--dry")] = False,
+    workers: Annotated[int, typer.Option(min=1, max=6)] = 3,
+) -> None:
+    """Run (or resume) the BigQuery extraction; stops cleanly when the budget is reached."""
+    import calendar
+    from datetime import date, timedelta
+
+    from breakout.ingest.bq.run import run_backfill
+
+    cfg = get_config(ctx.obj["config"])
+    if cfg.history.cutover_date is None:
+        raise typer.BadParameter("history.cutover_date is not set")
+    first = date.fromisoformat(since + "-01") if since else cfg.history.start_date
+    if until:
+        y, m = map(int, until.split("-"))
+        last = date(y, m, calendar.monthrange(y, m)[1])
+    else:
+        last = cfg.history.cutover_date - timedelta(days=1)
+    stats = run_backfill(
+        cfg,
+        first,
+        last,
+        mode=mode,
+        max_bytes=int(max_gb * 1e9) if max_gb else None,
+        dry=dry,
+        workers=workers,
+    )
+    typer.echo(json.dumps(stats))
+
+
+@backfill_app.command("parity")
+def backfill_parity_cmd(
+    ctx: typer.Context,
+    day: Annotated[list[str], typer.Option(help="YYYY-MM-DD; repeat for several days")],
+    mode: Annotated[str, typer.Option(help="spine | full")] = "full",
+    report: Annotated[Path, typer.Option(help="markdown report path")] = Path(
+        "docs/parity_report.md"
+    ),
+) -> None:
+    """Compare hourly-parser output with the BigQuery extraction for given days."""
+    from datetime import date
+
+    from breakout.ingest.bq.parity import render_report, run_parity
+
+    cfg = get_config(ctx.obj["config"])
+    results = [run_parity(cfg, date.fromisoformat(d), mode=mode) for d in day]
+    report.write_text(render_report(results), encoding="utf-8")
+    typer.echo(
+        f"wrote {report}: "
+        + ", ".join(f"{r['day']}={'PASS' if r['ok'] else 'FAIL'}" for r in results)
+    )
+    if not all(r["ok"] for r in results):
+        raise typer.Exit(1)
 
 
 @backfill_app.command("hourly")

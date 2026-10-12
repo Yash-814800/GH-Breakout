@@ -207,3 +207,20 @@ OpenDigger 8-11 KB/s sustained with 108-147 s to first byte (after 15 minutes on
 gharchive manifests: 0 of 48 hours exist. gharchive WatchEvents per hour: 169, 179, 213. Verdict:
 NO-GO on the >= 1 MB/s criterion; the stargazer-timestamp capture criterion is not measurable
 (stargazer lists restricted since July 2026). `reports/source_validation.md`.
+
+## ADR-011: Hourly backfill runs in GitHub Actions, not on the laptop (2026-10-12)
+**Context:** ADR-010 assumed `breakout backfill hourly` runs on the developer's laptop (~2 TB download,
+~45 GB lake, ~80 GB staging). The human reported that Phase 1 ingestion previously crashed Claude Code
+on the laptop and asked to keep heavy work off the machine.
+**Decision (human, 2026-10-12):**
+1. Do not run the hourly backfill locally. It moves to a GitHub Actions matrix workflow (one job per
+   month of days, within the 14 GB runner disk and 6 h limit), built in Phase 3 together with the Hugging
+   Face upload: each job parses its days with the Phase 1 parser, uploads the day files to HF, and
+   discards staging.
+2. The BigQuery spine extraction stays a local, one-time job (it needs ADC credentials; no service-account
+   key is to be created). Its approval remains open; when approved it runs with `--workers 1` under a
+   memory cap.
+**Consequences:** ADR-010 item 3 "laptop" wording is superseded for the hourly path only. Phase 3 gains
+an Actions backfill workflow and needs the `HF_TOKEN` Actions secret (human action). Backfill must be
+resumable across jobs, so the hourly manifest has to live on HF (or be derived from the lake listing)
+rather than only in `data/manifests/`. Local staging from Phase 1 (`data/staging`) can be deleted.

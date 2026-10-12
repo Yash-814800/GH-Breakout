@@ -27,7 +27,9 @@ Generated 2026-10-12. Supersedes the Phase 2 default and the earlier schedules i
 | 2023 | 54.2 |
 | **total** | **522.4** |
 
-## 2. Hourly files from the cutover onward (laptop, no BigQuery quota)
+## 2. Hourly files from the cutover onward (GitHub Actions per ADR-011, no BigQuery quota)
+
+> Superseded by ADR-011: this runs as an Actions matrix built in Phase 3, not on the laptop. The disk figures below describe the work, not a local footprint.
 
 - Order: trusted era 2023-06-01..2025-05-23 first, then the degraded era the day after 2025-05-23 .. last complete day (kept, flagged, never trained or evaluated on). Within an era oldest to newest.
 - `breakout backfill hourly [--dry]`: resumable through the hourly manifest (hours already `ok` at the current parser version are skipped), at most 4 concurrent downloads (`--workers`, default 2).
