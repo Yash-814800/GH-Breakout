@@ -1,0 +1,40 @@
+from __future__ import annotations
+
+import pytest
+from typer.testing import CliRunner
+
+from breakout.cli import app
+
+runner = CliRunner()
+GROUPS = ["ingest", "backfill", "lake", "enrich", "build", "ml", "daily", "publish", "ops"]
+
+
+def test_help_lists_groups():
+    result = runner.invoke(app, ["--help"])
+    assert result.exit_code == 0
+    for group in GROUPS:
+        assert group in result.output
+
+
+@pytest.mark.parametrize("group", GROUPS)
+def test_stub_groups(group):
+    result = runner.invoke(app, [group])
+    assert result.exit_code == 0
+    assert "not implemented yet (Phase" in result.output
+
+
+def test_info_empty_env(temp_config):
+    result = runner.invoke(app, ["--config", str(temp_config), "info"])
+    assert result.exit_code == 0, result.output
+    assert "HF_TOKEN: not set" in result.output
+    assert "gh-breakout" in result.output
+
+
+def test_info_masks_secrets(temp_config, monkeypatch):
+    monkeypatch.setenv("HF_TOKEN", "hf_supersecretvalue")
+    monkeypatch.setenv("GH_ENRICH_TOKEN", "ghp_anothersecret")
+    result = runner.invoke(app, ["--config", str(temp_config), "info"])
+    assert result.exit_code == 0
+    assert "HF_TOKEN: set" in result.output
+    assert "supersecret" not in result.output
+    assert "anothersecret" not in result.output

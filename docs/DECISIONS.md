@@ -33,3 +33,19 @@ the audit shows is still present, with explicit era flags.
 **Decision:** Astro static build, deployed from the daily workflow with `actions/deploy-pages`.
 Vercel Hobby / Cloudflare Pages documented as alternatives.
 **Consequences:** Site must respect the GitHub Pages project base path (`/<repo>/`).
+
+## ADR-005: Timestamps are naive UTC `TIMESTAMP` (2026-10-12)
+**Context:** CLAUDE.md section 5 requires choosing once between `TIMESTAMP` and `TIMESTAMPTZ`.
+**Decision:** Store all event and snapshot times as naive `TIMESTAMP` that is documented as UTC; dates as `DATE`.
+`project.timezone` is `UTC` in config.
+**Consequences:** No timezone conversion anywhere in SQL or Python. Any ingest code must convert
+tz-aware inputs to UTC and drop the tzinfo before writing.
+
+## ADR-006: Config loading rules (2026-10-12)
+**Context:** Tests and tooling must run without secrets, and the real `.env` must not leak into tests.
+**Decision:** `breakout.config` is the only reader of `project.yaml`; it validates with pydantic
+(`extra="forbid"`, so typos fail loudly). A `${VAR}` string with any unset variable becomes `None`;
+`require_*` accessors raise only on use. `.env` is loaded only when the default config path is used,
+never when an explicit path or `--config` / `BREAKOUT_CONFIG` is given. `training.embargo_days >=
+labels.horizon_days` is enforced at load time.
+**Consequences:** New YAML keys require a matching model field in the same change.

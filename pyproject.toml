@@ -1,0 +1,53 @@
+[project]
+name = "breakout"
+version = "0.1.0"
+description = "Predict which young GitHub repositories are about to break out, from the public GH Archive event stream."
+readme = "README.md"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "duckdb>=1.5.6",
+    "httpx>=0.28.1",
+    "huggingface-hub>=2.2.0",
+    "pyarrow>=26.0.0",
+    "pydantic>=2.14.1",
+    "python-dotenv>=1.2.4",
+    "pyyaml>=6.0.3",
+    "rich>=15.0.0",
+    "tenacity>=9.2.1",
+    "typer>=0.27.3",
+]
+
+[project.scripts]
+breakout = "breakout.cli:app"
+
+[build-system]
+requires = ["uv_build>=0.13.0,<0.14.0"]
+build-backend = "uv_build"
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+
+[tool.mypy]
+python_version = "3.12"
+files = ["src"]
+warn_unused_ignores = true
+plugins = ["pydantic.mypy"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+
+[dependency-groups]
+dev = [
+    "mypy>=2.4.0",
+    "pre-commit>=4.6.2",
+    "pytest>=9.1.1",
+    "pytest-cov>=7.1.0",
+    "ruff>=0.17.0",
+    "types-pyyaml>=6.0.12.20260906",
+]
