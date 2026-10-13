@@ -5,6 +5,9 @@
 
 # Local data lake & raw data (CLAUDE.md §7)
 data/
+# on the dev machine data is a symlink to the external SSD; `data/` only matches directories
+/data
+/data.pre-ssd-move/
 *.parquet
 !tests/fixtures/**
 

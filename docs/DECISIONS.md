@@ -244,3 +244,10 @@ spilling. Local disk was also the limit (46 GB free for a ~57 GB lake).
    the SSD shares the physical disk with `/home`. Hugging Face (Phase 3) is the second copy.
 **Consequences:** `data/lake` is readable only while the SSD is mounted. The merge code is slower than a
 single global pass (about 3 min per large type per month). Tests cover the day-wise merge.
+
+**Addendum (2026-10-13, human):** the Lexar SSD is the primary home for all local data. `data/` on the dev
+machine is a symlink to `/run/media/yash/Lexar SSD/gh-breakout/data` (lake, manifests, staging, parity,
+audit); no machine path is committed. `.gitignore` gained `/data` because `data/` does not match a
+symlink. All 943 symlinked lake files and 272 real files were checksum-verified before the swap;
+`breakout lake verify` passes through the new path. Consequence: nothing under `data/` is available
+when the SSD is unmounted, and NTFS (fuseblk) is slower for small writes than btrfs.
