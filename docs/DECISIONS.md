@@ -251,3 +251,15 @@ audit); no machine path is committed. `.gitignore` gained `/data` because `data/
 symlink. All 943 symlinked lake files and 272 real files were checksum-verified before the swap;
 `breakout lake verify` passes through the new path. Consequence: nothing under `data/` is available
 when the SSD is unmounted, and NTFS (fuseblk) is slower for small writes than btrfs.
+
+## ADR-013: Dataset license MIT; lake size may exceed 60 GB; HF_TOKEN Actions secret (2026-10-13)
+**Context:** Phase 3 needs a dataset-card license (HUMAN DECISION), the 60 GB lake target from ADR-001 is
+exceeded once the hourly era is added (spine 57 GB + ~45 GB), and Actions needs the HF token.
+**Decision (human):** (1) dataset cards declare `license: mit`; (2) exceeding the 60 GB target is accepted;
+(3) `HF_TOKEN` is stored as the repository Actions secret (set 2026-10-13 with `gh secret set`;
+`GH_ENRICH_TOKEN` already exists).
+**Consequences:** The cards must state provenance (GH Archive, public GitHub events) and that the license
+covers the repository's own processing and derived tables, and must not claim rights in the underlying
+events or in names/logins they contain. HF storage is best-effort for public datasets; at ~100 GB the
+upload must stay in batches and the daily job keeps appending compacted month files only. A `LICENSE`
+file for the code still needs the copyright holder's name.

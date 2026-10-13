@@ -78,10 +78,8 @@ measured (row counts, sizes, runtimes, metrics). Future sessions rely on it.
 
 - ADR-011: hourly backfill moves to a GitHub Actions matrix (built in Phase 3); nothing heavy runs locally. Needs the `HF_TOKEN` Actions secret then. `data/staging` (5.4 GB) is safe to delete.
 
-- Set the GitHub Actions secret `GH_ENRICH_TOKEN` (the PAT works locally; the runner test did not need it).
 - ~~Approve the BigQuery spine extraction~~ done 2026-10-13.
-- The spine lake is 57 GB (ADR-001 target < 60 GB total); the hourly era adds ~45 GB, so the 60 GB target will be exceeded. Needs your decision before Phase 3 uploads (trim, or accept and document).
-- Phase 3 (and the Actions hourly backfill) need `HF_TOKEN` as an Actions secret and your dataset license choice.
+- ~~Lake size over 60 GB~~ accepted (ADR-013). ~~HF_TOKEN Actions secret~~ set 2026-10-13. ~~Dataset license~~ MIT (ADR-013). Still open: copyright-holder name for a `LICENSE` file; `HF_USER` as an Actions variable when the workflow is written.
 - Review the source-test result (NO-GO for OpenDigger) and tell me how to proceed with the live-source gate (ADR-010, item 5). I have not started item 5.
 - The stargazers listing is no longer available to us (ADR-010); the capture check and the daily
   cross-check must use `stargazerCount` deltas instead.
