@@ -135,7 +135,8 @@ hand-maintained lists such as known bots), `tests/fixtures/*` (each fixture < 2 
 `config/*.yaml`, and `reports/` (Markdown, small JSON metrics, PNG figures < 500 KB each).
 Everything else data-like goes to Hugging Face or `data/`.
 
-`.gitignore` must include at least: `data/`, `.env`, `*.duckdb`, `*.duckdb.wal`,
+`.gitignore` must include at least: `data/` and `/data` (on the dev machine `data` is a symlink to the
+external SSD and `data/` only matches directories), `.env`, `*.duckdb`, `*.duckdb.wal`,
 `dbt/target/`, `dbt/logs/`, `site/node_modules/`, `site/dist/`, `site/public/data/`,
 `__pycache__/`, `.venv/`, `*.parquet` (with explicit `!tests/fixtures/**` exceptions).
 
@@ -178,3 +179,31 @@ Everything else data-like goes to Hugging Face or `data/`.
 - **Matured label**: a label whose horizon has fully elapsed and been ingested.
 - **Tier A / B / C features**: A = spine-only (all history), B = needs detail columns,
   C = external enrichment (GitHub API metadata, HN).
+
+## 10. Machine, storage and security rules (added 2026-10-13, ADR-011/012/013)
+
+The developer machine has 15 GB RAM and a previous heavy ingest crashed Claude Code. Treat
+local resources as scarce.
+
+1. **Heavy jobs run under a hard cap**, e.g. `systemd-run --user --scope -p MemoryMax=4G
+   -p MemorySwapMax=0 -p CPUQuota=100% uv run breakout ...`, with one worker. Never run the
+   hourly backfill (~2 TB download) on the laptop: it runs as a GitHub Actions matrix (built in
+   Phase 3, ADR-011). Do not start long jobs in the foreground; run them in the background and
+   report progress.
+2. **DuckDB statements over lake data** use a fresh connection per statement with
+   `SET memory_limit='1500MB'`, `SET threads=1` and `SET temp_directory=<data/staging/...>`.
+   Never `DISTINCT ON (...) *` plus a second global `ORDER BY` over a month of wide rows (it OOMs);
+   dedupe per day, then a sort-only pass (see `ingest/bq/run.py`, ADR-012). Measure peak RSS on
+   real data before launching long runs.
+3. **`data/` is a symlink to `/run/media/yash/Lexar SSD/gh-breakout/data`** (NTFS, same physical disk
+   as `/home`, not a backup). If the SSD is not mounted, stop and tell the human. Do not delete
+   anything under `data/` without asking; the SSD copy is the only local copy of the lake.
+4. **Secrets**: tokens are in git-ignored `.env` and GitHub Actions secrets (`HF_TOKEN`,
+   `GH_ENRICH_TOKEN` exist). Never print, log or commit a token; compare or validate them without
+   echoing. If a user pastes one in chat, say it is exposed and suggest rotation.
+5. **Account/outward actions need explicit approval each time**: creating or deleting Hugging
+   Face repos, uploads, `gh secret set`, pushes. The human has approved the HF token as an Actions
+   secret (done), MIT as the dataset-card license (ADR-013) and a lake larger than 60 GB.
+6. **Long-running state is resumable.** Always read the manifest (`data/manifests/*.json`,
+   `data/lake/manifests/hourly_manifest.parquet`) before launching, and say what remains.
+

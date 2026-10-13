@@ -2,10 +2,11 @@
 
 ## One-paragraph summary
 
-A one-time **historical backfill** pulls slim GH Archive events (2015 → cutover) from the
-public BigQuery dataset using a free, card-less BigQuery sandbox, run from the developer's
-laptop. From the cutover date onward, a **daily GitHub Actions job** downloads GH Archive
-hourly files directly, parses them into the same slim schema, appends them to a Parquet
+A one-time **historical backfill** pulls slim GH Archive events (2015-01 → 2023-05, spine columns
+only) from the public BigQuery dataset using a free, card-less BigQuery sandbox, run from the
+developer's laptop under a memory cap (done 2026-10-13, 57 GB). From the cutover date
+(2023-06-01) onward, the history **and** the **daily GitHub Actions job** download GH Archive
+hourly files directly (the ~2 TB hourly backfill itself runs as an Actions matrix, ADR-011), parses them into the same slim schema, appends them to a Parquet
 lake hosted on **Hugging Face** (public dataset), rebuilds features for candidate repos
 with **dbt + DuckDB**, scores them with a **LightGBM** model stored on Hugging Face,
 freezes the day's predictions into an immutable snapshot + git ledger, and deploys a
@@ -42,6 +43,19 @@ only if it beats the current champion and the baseline.
                          Astro static site on GitHub Pages: leaderboard, repo pages, track record,
                          explorer (DuckDB-WASM over same-origin Parquet), methodology, status, RSS, badges
 ```
+
+## Where data lives (as of 2026-10-13)
+
+| Place | What | Notes |
+|---|---|---|
+| `data/` (symlink → Lexar SSD NTFS partition) | lake (`bq-*`, `day-*`), manifests, staging, parity, audit | not in git; not a backup; same physical disk as `/home` (ADR-012) |
+| Hugging Face dataset/model repos | the published lake, derived tables, snapshots, models | second copy; created in Phase 3 |
+| GitHub Actions | hourly backfill matrix, daily pipeline, weekly retrain | secrets `HF_TOKEN`, `GH_ENRICH_TOKEN` |
+| Git | code, config, ledger, heartbeat, reports | tiny files only (CLAUDE.md §7) |
+
+Coverage: 2015-01..2023-05 BigQuery spine (`detail_level` 0, `source='bq'`); 2023-06-01 onward hourly
+parser (`detail_level` 1, `source='hourly'`); trusted data ends 2025-05-23, later days are degraded
+(ADR-009/010). Local resource limits and the memory-bounded merge design are in CLAUDE.md §10 and ADR-012.
 
 ## Why these choices (free, no card)
 

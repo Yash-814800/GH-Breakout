@@ -263,3 +263,22 @@ covers the repository's own processing and derived tables, and must not claim ri
 events or in names/logins they contain. HF storage is best-effort for public datasets; at ~100 GB the
 upload must stay in batches and the daily job keeps appending compacted month files only. A `LICENSE`
 file for the code still needs the copyright holder's name.
+
+## ADR-014: Phase 3 starting constraints for the Hugging Face lake (2026-10-13)
+**Context:** Handoff after Phase 2. These facts shape Phase 3 and are not in the phase file.
+**Decision / facts:**
+1. The Phase 3 plan must treat the SSD lake as the single source: `data/` is a symlink and is not a
+   backup. No `bq-*` file is deleted locally until the same file is on HF and checksum-matched in the
+   catalog; compaction deletes day files only after the HF commit succeeds (as in the phase file).
+2. Per-file size: the largest `bq-*` files are below 500 MB; the 1 GB split rule is not hit for `bq`,
+   but is still implemented for month files built from hourly days.
+3. Commit batching: 943 `bq-*` files means at least 12 commits at 80 files; commit in month order
+   with the catalog updated in the last commit of each batch. Uploads of ~57 GB run in the background,
+   resumable (skip-if-sha-matches via the remote catalog), one worker, never in the foreground.
+4. The hourly-era backfill is an Actions matrix that uploads per-month results to the events repo; it
+   reads the hourly manifest from HF and writes it back, so concurrent jobs must not touch the same hours
+   (one job = one month, jobs serialized per era, `concurrency` group).
+5. Free HF storage is best-effort; the events repo is expected to reach ~100 GB. Mitigation if HF refuses
+   or throttles: keep `bq` history in the repo and publish the hourly era as month files only.
+**Consequences:** Phase 3 adds an Actions workflow (`hourly-backfill`) in addition to the phase file's
+deliverables; PROGRESS "Handoff to Phase 3" lists what exists and what is missing.
