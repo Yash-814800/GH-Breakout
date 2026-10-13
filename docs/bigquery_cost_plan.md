@@ -46,6 +46,6 @@ Generated 2026-10-12. Supersedes the Phase 2 default and the earlier schedules i
 
 `history.detail_start_date` = 2023-06-01: Tier B features are NaN before it. The first trusted snapshot with a full 160-day detail look-back is therefore 2023-11-08; earlier snapshots rely on Tier A.
 
-## 4. Decision requested
+## 4. Result (2026-10-13)
 
-Approve running the 522.4 GB spine extraction this calendar month (2026-10). Until then nothing is executed.
+Approved and executed. 498/498 units, 101/101 months finalized, 522.7 GB billed (estimate 522.4 GB), 57 GB of Parquet, 0 failures, re-run performs 0 queries. See ADR-012 for the memory-bounded finalization.

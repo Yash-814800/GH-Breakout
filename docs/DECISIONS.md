@@ -224,3 +224,23 @@ on the laptop and asked to keep heavy work off the machine.
 an Actions backfill workflow and needs the `HF_TOKEN` Actions secret (human action). Backfill must be
 resumable across jobs, so the hourly manifest has to live on HF (or be derived from the lake listing)
 rather than only in `data/manifests/`. Local staging from Phase 1 (`data/staging`) can be deleted.
+
+## ADR-012: Memory-bounded month finalization and SSD-hosted lake (2026-10-13)
+**Context:** The developer machine has 15 GB RAM and Phase 1 had crashed Claude Code; the backfill had to
+run under a hard cap. Month finalization failed with DuckDB OOM four times on 2022-10/12 data: a month
+holds ~60 M PushEvent rows and ~10 M wide CreateEvent rows, and `DISTINCT ON (event_id) *` plus a second
+global `ORDER BY` (or a long-lived connection, or a per-chunk `UNION ALL`) exceeded the cap even with
+spilling. Local disk was also the limit (46 GB free for a ~57 GB lake).
+**Decision:**
+1. The backfill runs as `systemd-run --user --scope -p MemoryMax=4G -p MemorySwapMax=0 -p CPUQuota=100%`
+   with `--workers 1`. Every DuckDB statement runs on a fresh connection with `memory_limit=1500MB`,
+   `threads=1` and a spill directory under `data/staging`.
+2. Finalization is per day: dedupe on `event_id` for one day at a time into part files, then a sort-only
+   pass (`repo_id, created_at, event_id`) for events, or a streaming concatenation in day order for
+   `push_daily` (day, repo_id, actor_id). Peak RSS measured 1.0-1.9 GB. Output equals the earlier method;
+   row order within `push_daily` month files is by day first.
+3. Finalized month files are moved to the Lexar SSD (`/run/media/yash/Lexar SSD/gh-breakout/lake`) after a
+   SHA-256 check and replaced by symlinks, so `data/lake` keeps the layout. This is capacity, not a backup:
+   the SSD shares the physical disk with `/home`. Hugging Face (Phase 3) is the second copy.
+**Consequences:** `data/lake` is readable only while the SSD is mounted. The merge code is slower than a
+single global pass (about 3 min per large type per month). Tests cover the day-wise merge.

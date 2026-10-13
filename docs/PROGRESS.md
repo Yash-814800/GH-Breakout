@@ -7,7 +7,7 @@ measured (row counts, sizes, runtimes, metrics). Future sessions rely on it.
 |---|---|---|---|---|
 | 00 | Bootstrap & guardrails | ☑ | 2026-10-12 | 26 tests pass; ruff, mypy, pre-commit (incl. gitleaks) green locally. CI green on GitHub (run 38189757833). |
 | 01 | Schema audit, slim schema, hourly parser | ☑ | 2026-10-12 | 9 eras audited; day 2026-10-10 ingested: 24/24 hours ok, 763,462 rows, 39 s wall clock, 12 MB lake + 24 MB staging; rerun no-op (0.5 s, files checksum-identical). See open issue on star volume. |
-| 02 | BigQuery cost plan & historical backfill | ◐ code done, extraction awaiting approval | 2026-10-12 | Survey, planner, `backfill run`, `backfill parity` implemented; ruff, mypy, 125 tests green. Parity PASS on 2024-06-03 and 2026-10-10 (`docs/parity_report.md`). Spine extraction of 522.4 GB not approved yet; only a 2022-10 smoke slice (5 units, 11.7 GB) is in the manifest, not finalized. |
+| 02 | BigQuery cost plan & historical backfill | ☑ | 2026-10-13 | Spine 2015-01..2023-05 complete: 498/498 units, 101/101 months finalized, 0 failed, 522.7 GB billed, 57 GB lake (3.26 G events). Re-run performs 0 queries; `lake verify` OK (963 files). Parity PASS (2024-06-03, 2026-10-10). Hourly era from 2023-06-01 runs in Actions (ADR-011). Lake lives on the Lexar SSD, symlinked from `data/lake` (ADR-012). |
 | 03 | Lake on Hugging Face (layout, upload, sync, compaction) | ☐ | | |
 | 04 | Enrichment (repo metadata, actor age, trending, HN) | ☐ | | |
 | 05 | dbt staging & intermediate models | ☐ | | |
@@ -53,6 +53,22 @@ measured (row counts, sizes, runtimes, metrics). Future sessions rely on it.
 - (Phase 2) cutover_date: 2023-06-01 (ADR-010)
 - (Phase 2) Parity (BigQuery full vs hourly parser): 2024-06-03 and 2026-10-10, 0 differing rows or columns on every event type and push_daily; billed 19.57 GB and 0.89 GB
 - (Phase 2) detail_start_date: 2023-06-01 (ADR-010)
+- (Phase 2) BigQuery spine 2015-01..2023-05: 522.7 GB billed in this run (incl. an 11.7 GB first slice) of the 900 GB monthly budget; this calendar month in total about 600 GB with the 55 GB used earlier and the two parity days (20.5 GB). Nothing remains to scan; no resume date.
+- (Phase 2) Local lake: 57 GB on disk, 963 parquet files, 3,263,437,726 events rows (incl. 453,798 from Phase 1 test days). Rows per event type per year (millions):
+
+| year | Create | Fork | IssueComment | Issues | Public | PullRequest | Review | Release | Watch | total |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| 2015 | 28.4 | 7.0 | 19.1 | 9.9 | 0.2 | 10.8 | 0.0 | 0.7 | 18.9 | 95 |
+| 2016 | 43.8 | 9.5 | 25.7 | 12.8 | 0.3 | 17.8 | 0.0 | 1.1 | 26.1 | 137 |
+| 2017 | 57.2 | 11.8 | 29.3 | 14.9 | 0.4 | 22.9 | 0.0 | 1.5 | 32.6 | 171 |
+| 2018 | 66.7 | 12.8 | 31.1 | 16.4 | 0.5 | 27.6 | 0.0 | 1.9 | 37.0 | 194 |
+| 2019 | 86.9 | 16.4 | 38.3 | 18.8 | 1.6 | 45.5 | 0.0 | 2.4 | 46.1 | 256 |
+| 2020 | 134.7 | 18.7 | 54.2 | 25.7 | 2.6 | 84.5 | 8.9 | 4.2 | 49.4 | 383 |
+| 2021 | 149.0 | 17.7 | 55.4 | 23.2 | 3.1 | 92.5 | 24.3 | 5.3 | 49.1 | 420 |
+| 2022 | 201.8 | 19.4 | 69.4 | 25.4 | 3.9 | 129.8 | 30.1 | 7.0 | 56.5 | 543 |
+| 2023 (to May) | 79.5 | 8.3 | 27.9 | 12.0 | 2.0 | 47.4 | 14.2 | 3.2 | 34.7 | 229 |
+
+  push_daily rows (M) / pushes (M): 2015 37.3/104; 2016 52.3/165; 2017 67.4/219; 2018 79.3/258; 2019 92.8/313; 2020 120.6/434; 2021 131.7/490; 2022 169.4/662; 2023 82.5/317.
 - (Phase 3) Lake size on HF (GB), file count:
 - (Phase 6) Candidates per snapshot (median), positive rate:
 - (Phase 8) Baseline vs model PR-AUC / precision@25 (pooled and per year):
@@ -63,7 +79,9 @@ measured (row counts, sizes, runtimes, metrics). Future sessions rely on it.
 - ADR-011: hourly backfill moves to a GitHub Actions matrix (built in Phase 3); nothing heavy runs locally. Needs the `HF_TOKEN` Actions secret then. `data/staging` (5.4 GB) is safe to delete.
 
 - Set the GitHub Actions secret `GH_ENRICH_TOKEN` (the PAT works locally; the runner test did not need it).
-- Approve running the 522.4 GB BigQuery spine extraction (this calendar month, 578 GB of 900 GB).
+- ~~Approve the BigQuery spine extraction~~ done 2026-10-13.
+- The spine lake is 57 GB (ADR-001 target < 60 GB total); the hourly era adds ~45 GB, so the 60 GB target will be exceeded. Needs your decision before Phase 3 uploads (trim, or accept and document).
+- Phase 3 (and the Actions hourly backfill) need `HF_TOKEN` as an Actions secret and your dataset license choice.
 - Review the source-test result (NO-GO for OpenDigger) and tell me how to proceed with the live-source gate (ADR-010, item 5). I have not started item 5.
 - The stargazers listing is no longer available to us (ADR-010); the capture check and the daily
   cross-check must use `stargazerCount` deltas instead.

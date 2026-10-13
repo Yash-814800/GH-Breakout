@@ -72,8 +72,11 @@ class FakeClient:
             raise RuntimeError(self.fail)
         rows = [
             (1, "WatchEvent", datetime(2020, 1, 2, 3), 10),
-            (2, "PushEvent", datetime(2020, 1, 2, 4), 10),
-            (3, "PushEvent", datetime(2020, 1, 2, 5), 10),
+            # chunks hold disjoint days, so each call returns its own day's pushes (plus a
+            # within-chunk duplicate that must be collapsed)
+            (100 * self.queries + 2, "PushEvent", datetime(2020, 1, 1 + self.queries, 4), 10),
+            (100 * self.queries + 3, "PushEvent", datetime(2020, 1, 1 + self.queries, 5), 10),
+            (100 * self.queries + 3, "PushEvent", datetime(2020, 1, 1 + self.queries, 5), 10),
         ]
         return _Job([_batch(rows)], self.bytes, False)
 
@@ -129,7 +132,7 @@ def test_run_finalizes_month_and_second_run_queries_nothing(cfg: Config, tmp_pat
     assert con.execute(f"select count(*) from '{ev}'").fetchone() == (1,)
     assert con.execute(f"select detail_level, source from '{ev}'").fetchone() == (0, "bq")
     push = layout.bq_file("PushEvent", 2020, 1, cfg)
-    assert con.execute(f"select sum(n_pushes) from '{push}'").fetchone() == (2,)
+    assert con.execute(f"select sum(n_pushes) from '{push}'").fetchone() == (10,)
     assert not (layout.staging_dir(cfg) / "bq").exists() or not any(
         (layout.staging_dir(cfg) / "bq").rglob("*.parquet")
     )

@@ -220,13 +220,127 @@ def run_unit(client, cfg: Config, unit: Unit, raw_types: list[str], mode_full: b
     return unit
 
 
+def _connect(spill: Path) -> duckdb.DuckDBPyConnection:
+    """Bounded DuckDB connection; use a fresh one per statement (long-lived ones cache memory)."""
+    con = duckdb.connect()
+    con.execute("SET memory_limit = '1500MB'")
+    con.execute(f"SET temp_directory = '{spill.as_posix()}'")
+    con.execute("SET threads = 1")
+    return con
+
+
+def _days_index(files: list[str], spill: Path) -> dict[date, list[str]]:
+    """Map each calendar day to the staged chunk files that contain rows for it."""
+    days_in: dict[date, list[str]] = {}
+    for f in files:
+        con = _connect(spill)
+        rows = con.execute(
+            "SELECT DISTINCT CAST(created_at AS DATE) FROM read_parquet(?)", [f]
+        ).fetchall()
+        con.close()
+        for (d,) in rows:
+            days_in.setdefault(d, []).append(f)
+    return days_in
+
+
+def _finalize_events(
+    cfg: Config, y: int, m: int, etype: str, files: list[str], spill: Path
+) -> Path:
+    """Build one month file: per-day dedupe on event_id, then one sort-only pass.
+
+    The hash dedupe over a whole month of wide rows plus a second sort exceeds the memory cap;
+    per day the dedupe is small, and an external sort over already-unique rows spills cleanly.
+    """
+    parts_dir = spill / f"parts_{etype}"
+    shutil.rmtree(parts_dir, ignore_errors=True)
+    parts_dir.mkdir(parents=True, exist_ok=True)
+    parts: list[str] = []
+    for d, day_files in sorted(_days_index(files, spill).items()):
+        part = parts_dir / f"{d:%Y%m%d}.parquet"
+        con = _connect(spill)
+        con.execute("SET preserve_insertion_order = false")
+        con.execute(
+            "COPY (SELECT DISTINCT ON (event_id) * FROM read_parquet(?) "
+            "WHERE CAST(created_at AS DATE) = ?) "
+            f"TO '{part.as_posix()}' (FORMAT parquet, COMPRESSION zstd)",
+            [day_files, d],
+        )
+        con.close()
+        parts.append(str(part))
+    dest = layout.bq_file(etype, y, m, cfg)
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    tmp = dest.with_name(dest.name + ".tmp")
+    tmp.unlink(missing_ok=True)
+    con = _connect(spill)
+    con.execute("SET preserve_insertion_order = false")
+    con.execute(
+        "COPY (SELECT * FROM read_parquet(?) ORDER BY repo_id, created_at, event_id) "
+        f"TO '{tmp.as_posix()}' "
+        "(FORMAT parquet, COMPRESSION zstd, COMPRESSION_LEVEL 9, ROW_GROUP_SIZE 131072)",
+        [parts],
+    )
+    con.close()
+    os.replace(tmp, dest)
+    shutil.rmtree(parts_dir, ignore_errors=True)
+    return dest
+
+
+def _finalize_push(cfg: Config, y: int, m: int, files: list[str], spill: Path) -> Path:
+    """Build ``push_daily`` for a month one day at a time (bounded memory).
+
+    A month holds ~60M raw push rows, so one global dedupe/aggregate/sort does not fit the cap.
+    Per day (~2M rows): dedupe on event_id across every chunk holding that day, aggregate to
+    (repo_id, actor_id), then concatenate the day parts in day order (each is already sorted).
+    """
+
+    days_in = _days_index(files, spill)
+    parts_dir = spill / "push_parts"
+    shutil.rmtree(parts_dir, ignore_errors=True)
+    parts_dir.mkdir(parents=True, exist_ok=True)
+    parts: list[str] = []
+    for d in sorted(days_in):
+        part = parts_dir / f"{d:%Y%m%d}.parquet"
+        con = _connect(spill)
+        con.execute(
+            "COPY (SELECT repo_id, actor_id, CAST(? AS DATE) AS day, "
+            "CAST(count(*) AS INTEGER) AS n_pushes, arg_max(repo_name, event_id) AS repo_name "
+            "FROM (SELECT DISTINCT ON (event_id) event_id, repo_id, actor_id, repo_name "
+            "FROM read_parquet(?) WHERE CAST(created_at AS DATE) = ?) "
+            "GROUP BY repo_id, actor_id ORDER BY repo_id, actor_id) "
+            f"TO '{part.as_posix()}' (FORMAT parquet, COMPRESSION zstd)",
+            [d, days_in[d], d],
+        )
+        con.close()
+        parts.append(str(part))
+    dest = layout.bq_file(PUSH, y, m, cfg)
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    tmp = dest.with_name(dest.name + ".tmp")
+    tmp.unlink(missing_ok=True)
+    con = _connect(spill)
+    con.execute("SET preserve_insertion_order = true")  # keep day order; streaming, no sort
+    con.execute(
+        "COPY (SELECT repo_id, actor_id, day, n_pushes, repo_name, 'bq' AS source, "
+        "CAST(? AS TIMESTAMP) AS ingested_at FROM read_parquet(?)) "
+        f"TO '{tmp.as_posix()}' "
+        "(FORMAT parquet, COMPRESSION zstd, COMPRESSION_LEVEL 9, ROW_GROUP_SIZE 131072)",
+        [datetime.now(UTC).replace(tzinfo=None, microsecond=0), parts],
+    )
+    con.close()
+    os.replace(tmp, dest)
+    shutil.rmtree(parts_dir, ignore_errors=True)
+    return dest
+
+
 def finalize_month(cfg: Config, month: str, mode: str, units: list[Unit]) -> list[Path]:
     """Merge all chunks of a month into ``bq-YYYYMM.parquet`` per event type (+ push_daily)."""
     y, m = map(int, month.split("-"))
     dirs = [_staging(cfg, month, mode, u) for u in units]
     written: list[Path] = []
-    con = duckdb.connect()
-    con.execute("SET preserve_insertion_order = true")
+    # Bounded memory: spill to disk instead of growing (explicit ORDER BY keeps output order).
+    # A fresh connection per event type: one long-lived connection accumulates cached metadata
+    # and buffers until the later, larger types run out of room under the cap.
+    spill = layout.staging_dir(cfg) / "duckdb_spill"
+    spill.mkdir(parents=True, exist_ok=True)
     types = set(cfg.events.raw_types) | {PUSH}
     for etype in sorted(types):
         files = [str(d / f"event_type={etype}.parquet") for d in dirs]
@@ -234,35 +348,12 @@ def finalize_month(cfg: Config, month: str, mode: str, units: list[Unit]) -> lis
         if not files:
             continue
         if etype == PUSH:
-            dest = layout.bq_file(PUSH, y, m, cfg)
-            select = (
-                "SELECT repo_id, actor_id, CAST(created_at AS DATE) AS day, "
-                "CAST(count(*) AS INTEGER) AS n_pushes, arg_max(repo_name, event_id) AS repo_name, "
-                "'bq' AS source, CAST(? AS TIMESTAMP) AS ingested_at FROM ("
-                "SELECT DISTINCT ON (event_id) * FROM read_parquet(?) ORDER BY event_id"
-                ") GROUP BY repo_id, actor_id, day ORDER BY repo_id, actor_id, day"
-            )
-            params: list = [datetime.now(UTC).replace(tzinfo=None, microsecond=0), files]
-        else:
-            dest = layout.bq_file(etype, y, m, cfg)
-            select = (
-                "SELECT * FROM (SELECT DISTINCT ON (event_id) * FROM read_parquet(?) "
-                "ORDER BY event_id) ORDER BY repo_id, created_at, event_id"
-            )
-            params = [files]
-        dest.parent.mkdir(parents=True, exist_ok=True)
-        tmp = dest.with_name(dest.name + ".tmp")
-        tmp.unlink(missing_ok=True)
-        con.execute(
-            f"COPY ({select}) TO '{tmp.as_posix()}' "
-            "(FORMAT parquet, COMPRESSION zstd, COMPRESSION_LEVEL 9, ROW_GROUP_SIZE 131072)",
-            params,
-        )
-        os.replace(tmp, dest)
-        written.append(dest)
-    con.close()
+            written.append(_finalize_push(cfg, y, m, files, spill))
+            continue
+        written.append(_finalize_events(cfg, y, m, etype, files, spill))
     for d in dirs:
         shutil.rmtree(d, ignore_errors=True)
+    shutil.rmtree(spill, ignore_errors=True)
     base = layout.staging_dir(cfg) / "bq" / month.replace("-", "") / mode
     shutil.rmtree(base, ignore_errors=True)
     return written
