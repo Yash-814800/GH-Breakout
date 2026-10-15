@@ -38,41 +38,37 @@ measured (row counts, sizes, runtimes, metrics). Future sessions rely on it.
 | Stargazers API for per-repo ground truth | ✖ not available | GitHub restricted it to admins/collaborators in July 2026 (ADR-010) |
 | Live-source gate / item 5 | ☐ not started | waits for your review of the source test |
 
-## Handoff to Phase 3 (state at 2026-10-13, commit 33a31b5 and later)
+## Handoff to Phase 4 (state at 2026-10-16, commit 9440924)
 
-Start a fresh session with: CLAUDE.md, this file, DECISIONS.md (ADR-010..013), ARCHITECTURE.md and
-`docs/phases/PHASE_03_lake_on_hf.md`; then write the checklist plan and wait for the human's OK.
+Start a fresh session with: CLAUDE.md, this file, DECISIONS.md (ADR-009..015), ARCHITECTURE.md and
+`docs/phases/PHASE_04_*.md`; then write the checklist plan and wait for the human's OK.
 
-**Prerequisites: all met.** Phase 2 done; `HF_TOKEN` (write role, user `Yasshh814`) and `HF_USER` in `.env`;
-`HF_TOKEN` and `GH_ENRICH_TOKEN` are repo Actions secrets; license MIT (ADR-013); size over 60 GB accepted.
+**Prerequisites: all met.** Phases 0-3 done. `GH_ENRICH_TOKEN` (classic, no scopes, 5,000 req/h) is in
+`.env` and the Actions secrets; `HF_TOKEN`/`HF_USER` in `.env`, Actions secret `HF_TOKEN`, Actions variable
+`HF_USER=Yasshh814`. The human pre-approved HF writes and Actions runs in the Phase 3 session; ask again
+before creating anything new on the Hub or starting long Actions runs in a new phase.
 
-**What exists locally** (all under `data/`, a symlink to `/run/media/yash/Lexar SSD/gh-breakout/data`):
-- `data/lake/events/event_type=T/year=YYYY/month=MM/bq-YYYYMM.parquet`: 9 raw types x 101 months
-  (2015-01..2023-05), `detail_level = 0`, `source = 'bq'`. Plus 20 `day-*.parquet` files from Phase 1 test
-  days (2024-06-03, 2026-10-10, ...; ~453,798 events) that should NOT be pushed as history unless the
-  human wants them (they are not part of the planned coverage).
-- `data/lake/push_daily/year=/month=/bq-YYYYMM.parquet` (101 months), ordered by day, repo_id, actor_id.
-- `data/lake/manifests/hourly_manifest.parquet` (hour-level manifest; must live on HF so Actions jobs can
-  resume), `data/manifests/bq_backfill.json` (498 units done), cost survey and capture JSON.
-- Sizes: 57 GB, 964 parquet files (842 event `bq-*` files + 101 push `bq-*` files + 20 test-day files +
-  the hourly manifest), 3,263,437,726 event rows. Not every type exists in every month (e.g. review
-  events start 2020), so it is fewer than 9 x 101. No file is above 500 MB; the largest are CreateEvent
-  months of 2022-23. **Respect <= 80 files per commit** and keep the 1 GB split rule for month files.
-- Existing CLI: `breakout lake verify` (works), `breakout backfill {survey,plan,run,parity,hourly}`.
-  **Not existing yet** (Phase 3 deliverables): `breakout lake init|push|pull|compact`, `lake/hf.py`,
-  `lake/catalog.py`, dataset cards, `docs/runbook.md` lake sections (runbook exists for token rotation).
+**Where the data is**
+- Hub (public): `Yasshh814/gh-breakout-events` (1,523 files, 114.91 GB, 5.59 G rows, 2015-01..2026-10-14,
+  `catalog.parquet` at the root, README card), `-derived`, `-snapshots`, `-models` (cards only so far).
+- Local: `data/` -> Lexar SSD. `data/lake` holds only the `bq` history (2015-01..2023-05, 60 GB) and the
+  20 Phase 1 test-day files; the hourly era (2023-06..) is **on the Hub only**. Fetch what a phase needs with
+  `uv run breakout lake pull --types WatchEvent,... --since YYYY-MM-DD [--until ...] [--push-daily]
+  [--to DIR] [--manifests]` (it downloads exactly the files covering the range, into `data/lake` by default).
+- `HF_HOME` is `data/hf_home` (SSD), scratch is `data/tmp`.
 
-**Phase 3 specifics that differ from the phase file**
-- The hourly era (2023-06-01..today, ~2 TB download, ~45 GB lake) is produced by an **Actions matrix**
-  workflow that parses with the Phase 1 parser and uploads to HF, one job per month (<= 14 GB runner disk,
-  6 h): add it as part of Phase 3 (ADR-011). Needs `HF_USER` as an Actions variable and the hourly manifest
-  on HF.
-- Dataset cards: `license: mit` (ADR-013), with provenance wording that claims no rights in underlying
-  GH Archive events or logins.
-- Bootstrap upload is ~57 GB: the CLAUDE.md STOP rule ("total exceeds 60 GB, ask") is waived by ADR-013 but
-  creating repos and uploading still need the human's go-ahead in that session.
-- A `LICENSE` file for the code is still pending the copyright holder's name.
-- Do not push the 20 test-day files or `data/staging`; the catalog must exclude `.tmp`/`.partial`.
+**Facts that matter for Phase 4+**
+- Trusted era ends 2025-05-23 (`history.trusted_end`); later months are degraded (WatchEvents collapse,
+  ADR-009). Stars after that date must come from API `stargazerCount` snapshots (stargazer listing is
+  restricted, ADR-010). 2 hours are missing upstream (2025-06-12 17:00, 18:00).
+- Tier B detail columns exist only from 2023-06-01 (`detail_level = 1`); earlier rows are spine-only.
+- 2026-10 is published as `day-` files; the daily job (Phase 9) must append day files and compact the
+  month with `lake compact --month` when complete (it also needs `lake pull --manifests` first).
+- The repo is ~115 GB; HF free storage is best-effort (ADR-014 item 5). Do not add large tables to the
+  events repo; derived tables go to `gh-breakout-derived`.
+- Use `breakout.lake.hf` / `breakout.lake.sync` for any Hub access (retries, commit-size caps, catalog
+  consistency, protected snapshots repo). Commits must stay <= 1.5 GB / 80 files or the client OOMs.
+- No `LICENSE` file for the code yet (human: decide after Phase 10).
 
 ## Phase 3 status (2026-10-15)
 
@@ -132,10 +128,10 @@ Start a fresh session with: CLAUDE.md, this file, DECISIONS.md (ADR-010..013), A
 
 ## Open issues / TODO for the human
 
-- ADR-011: hourly backfill moves to a GitHub Actions matrix (built in Phase 3); nothing heavy runs locally. Needs the `HF_TOKEN` Actions secret then. `data/staging` (5.4 GB) is safe to delete.
+- ~~ADR-011 hourly backfill~~ done 2026-10-16 (Actions matrix, 41 jobs). Nothing heavy runs locally. `data/staging` (5.4 GB) is safe to delete (ask the human first).
 
 - ~~Approve the BigQuery spine extraction~~ done 2026-10-13.
-- ~~Lake size over 60 GB~~ accepted (ADR-013). ~~HF_TOKEN Actions secret~~ set 2026-10-13. ~~Dataset license~~ MIT (ADR-013). Still open: copyright-holder name for a `LICENSE` file; `HF_USER` as an Actions variable when the workflow is written.
+- ~~Lake size over 60 GB~~ accepted (ADR-013). ~~HF_TOKEN Actions secret~~ set 2026-10-13. ~~Dataset license~~ MIT (ADR-013). `HF_USER` Actions variable set (2026-10-15). Still open: `LICENSE` file for the code (human deferred it until after Phase 10).
 - Review the source-test result (NO-GO for OpenDigger) and tell me how to proceed with the live-source gate (ADR-010, item 5). I have not started item 5.
 - The stargazers listing is no longer available to us (ADR-010); the capture check and the daily
   cross-check must use `stargazerCount` deltas instead.

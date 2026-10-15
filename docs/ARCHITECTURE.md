@@ -49,13 +49,15 @@ only if it beats the current champion and the baseline.
 | Place | What | Notes |
 |---|---|---|
 | `data/` (symlink → Lexar SSD NTFS partition) | lake (`bq-*`, `day-*`), manifests, staging, parity, audit | not in git; not a backup; same physical disk as `/home` (ADR-012) |
-| Hugging Face dataset/model repos | the published lake, derived tables, snapshots, models | second copy; created in Phase 3 |
-| GitHub Actions | hourly backfill matrix, daily pipeline, weekly retrain | secrets `HF_TOKEN`, `GH_ENRICH_TOKEN` |
+| Hugging Face dataset/model repos (`Yasshh814/gh-breakout-{events,derived,snapshots,models}`) | the published lake (1,523 files, 114.91 GB, 2015-01..2026-10), `catalog.parquet`, cards, manifest fragments; derived tables, snapshots, models later | primary full copy (hourly era exists only here); created and filled in Phase 3 |
+| GitHub Actions | `hourly-backfill` matrix (done), daily pipeline, weekly retrain | secrets `HF_TOKEN`, `GH_ENRICH_TOKEN`; variable `HF_USER` |
 | Git | code, config, ledger, heartbeat, reports | tiny files only (CLAUDE.md §7) |
 
 Coverage: 2015-01..2023-05 BigQuery spine (`detail_level` 0, `source='bq'`); 2023-06-01 onward hourly
-parser (`detail_level` 1, `source='hourly'`); trusted data ends 2025-05-23, later days are degraded
-(ADR-009/010). Local resource limits and the memory-bounded merge design are in CLAUDE.md §10 and ADR-012.
+parser (`detail_level` 1, `source='hourly'`), compacted to `month-` files, the running month as `day-`
+files; trusted data ends 2025-05-23, later days are degraded (ADR-009/010). Lake sync is
+`breakout.lake.{hf,sync,catalog,compact}`: every Hub commit carries the refreshed `catalog.parquet`
+and is guarded by `parent_commit` (ADR-015). Local resource limits and the memory-bounded merge design are in CLAUDE.md §10 and ADR-012.
 
 ## Why these choices (free, no card)
 
@@ -89,4 +91,5 @@ parser (`detail_level` 1, `source='hourly'`); trusted data ends 2025-05-23, late
 - Scheduled workflows in public repos are disabled after 60 days without repository activity;
   scheduled runs can be delayed.
 - GitHub Pages: ~1 GB published site limit, soft bandwidth limit ~100 GB/month.
-- Hugging Face repos: keep < 100k files per repo, < 10k entries per folder, ~50–100 files per commit.
+- Hugging Face repos: keep < 100k files per repo, < 10k entries per folder, ~50–100 files per commit;
+  in practice commits are capped at 1.5 GB because the Hub client OOMs at 3 GB with larger ones (ADR-015).

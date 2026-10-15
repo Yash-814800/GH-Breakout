@@ -180,15 +180,15 @@ external SSD and `data/` only matches directories), `.env`, `*.duckdb`, `*.duckd
 - **Tier A / B / C features**: A = spine-only (all history), B = needs detail columns,
   C = external enrichment (GitHub API metadata, HN).
 
-## 10. Machine, storage and security rules (added 2026-10-13, ADR-011/012/013)
+## 10. Machine, storage and security rules (added 2026-10-13, ADR-011/012/013; updated 2026-10-16, ADR-015)
 
 The developer machine has 15 GB RAM and a previous heavy ingest crashed Claude Code. Treat
 local resources as scarce.
 
 1. **Heavy jobs run under a hard cap**, e.g. `systemd-run --user --scope -p MemoryMax=4G
    -p MemorySwapMax=0 -p CPUQuota=100% uv run breakout ...`, with one worker. Never run the
-   hourly backfill (~2 TB download) on the laptop: it runs as a GitHub Actions matrix (built in
-   Phase 3, ADR-011). Do not start long jobs in the foreground; run them in the background and
+   hourly backfill (~2 TB download) on the laptop: it ran as a GitHub Actions matrix (`hourly-backfill`,
+   done 2026-10-16, ADR-011); re-running it is safe and skips finished months. Do not start long jobs in the foreground; run them in the background and
    report progress.
 2. **DuckDB statements over lake data** use a fresh connection per statement with
    `SET memory_limit='1500MB'`, `SET threads=1` and `SET temp_directory=<data/staging/...>`.
@@ -206,4 +206,13 @@ local resources as scarce.
    secret (done), MIT as the dataset-card license (ADR-013) and a lake larger than 60 GB.
 6. **Long-running state is resumable.** Always read the manifest (`data/manifests/*.json`,
    `data/lake/manifests/hourly_manifest.parquet`) before launching, and say what remains.
-
+7. **Hugging Face lake (Phase 3, ADR-015).** The events repo `Yasshh814/gh-breakout-events` holds the whole
+   lake (hourly era only there; local `data/lake` has just the `bq` history). Move data with
+   `breakout lake pull|push|compact|verify` and `breakout.lake.{hf,sync}` only: they cap commits at
+   1.5 GB / 80 files (larger commits OOM the client), keep `catalog.parquet` consistent and never delete
+   in the snapshots repo. Run uploads detached under a cap (`setsid nohup systemd-run --user --scope -p
+   MemoryMax=3G -p MemorySwapMax=0 ...`) and check liveness with `systemctl --user is-active <scope>`,
+   not `pgrep -f`. `HF_HOME` is `data/hf_home` and scratch is `data/tmp`, both on the SSD. Do not pull
+   the whole lake; pull only the types and dates a step needs.
+8. **Repo and Actions actions** (create/delete HF repos, uploads, `gh workflow run`, pushes) need explicit
+   approval in each new session; the human's Phase 3 approvals do not carry over.
