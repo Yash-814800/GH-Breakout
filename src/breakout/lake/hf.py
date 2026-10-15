@@ -260,6 +260,7 @@ def _commit(api: HfApi, rid: str, rtype: str, ops: list, message: str, parent: s
             commit_message=message,
             repo_type=rtype,
             parent_commit=parent,
+            num_threads=1,  # memory: the Hub client buffers per thread (OOM at 3 GB with 5)
         )
     except HfHubHTTPError as exc:
         if _status(exc) == 412:

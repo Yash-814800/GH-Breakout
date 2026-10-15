@@ -312,3 +312,9 @@ deliverables; PROGRESS "Handoff to Phase 3" lists what exists and what is missin
    missing (SSD unmounted).
 **Consequences:** `config/project.yaml` gains `huggingface.max_bytes_per_commit` and `lake.max_file_mb`.
 Gap days (2015-12-31, 2021-05-08/10/11) are published as `day-` files beside the `bq` month.
+
+**Addendum (2026-10-15, bootstrap upload):** the first two upload attempts were OOM-killed at the 3 GB
+cap within ~45 s: a single 8 GB / 73-file commit makes the Hub client chunk and hash many files at once.
+`huggingface.max_bytes_per_commit` is now 1.5 GB and `create_commit` runs with `num_threads=1`. Peak RSS
+was ~2.1 GB under the 3 GB cap; the 60.68 GB upload took 44 commits (~2 h at ~11 MB/s). Lesson: check
+liveness with `systemctl --user is-active <scope>`, not `pgrep -f` (it matches its own shell).

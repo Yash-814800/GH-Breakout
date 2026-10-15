@@ -57,7 +57,7 @@ huggingface:
   snapshots_repo: ${HF_USER}/gh-breakout-snapshots  # public dataset: frozen daily predictions (never squash)
   models_repo: ${HF_USER}/gh-breakout-models        # public model repo
   max_files_per_commit: 80
-  max_bytes_per_commit: 8000000000   # also cap bytes per commit so an interrupted upload loses little
+  max_bytes_per_commit: 1500000000   # bytes per commit: bounds client memory (8 GB commits OOM'd at a 3 GB cap) and lost work
 
 ingest:
   # Hourly sources, tried in order (priority). A source is skipped for hours before its
