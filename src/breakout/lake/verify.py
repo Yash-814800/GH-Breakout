@@ -11,6 +11,12 @@
    ``(repo_id, actor_id, day)`` within a month.
 5. OpenDigger-sourced rows (``source = 'opendigger'``) are listed so the publisher can exclude
    those files from the public Hugging Face dataset; verification never fails on them.
+6. Coverage (Phase 3): no two files cover the same (event_type, day): a month with a ``bq`` or
+   ``month`` file has no ``day`` files (except ``history.hourly_gap_days``), and never both ``bq``
+   and ``month`` files. Every file's columns/types equal ``schema.py`` and its ``schema_version``
+   equals ``SCHEMA_VERSION``.
+7. ``--deep``: ``event_id`` unique across all files of an event type and month (scans data).
+8. ``--remote``: local catalog vs the catalog on Hugging Face vs the Hub file listing.
 """
 
 from __future__ import annotations
@@ -20,9 +26,13 @@ from datetime import date
 from pathlib import Path
 
 import duckdb
+import pyarrow as pa
+import pyarrow.parquet as pq
 
 from breakout.config import Config
+from breakout.lake import catalog as cat
 from breakout.lake import layout
+from breakout.schema import SCHEMA_VERSION
 
 
 @dataclass
@@ -53,7 +63,7 @@ def _month_of(path: Path) -> tuple[int, int]:
     return year, month
 
 
-def verify_lake(cfg: Config) -> VerifyReport:
+def verify_lake(cfg: Config, *, deep: bool = False) -> VerifyReport:
     rep = VerifyReport()
     root = layout.lake_root(cfg)
     cutover = cfg.history.cutover_date
@@ -69,6 +79,7 @@ def verify_lake(cfg: Config) -> VerifyReport:
         ]
     )
     groups: dict[tuple[str, int, int], list[Path]] = {}
+    coverage: dict[tuple, list[tuple[str, date | None]]] = {}
     for f in files:
         rep.files_checked += 1
         is_push = "push_daily" in f.parts
@@ -93,6 +104,21 @@ def verify_lake(cfg: Config) -> VerifyReport:
                 )
             if kind == "day" and day is not None and day < cutover and day not in gap_days:
                 rep.violations.append(f"{f}: hourly day file before cutover {cutover}")
+        # 6. schema / schema_version from the footer (no data scan)
+        try:
+            info = cat.parse_path(f.relative_to(root).as_posix())
+        except ValueError:
+            rep.violations.append(f"{f}: unexpected file name")
+            continue
+        pf = pq.ParquetFile(f)
+        want = cat.PUSH_DAILY_SCHEMA if is_push else cat.EVENTS_SCHEMA
+        have = pf.schema_arrow
+        if have.names != want.names or any(
+            have.field(n).type != want.field(n).type for n in want.names
+        ):
+            rep.violations.append(f"{f}: columns/types differ from schema.py: {have.names}")
+        elif cat._schema_version(pf, info["table"]) != SCHEMA_VERSION:
+            rep.violations.append(f"{f}: schema_version != {SCHEMA_VERSION}")
         col_day = "day" if is_push else "created_at"
         rows = con.execute(
             f"SELECT count(*), min(CAST({col_day} AS DATE)), max(CAST({col_day} AS DATE)), "
@@ -149,6 +175,9 @@ def verify_lake(cfg: Config) -> VerifyReport:
             if bad and bad[0]:
                 rep.violations.append(f"{f}: {bad[0]} rows with event_type != {etype}")
         # 4. uniqueness
+        coverage.setdefault((info["table"], info["event_type"], year, month), []).append(
+            (kind, day)
+        )
         if is_push:
             dup = con.execute(
                 "SELECT count(*) FROM (SELECT 1 FROM read_parquet(?) "
@@ -159,8 +188,19 @@ def verify_lake(cfg: Config) -> VerifyReport:
                 rep.violations.append(f"{f}: {dup[0]} duplicated (repo_id, actor_id, day) groups")
         else:
             groups.setdefault((str(etype), year, month), []).append(f)
-    # event_id unique within an event type and month, across all files of that month
-    for (etype, year, month), fs in groups.items():
+    for (_table, etype, year, month), members in coverage.items():
+        kinds = {k for k, _ in members}
+        label = f"{etype or 'push_daily'} {year}-{month:02d}"
+        if {"bq", "month"} <= kinds:
+            rep.violations.append(f"{label}: both bq and month files")
+        if kinds & {"bq", "month"}:
+            stray = [d for k, d in members if k == "day" and d not in gap_days]
+            if stray:
+                rep.violations.append(
+                    f"{label}: day files {[str(d) for d in stray[:3]]} overlap a bq/month file"
+                )
+    # 7. event_id unique within an event type and month, across all files of that month
+    for (etype, year, month), fs in groups.items() if deep else ():
         dup = con.execute(
             "SELECT count(*) - count(DISTINCT event_id) FROM read_parquet(?)",
             [[str(x) for x in fs]],
@@ -171,3 +211,32 @@ def verify_lake(cfg: Config) -> VerifyReport:
             )
     rep.rows_by_era = era_rows
     return rep
+
+
+def verify_remote(cfg: Config, api, local: pa.Table) -> list[str]:
+    """Compare the local catalog with the Hub: returns violation strings (empty = consistent).
+
+    Files only present locally are not violations (not pushed yet) and are reported separately by
+    the CLI; anything the remote catalog and the Hub listing disagree on is.
+    """
+    from breakout.lake import hf, sync
+
+    out: list[str] = []
+    remote, _ = sync.fetch_remote_catalog(api, cfg)
+    listing = {f.path: f for f in hf.remote_list(api, cfg, "events")}
+    r_rows = {r["path"]: r for r in remote.to_pylist()}
+    l_rows = {r["path"]: r for r in local.to_pylist()}
+    for path, r in r_rows.items():
+        f = listing.get(path)
+        if f is None:
+            out.append(f"{path}: in the remote catalog but not in the repo")
+        elif f.sha256 != r["sha256"] or f.size != r["bytes"]:
+            out.append(f"{path}: remote catalog differs from the Hub file (sha/size)")
+        mine = l_rows.get(path)
+        if mine is not None and mine["sha256"] != r["sha256"]:
+            out.append(f"{path}: local file differs from the remote (sha256)")
+    skip = {hf.CATALOG_PATH, "README.md", ".gitattributes"}
+    for path in listing:
+        if path not in r_rows and path not in skip and not path.startswith("manifests/"):
+            out.append(f"{path}: in the repo but missing from the remote catalog")
+    return out

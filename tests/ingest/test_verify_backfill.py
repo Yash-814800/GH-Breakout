@@ -80,7 +80,7 @@ def test_verify_flags_each_invariant(cfg: Config) -> None:
         layout.day_file("WatchEvent", date(2024, 1, 5), cfg),
         _rows(date(2024, 1, 6), "hourly", 1, range(70, 72)),
     )
-    msg = "\n".join(verify_lake(cfg).violations)
+    msg = "\n".join(verify_lake(cfg, deep=True).violations)
     assert "not entirely before cutover" in msg
     assert "hourly day file before cutover" in msg
     assert "spine-era bq file with detail_level" in msg

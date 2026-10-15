@@ -216,21 +216,277 @@ def backfill_hourly_cmd(
     run_hourly_backfill(cfg, days, workers=workers, force=force, on_day=report)
 
 
-lake_app = typer.Typer(help="Lake maintenance (Phase 3).", no_args_is_help=True)
+lake_app = typer.Typer(
+    help="Lake on Hugging Face: init, push, pull, compact, verify (Phase 3).", no_args_is_help=True
+)
 app.add_typer(lake_app, name="lake")
 
 
-@lake_app.command("verify")
-def lake_verify_cmd(ctx: typer.Context) -> None:
-    """Check lake invariants (ADR-010); exit 1 on violations."""
-    from breakout.lake.verify import verify_lake
+def _parse_month(value: str) -> tuple[int, int]:
+    try:
+        y, m = value.split("-")
+        year, month = int(y), int(m)
+        if not 1 <= month <= 12:
+            raise ValueError
+    except ValueError as exc:
+        raise typer.BadParameter(f"expected YYYY-MM, got {value!r}") from exc
+    return year, month
+
+
+def _require_lake(cfg) -> Path:
+    """The lake root must be reachable (the SSD mounted); never create it implicitly."""
+    from breakout.lake import layout
+
+    root = layout.lake_root(cfg)
+    if not root.exists():
+        typer.echo(f"lake root {root} does not exist; is the Lexar SSD mounted?", err=True)
+        raise typer.Exit(2)
+    return root
+
+
+@lake_app.command("init")
+def lake_init_cmd(ctx: typer.Context) -> None:
+    """Create the four public repos (idempotent) and write/update their dataset cards."""
+    from breakout.lake import cards, hf, sync
 
     cfg = get_config(ctx.obj["config"])
-    report = verify_lake(cfg)
+    api = hf.get_api()
+    repos = hf.ensure_repos(cfg, api)
+    remote, _ = sync.fetch_remote_catalog(api, cfg)
+    tmp = P.ensure_dir(P.TMP_DIR / "cards")
+    for key, text in cards.render_all(cfg, remote).items():
+        path = tmp / f"{key}.README.md"
+        path.write_text(text, encoding="utf-8")
+        commit = hf.put_small_files(
+            api, cfg, key, [hf.UploadItem(path, "README.md")], "update dataset card"
+        )
+        typer.echo(f"{key}: {repos[key]} card {'updated' if commit else 'unchanged'}")
+
+
+@lake_app.command("push")
+def lake_push_cmd(
+    ctx: typer.Context,
+    table: Annotated[str, typer.Option(help="events | push_daily | all")] = "all",
+    since: Annotated[str | None, typer.Option(help="first month YYYY-MM")] = None,
+    until: Annotated[str | None, typer.Option(help="last month YYYY-MM")] = None,
+    include_days: Annotated[
+        bool, typer.Option("--include-days", help="also push day-*.parquet files")
+    ] = False,
+    dry: Annotated[
+        bool, typer.Option("--dry", help="list what would be uploaded and exit")
+    ] = False,
+) -> None:
+    """Upload new/changed local files (month order), then manifests and catalog (resumable)."""
+    from breakout.lake import cards, hf, layout, sync
+    from breakout.lake import catalog as cat
+
+    cfg = get_config(ctx.obj["config"])
+    root = _require_lake(cfg)
+    if table not in ("events", "push_daily", "all"):
+        raise typer.BadParameter("--table must be events, push_daily or all")
+    tables = (cat.EVENTS_TABLE, cat.PUSH_TABLE) if table == "all" else (table,)
+    lo = _parse_month(since) if since else None
+    hi = _parse_month(until) if until else None
+    files = []
+    for f in cat.lake_files(root, tables):
+        info = cat.parse_path(f.relative_to(root).as_posix())
+        ym = (info["year"], info["month"])
+        if (lo and ym < lo) or (hi and ym > hi):
+            continue
+        if info["kind"] == "day" and not include_days:
+            continue
+        files.append(f)
+    total = sum(f.stat().st_size for f in files)
+    typer.echo(f"{len(files)} local file(s), {total / 1e9:.2f} GB candidate")
+    if dry:
+        return
+    api = hf.get_api()
+    hf.ensure_repos(cfg, api)
+    cache = hf.ShaCache(layout.data_root(cfg) / "catalog_cache.json")
+    # refuse files that contain OpenDigger rows (never published)
+    probe = cat.build_catalog(root, files=files, cache=cache)
+    bad = [r["path"] for r in probe.to_pylist() if r["source_max"] == "opendigger"]
+    if bad:
+        typer.echo(f"refusing to push {len(bad)} file(s) with opendigger rows: {bad[:3]}", err=True)
+        raise typer.Exit(1)
+    cache.save()
+    extra = sync.small_items(
+        layout.lake_root(cfg),
+        [f"manifests/{n}" for n in ("bq_backfill.json",)],
+    )
+
+    def progress(i: int, n: int, size: int) -> None:
+        typer.echo(f"commit {i}/{n} done ({size / 1e9:.2f} GB)")
+
+    commits = sync.push_files(
+        api,
+        cfg,
+        root,
+        files,
+        f"lake push ({table}{' since ' + since if since else ''})",
+        extra=extra,
+        cache=cache,
+        progress=progress,
+    )
+    cache.save()
+    # refresh the dataset card from the new catalog
+    remote, _ = sync.fetch_remote_catalog(api, cfg)
+    card = P.ensure_dir(P.TMP_DIR / "cards") / "events.README.md"
+    card.write_text(cards.render_events(cfg, remote), encoding="utf-8")
+    hf.put_small_files(
+        api, cfg, "events", [hf.UploadItem(card, "README.md")], "update dataset card"
+    )
+    rows = remote.to_pylist()
+    typer.echo(
+        f"{len(commits)} commit(s); remote now {len(rows)} files, "
+        f"{sum(r['bytes'] for r in rows) / 1e9:.2f} GB, {sum(r['rows'] for r in rows):,} rows"
+    )
+
+
+@lake_app.command("pull")
+def lake_pull_cmd(
+    ctx: typer.Context,
+    types: Annotated[str | None, typer.Option(help="comma list, e.g. WatchEvent,ForkEvent")] = None,
+    since: Annotated[str | None, typer.Option(help="first day YYYY-MM-DD")] = None,
+    until: Annotated[str | None, typer.Option(help="last day YYYY-MM-DD")] = None,
+    push_daily: Annotated[bool, typer.Option("--push-daily")] = False,
+    to: Annotated[
+        Path | None, typer.Option(help="destination lake root (default data/lake)")
+    ] = None,
+    manifests: Annotated[bool, typer.Option("--manifests", help="also fetch manifests/")] = False,
+    workers: Annotated[int, typer.Option(min=1, max=8)] = 8,
+) -> None:
+    """Download only the files covering the range (uses the remote catalog)."""
+    from datetime import date
+
+    from breakout.lake import hf, sync
+
+    cfg = get_config(ctx.obj["config"])
+    if to is None:
+        _require_lake(cfg)
+    api = hf.get_api()
+    got = sync.pull(
+        api,
+        cfg,
+        types=[t for t in types.split(",") if t] if types else None,
+        start=date.fromisoformat(since) if since else None,
+        end=date.fromisoformat(until) if until else None,
+        push_daily=push_daily,
+        to=to,
+        workers=workers,
+        manifests=manifests,
+    )
+    typer.echo(f"{len(got)} file(s), {sum(p.stat().st_size for p in got) / 1e9:.2f} GB")
+    for p in got[:50]:
+        typer.echo(f"  {p}")
+
+
+@lake_app.command("compact")
+def lake_compact_cmd(
+    ctx: typer.Context,
+    month: Annotated[str, typer.Option(help="YYYY-MM")],
+    push: Annotated[bool, typer.Option("--push/--no-push")] = True,
+    force: Annotated[
+        bool, typer.Option("--force", help="compact even if hours are pending")
+    ] = False,
+    memory_limit: Annotated[str, typer.Option(help="DuckDB memory_limit per statement")] = "1500MB",
+) -> None:
+    """Merge a finished month's day files into month files (one atomic Hub commit with --push)."""
+    from breakout.lake import compact
+
+    cfg = get_config(ctx.obj["config"])
+    _require_lake(cfg)
+    y, m = _parse_month(month)
+    res = compact.compact_month(cfg, y, m, push=push, force=force, memory_limit=memory_limit)
+    typer.echo(
+        f"{y:04d}-{m:02d}: {res.status} {res.reason} written={len(res.written)} "
+        f"day_files={len(res.day_files)} removed_local={len(res.removed_local)} "
+        f"commits={len(res.commits)}"
+    )
+    if res.status == "incomplete":
+        raise typer.Exit(3)
+
+
+@lake_app.command("backfill-month")
+def lake_backfill_month_cmd(
+    ctx: typer.Context,
+    month: Annotated[str, typer.Argument(help="YYYY-MM (>= cutover month)")],
+    workers: Annotated[int, typer.Option(min=1, max=4, help="days in flight (1 hour each)")] = 2,
+    memory_limit: Annotated[str, typer.Option()] = "3GB",
+) -> None:
+    """Actions job body: ingest a month of hourly files, compact, push (skips finished months)."""
+    from breakout.lake import backfill_month
+
+    cfg = get_config(ctx.obj["config"])
+    y, m = _parse_month(month)
+    run = backfill_month.run_month(cfg, y, m, workers=workers, memory_limit=memory_limit)
+    typer.echo(json.dumps(run.__dict__))
+
+
+@lake_app.command("backfill-gap-days")
+def lake_backfill_gap_days_cmd(
+    ctx: typer.Context,
+    workers: Annotated[int, typer.Option(min=1, max=4)] = 2,
+) -> None:
+    """Actions job body: ingest history.hourly_gap_days and push them as day files."""
+    from breakout.lake import backfill_month
+
+    cfg = get_config(ctx.obj["config"])
+    typer.echo(json.dumps(backfill_month.run_gap_days(cfg, workers=workers).__dict__))
+
+
+@lake_app.command("verify")
+def lake_verify_cmd(
+    ctx: typer.Context,
+    deep: Annotated[bool, typer.Option("--deep", help="scan for duplicate event_ids")] = False,
+    remote: Annotated[bool, typer.Option("--remote", help="compare with the Hub")] = False,
+) -> None:
+    """Check lake invariants (ADR-010, Phase 3); exit 1 on violations."""
+    from breakout.lake import catalog as cat
+    from breakout.lake import hf, layout
+    from breakout.lake.verify import verify_lake, verify_remote
+
+    cfg = get_config(ctx.obj["config"])
+    root = _require_lake(cfg)
+    report = verify_lake(cfg, deep=deep)
     for line in report.summary_lines():
         typer.echo(line)
-    if not report.ok:
+    ok = report.ok
+    if remote:
+        cache = hf.ShaCache(layout.data_root(cfg) / "catalog_cache.json")
+        local = cat.build_catalog(root, cache=cache)
+        cache.save()
+        problems = verify_remote(cfg, hf.get_api(), local)
+        typer.echo(f"remote: {len(problems)} problem(s)")
+        for line in problems[:50]:
+            typer.echo(f"  - {line}")
+        ok = ok and not problems
+    if not ok:
         raise typer.Exit(1)
+
+
+@lake_app.command("catalog")
+def lake_catalog_cmd(
+    ctx: typer.Context,
+    write: Annotated[Path | None, typer.Option(help="write the local catalog here")] = None,
+) -> None:
+    """Build the local catalog from Parquet footers and print totals."""
+    from breakout.lake import catalog as cat
+    from breakout.lake import hf, layout
+
+    cfg = get_config(ctx.obj["config"])
+    root = _require_lake(cfg)
+    cache = hf.ShaCache(layout.data_root(cfg) / "catalog_cache.json")
+    table = cat.build_catalog(root, cache=cache)
+    cache.save()
+    rows = table.to_pylist()
+    typer.echo(
+        f"{len(rows)} files, {sum(r['bytes'] for r in rows) / 1e9:.2f} GB, "
+        f"{sum(r['rows'] for r in rows):,} rows"
+    )
+    if write:
+        cat.write_catalog(table, write)
+        typer.echo(f"wrote {write}")
 
 
 ingest_app = typer.Typer(help="Hourly GH Archive ingest (Phase 1).", no_args_is_help=True)

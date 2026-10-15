@@ -282,3 +282,33 @@ file for the code still needs the copyright holder's name.
    or throttles: keep `bq` history in the repo and publish the hourly era as month files only.
 **Consequences:** Phase 3 adds an Actions workflow (`hourly-backfill`) in addition to the phase file's
 deliverables; PROGRESS "Handoff to Phase 3" lists what exists and what is missing.
+
+## ADR-015: Phase 3 lake sync design (2026-10-15)
+**Context:** Phase 3 implementation choices that differ from or extend `PHASE_03_lake_on_hf.md`.
+**Decision:**
+1. **Catalog in every commit.** Each upload commit carries the refreshed `catalog.parquet` and is
+   guarded by `parent_commit`; a lost race re-reads the remote catalog and continues (already-committed
+   files are skipped by sha256). Several Actions jobs can therefore push concurrently (`max-parallel: 2`).
+2. **Resumability via the catalog, not a shared manifest.** The hourly manifest is not a single remote
+   file: each month job writes `manifests/hourly/hourly-YYYYMM.parquet` (and `hourly-gap-days.parquet`),
+   so concurrent jobs never write the same remote file; `lake pull --manifests` merges fragments locally.
+   A month with `month-` files in the remote catalog is skipped.
+3. **Day files are not pushed by `lake push` unless `--include-days`.** The 20 Phase 1 test days stay
+   local; backfilled months arrive only as `month-` files (no day files ever exist remotely for them).
+4. **Size cap is 1 GB per file (`lake.max_file_mb`), split on row-group boundaries**; `target_file_mb`
+   is a sizing hint. A commit is also capped by bytes (`huggingface.max_bytes_per_commit`, 8 GB).
+5. **Compaction** is a sort-only pass (`repo_id, created_at, event_id`) over per-day-deduplicated day
+   files on a fresh DuckDB connection (1500 MB, 1 thread, spill to `data/staging`), with
+   `hive_partitioning=false` (DuckDB otherwise adds `year`/`month` columns from the path).
+   `push_daily` is a streaming concatenation in day order. The month is complete only when every hour
+   has a manifest row that is `ok` or `missing`.
+6. **Invariants added to `lake verify`:** schema/columns equal `schema.py`, `schema_version` equals
+   `SCHEMA_VERSION` (stored as Parquet key-value metadata `breakout.schema_version`, inferred from the
+   columns for older files), no day files in months that have a `bq`/`month` file except
+   `history.hourly_gap_days`, never both `bq` and `month`; `--deep` adds the duplicate `event_id` scan;
+   `--remote` cross-checks local catalog, remote catalog and the Hub listing (LFS sha256).
+7. **Storage on the SSD.** `HF_HOME` defaults to `data/hf_home` (set before `huggingface_hub` is
+   imported), scratch files go to `data/tmp`, and lake commands refuse to run when the lake root is
+   missing (SSD unmounted).
+**Consequences:** `config/project.yaml` gains `huggingface.max_bytes_per_commit` and `lake.max_file_mb`.
+Gap days (2015-12-31, 2021-05-08/10/11) are published as `day-` files beside the `bq` month.

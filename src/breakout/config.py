@@ -126,6 +126,7 @@ class HuggingFaceCfg(_Section):
     snapshots_repo: str | None
     models_repo: str | None
     max_files_per_commit: int
+    max_bytes_per_commit: int
 
     def _require(self, field: str) -> str:
         value = getattr(self, field)
@@ -153,6 +154,7 @@ class LakeCfg(_Section):
     local_root: str
     compression: str
     target_file_mb: int
+    max_file_mb: int
 
 
 class CandidatesCfg(_Section):

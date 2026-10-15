@@ -57,6 +57,7 @@ huggingface:
   snapshots_repo: ${HF_USER}/gh-breakout-snapshots  # public dataset: frozen daily predictions (never squash)
   models_repo: ${HF_USER}/gh-breakout-models        # public model repo
   max_files_per_commit: 80
+  max_bytes_per_commit: 8000000000   # also cap bytes per commit so an interrupted upload loses little
 
 ingest:
   # Hourly sources, tried in order (priority). A source is skipped for hours before its
@@ -77,7 +78,8 @@ ingest:
 lake:
   local_root: data/lake
   compression: zstd
-  target_file_mb: 128             # compact to roughly this size; never exceed 1 GB per file
+  target_file_mb: 128             # row-group/file sizing hint for new month files
+  max_file_mb: 1024               # hard cap: a month file above this is split into -partNNN files
 
 candidates:                       # SAME definition for training and live scoring
   max_age_days: 90                # age = days since repo birth (see Phase 6 for birth definition)

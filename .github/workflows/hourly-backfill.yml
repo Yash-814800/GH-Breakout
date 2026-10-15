@@ -1,0 +1,102 @@
+name: hourly-backfill
+
+# One-time (resumable) backfill of the hourly era (history.cutover_date .. last complete month)
+# into the Hugging Face events repo. One matrix job per month: download the month's hourly files
+# from data.gharchive.org, parse with the Phase 1 parser, compact into month files, push files +
+# catalog + manifest fragment, discard staging. Months already on the Hub are skipped, so
+# re-running (or running again after a failure) only does the remaining work. ADR-011 / ADR-014.
+on:
+  workflow_dispatch:
+    inputs:
+      months:
+        description: "Comma list YYYY-MM, or 'all' (cutover month .. current month)"
+        required: false
+        default: "all"
+      parallel:
+        description: "Months in flight at once (HF commits are guarded by parent_commit)"
+        required: false
+        default: "2"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: hourly-backfill
+  cancel-in-progress: false
+
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    outputs:
+      months: ${{ steps.plan.outputs.months }}
+    steps:
+      - uses: actions/checkout@v7
+      - id: plan
+        env:
+          MONTHS: ${{ inputs.months }}
+        run: |
+          python3 - <<'PY' >> "$GITHUB_OUTPUT"
+          import datetime as dt, json, os, re
+          text = open("config/project.yaml").read()
+          cutover = dt.date.fromisoformat(re.search(r"^\s*cutover_date:\s*(\d{4}-\d{2}-\d{2})", text, re.M).group(1))
+          want = os.environ["MONTHS"].strip()
+          if want in ("", "all"):
+              today = dt.datetime.now(dt.timezone.utc).date()
+              y, m, out = cutover.year, cutover.month, []
+              while (y, m) <= (today.year, today.month):
+                  out.append(f"{y:04d}-{m:02d}")
+                  y, m = (y + 1, 1) if m == 12 else (y, m + 1)
+          else:
+              out = [x.strip() for x in want.split(",") if x.strip()]
+              assert all(re.fullmatch(r"\d{4}-\d{2}", x) for x in out), out
+          print("months=" + json.dumps(out))
+          PY
+
+  gap-days:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v10.3.0
+      - run: uv sync --frozen
+      - name: Ingest gap days and push
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          HF_USER: ${{ vars.HF_USER }}
+        run: uv run breakout lake backfill-gap-days --workers 2
+
+  backfill:
+    needs: plan
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        month: ${{ fromJSON(needs.plan.outputs.months) }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v10.3.0
+      - run: uv sync --frozen
+      - name: Backfill ${{ matrix.month }}
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          HF_USER: ${{ vars.HF_USER }}
+        run: uv run breakout lake backfill-month ${{ matrix.month }} --workers 3 --memory-limit 6GB
+      - name: Disk
+        if: always()
+        run: df -h . | tail -1
+
+  cards:
+    needs: backfill
+    if: always() && needs.backfill.result != 'cancelled'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v10.3.0
+      - run: uv sync --frozen
+      - name: Refresh dataset cards from the catalog
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          HF_USER: ${{ vars.HF_USER }}
+        run: uv run breakout lake init

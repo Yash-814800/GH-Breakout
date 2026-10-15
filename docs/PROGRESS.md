@@ -8,7 +8,7 @@ measured (row counts, sizes, runtimes, metrics). Future sessions rely on it.
 | 00 | Bootstrap & guardrails | ☑ | 2026-10-12 | 26 tests pass; ruff, mypy, pre-commit (incl. gitleaks) green locally. CI green on GitHub (run 38189757833). |
 | 01 | Schema audit, slim schema, hourly parser | ☑ | 2026-10-12 | 9 eras audited; day 2026-10-10 ingested: 24/24 hours ok, 763,462 rows, 39 s wall clock, 12 MB lake + 24 MB staging; rerun no-op (0.5 s, files checksum-identical). See open issue on star volume. |
 | 02 | BigQuery cost plan & historical backfill | ☑ | 2026-10-13 | Spine 2015-01..2023-05 complete: 498/498 units, 101/101 months finalized, 0 failed, 522.7 GB billed, 57 GB lake (3.26 G events). Re-run performs 0 queries; `lake verify` OK (963 files). Parity PASS (2024-06-03, 2026-10-10). Hourly era from 2023-06-01 runs in Actions (ADR-011). Lake lives on the Lexar SSD, symlinked from `data/lake` (ADR-012). |
-| 03 | Lake on Hugging Face (layout, upload, sync, compaction) | ☐ | | |
+| 03 | Lake on Hugging Face (layout, upload, sync, compaction) | ◐ | 2026-10-15 | code + tests done (163 pass); HF repo creation/upload blocked pending approval, see 'Phase 3 status' |
 | 04 | Enrichment (repo metadata, actor age, trending, HN) | ☐ | | |
 | 05 | dbt staging & intermediate models | ☐ | | |
 | 06 | Candidates, labels, baseline, evaluation harness | ☐ | | |
@@ -73,6 +73,16 @@ Start a fresh session with: CLAUDE.md, this file, DECISIONS.md (ADR-010..013), A
   creating repos and uploading still need the human's go-ahead in that session.
 - A `LICENSE` file for the code is still pending the copyright holder's name.
 - Do not push the 20 test-day files or `data/staging`; the catalog must exclude `.tmp`/`.partial`.
+
+## Phase 3 status (2026-10-15, in progress)
+
+- Done: `lake/{hf,catalog,sync,compact,cards,backfill_month}.py`, extended `lake verify`, CLI
+  `lake init|push|pull|compact|verify|catalog|backfill-month|backfill-gap-days`, workflow
+  `.github/workflows/hourly-backfill.yml`, runbook lake section, ADR-015, tests in `tests/lake/`.
+- Local catalog (footers + sha256): 963 files, 60.76 GB, 3,263,891,524 rows (incl. 20 test-day files);
+  `lake push --dry` selects 943 files, 60.68 GB (no day files).
+- Not done: `lake init` (creating the four public HF repos), bootstrap upload, Actions variable
+  `HF_USER`, hourly backfill run, acceptance checks that need the Hub (pull, `hf://` query, cards).
 
 ## Measured facts
 
