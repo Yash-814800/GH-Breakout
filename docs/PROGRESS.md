@@ -8,7 +8,7 @@ measured (row counts, sizes, runtimes, metrics). Future sessions rely on it.
 | 00 | Bootstrap & guardrails | ☑ | 2026-10-12 | 26 tests pass; ruff, mypy, pre-commit (incl. gitleaks) green locally. CI green on GitHub (run 38189757833). |
 | 01 | Schema audit, slim schema, hourly parser | ☑ | 2026-10-12 | 9 eras audited; day 2026-10-10 ingested: 24/24 hours ok, 763,462 rows, 39 s wall clock, 12 MB lake + 24 MB staging; rerun no-op (0.5 s, files checksum-identical). See open issue on star volume. |
 | 02 | BigQuery cost plan & historical backfill | ☑ | 2026-10-13 | Spine 2015-01..2023-05 complete: 498/498 units, 101/101 months finalized, 0 failed, 522.7 GB billed, 57 GB lake (3.26 G events). Re-run performs 0 queries; `lake verify` OK (963 files). Parity PASS (2024-06-03, 2026-10-10). Hourly era from 2023-06-01 runs in Actions (ADR-011). Lake lives on the Lexar SSD, symlinked from `data/lake` (ADR-012). |
-| 03 | Lake on Hugging Face (layout, upload, sync, compaction) | ☑ | 2026-10-15 | 4 public repos; 943 files, 60.68 GB, 3.26 G rows on the Hub (44 commits); catalog + cards live; pull and `hf://` queries verified; `lake verify --remote` 0 problems; 163 tests pass. Hourly-era Actions backfill built, not yet run (needs go-ahead). |
+| 03 | Lake on Hugging Face (layout, upload, sync, compaction) | ☑ | 2026-10-15 | 4 public repos; 943 files, 60.68 GB, 3.26 G rows on the Hub (44 commits); catalog + cards live; pull and `hf://` queries verified; `lake verify --remote` 0 problems; 163 tests pass. Hourly-era backfill done 2026-10-16: 1,523 files, 114.91 GB, 5.59 G rows, 142 months, 41/41 jobs ok, 2 hours missing upstream. |
 | 04 | Enrichment (repo metadata, actor age, trending, HN) | ☐ | | |
 | 05 | dbt staging & intermediate models | ☐ | | |
 | 06 | Candidates, labels, baseline, evaluation harness | ☐ | | |
@@ -85,9 +85,12 @@ Start a fresh session with: CLAUDE.md, this file, DECISIONS.md (ADR-010..013), A
   push_daily 833,463,800 in 101 files / 14.8 GB), 44 commits, 2015-01-01 .. 2023-05-31.
 - Pull test: `lake pull --types WatchEvent --since 2023-03-01 --until 2023-05-31` fetched exactly 3 files
   (0.51 GB); the phase DuckDB query gives identical results on the pulled files and on `hf://`.
-- Actions variable `HF_USER=Yasshh814` set. Hourly-era backfill workflow built, **not yet run**
-  (~2 TB download; human go-ahead).
+- Actions variable `HF_USER=Yasshh814` set. Hourly-era backfill **done** (run 38680271855, 41/41 jobs,
+  ~22 h): events repo now 1,523 files, 114.91 GB, 5,592,548,999 rows (events 3,969,741,484 / 80.5 GB;
+  push_daily 1,622,807,515 / 34.4 GB), 2015-01..2026-10-14; 2026-10 as day files; 42 manifest fragments
+  (29,662 ok hours, 2 missing: 2025-06-12 17:00, 18:00). Smoke test (2023-06): 1 job, 65 min.
 - `lake verify --remote`: 963 local files OK, 0 opendigger files, 0 remote problems.
+- Open: HF free storage is best-effort and the repo is now ~115 GB; watch for throttling (ADR-014 item 5).
 - Still pending: `LICENSE` file for the code (deferred by the human until after Phase 10).
 
 ## Measured facts
@@ -122,7 +125,7 @@ Start a fresh session with: CLAUDE.md, this file, DECISIONS.md (ADR-010..013), A
 
   push_daily rows (M) / pushes (M): 2015 37.3/104; 2016 52.3/165; 2017 67.4/219; 2018 79.3/258; 2019 92.8/313; 2020 120.6/434; 2021 131.7/490; 2022 169.4/662; 2023 82.5/317.
 - (Phase 2 ops) BigQuery backfill wall clock ~18 h on one worker under a 4 GB cap; merge peak RSS 1.0-1.9 GB; 4 failed attempts fixed by per-day finalization (ADR-012)
-- (Phase 3) Lake size on HF (GB), file count: 60.68 GB, 943 data files (+ catalog, README, manifests); 3,260,735,374 rows
+- (Phase 3) Lake size on HF (GB), file count: 114.91 GB, 1,523 data files (+ catalog, README, 42 manifest fragments); 5,592,548,999 rows. Bootstrap (bq) part: 60.68 GB / 943 files; hourly era +54.2 GB / 580 files
 - (Phase 6) Candidates per snapshot (median), positive rate:
 - (Phase 8) Baseline vs model PR-AUC / precision@25 (pooled and per year):
 - (Phase 9) Daily job runtime (median):

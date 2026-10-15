@@ -78,6 +78,7 @@ $coverage
 - **Unstars are not recorded**: the stream only contains star events.
 - **Bots are included**; no bot filtering is applied here.
 - A few days are absent from every source (2020-08-22, 2021-08-26, 2021-10-26..28).
+- Two hours are absent upstream (404 at data.gharchive.org): 2025-06-12 17:00 and 18:00 UTC.
 - `repo_name` and `actor_login` are the names at event time; repositories are renamed and
   transferred, so always key on `repo_id` and `actor_id`.
 

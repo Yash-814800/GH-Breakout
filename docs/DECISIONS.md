@@ -318,3 +318,14 @@ cap within ~45 s: a single 8 GB / 73-file commit makes the Hub client chunk and 
 `huggingface.max_bytes_per_commit` is now 1.5 GB and `create_commit` runs with `num_threads=1`. Peak RSS
 was ~2.1 GB under the 3 GB cap; the 60.68 GB upload took 44 commits (~2 h at ~11 MB/s). Lesson: check
 liveness with `systemctl --user is-active <scope>`, not `pgrep -f` (it matches its own shell).
+
+**Addendum (2026-10-16, hourly-era backfill):** the Actions matrix (`hourly-backfill`, run 38680271855,
+41 month jobs plus the gap-days job) completed with 0 failures, about 22 h wall clock at two months in
+parallel (~65 min per month; gap days 21 min). Result on the Hub: 1,523 files, 114.91 GB,
+5,592,548,999 rows; all 142 months 2015-01..2026-10 are covered for every table, no day/month overlaps,
+no OpenDigger rows, schema_version 1 everywhere, catalog and Hub listing agree (sha256 and size).
+2026-10 is published as day files (month not over). Hour statuses over the 42 manifest fragments: 29,662
+ok, 2 missing (2025-06-12 17:00 and 18:00 UTC, 404 at data.gharchive.org). The hourly era added 54 GB
+(estimate was 45 GB); the repo is above the ~100 GB ADR-014 expectation, so the HF best-effort storage
+risk in ADR-013/014 item 5 now applies (mitigation unchanged: keep month files only, no day files for
+finished months).
