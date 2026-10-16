@@ -1,0 +1,137 @@
+{
+ "data": {
+  "rateLimit": {
+   "remaining": 4990,
+   "resetAt": "2026-10-16T13:00:00Z",
+   "cost": 1
+  },
+  "nodes": [
+   {
+    "databaseId": 101,
+    "nameWithOwner": "alice/proj",
+    "createdAt": "2024-03-01T12:30:00Z",
+    "isFork": false,
+    "parent": null,
+    "isArchived": false,
+    "isMirror": false,
+    "isTemplate": false,
+    "primaryLanguage": {
+     "name": "Python"
+    },
+    "licenseInfo": {
+     "spdxId": "MIT"
+    },
+    "owner": {
+     "__typename": "User",
+     "login": "alice",
+     "databaseId": 7,
+     "createdAt": "2012-01-02T00:00:00Z"
+    },
+    "description": "A repo",
+    "homepageUrl": "",
+    "repositoryTopics": {
+     "nodes": [
+      {
+       "topic": {
+        "name": "ml"
+       }
+      },
+      {
+       "topic": {
+        "name": "cli"
+       }
+      }
+     ]
+    },
+    "stargazerCount": 321
+   },
+   {
+    "databaseId": 102,
+    "nameWithOwner": "acme/tool",
+    "createdAt": "2024-03-01T12:30:00Z",
+    "isFork": false,
+    "parent": null,
+    "isArchived": false,
+    "isMirror": false,
+    "isTemplate": false,
+    "primaryLanguage": null,
+    "licenseInfo": {
+     "spdxId": "MIT"
+    },
+    "owner": {
+     "__typename": "Organization",
+     "login": "acme",
+     "databaseId": 7,
+     "createdAt": "2012-01-02T00:00:00Z"
+    },
+    "description": "A repo",
+    "homepageUrl": "",
+    "repositoryTopics": {
+     "nodes": [
+      {
+       "topic": {
+        "name": "ml"
+       }
+      },
+      {
+       "topic": {
+        "name": "cli"
+       }
+      }
+     ]
+    },
+    "stargazerCount": 321
+   },
+   null,
+   {
+    "databaseId": 555,
+    "nameWithOwner": "bob/reused-name",
+    "createdAt": "2024-03-01T12:30:00Z",
+    "isFork": false,
+    "parent": null,
+    "isArchived": false,
+    "isMirror": false,
+    "isTemplate": false,
+    "primaryLanguage": {
+     "name": "Python"
+    },
+    "licenseInfo": {
+     "spdxId": "MIT"
+    },
+    "owner": {
+     "__typename": "User",
+     "login": "bob",
+     "databaseId": 7,
+     "createdAt": "2012-01-02T00:00:00Z"
+    },
+    "description": "A repo",
+    "homepageUrl": "",
+    "repositoryTopics": {
+     "nodes": [
+      {
+       "topic": {
+        "name": "ml"
+       }
+      },
+      {
+       "topic": {
+        "name": "cli"
+       }
+      }
+     ]
+    },
+    "stargazerCount": 321
+   }
+  ]
+ },
+ "errors": [
+  {
+   "type": "NOT_FOUND",
+   "path": [
+    "nodes",
+    2
+   ],
+   "message": "Could not resolve to a node with the global id of '...'"
+  }
+ ]
+}

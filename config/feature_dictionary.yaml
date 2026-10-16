@@ -21,3 +21,39 @@
 #     live_available: false      # pr_merged is NULL in post-2025-10-07 payloads
 version: 1
 features: {}
+
+# Phase 4 enrichment columns (ADR-017). `model_feature: true` marks the only columns the model may
+# read; everything else is display-only or a join key. Never use anything fetched "as of now" that
+# changes over time (CLAUDE.md section 6). Tests in tests/enrich enforce this allow-list.
+enrichment_columns:
+  repo_metadata:
+    repo_id:                  {model_feature: false, note: "join key"}
+    created_at:               {model_feature: true,  kind: fixed, note: "true creation time; birth in Phase 6 also uses PublicEvent"}
+    is_fork:                  {model_feature: true,  kind: fixed}
+    primary_language:         {model_feature: true,  kind: slowly_varying_exception, adr: ADR-017}
+    owner_type:               {model_feature: true,  kind: slowly_varying_exception, adr: ADR-017}
+    parent_repo_id:           {model_feature: false, note: "fixed at fork time; fork repos are excluded by candidates.exclude_forks"}
+    owner_id:                 {model_feature: false, note: "join key (bot/ownership lists)"}
+    owner_login:              {model_feature: false, note: "display only"}
+    owner_created_at:         {model_feature: false, note: "owner account age; candidate for a later documented exception"}
+    name_with_owner:          {model_feature: false, note: "display only, never a key"}
+    is_archived:              {model_feature: false, note: "current state; display only"}
+    is_mirror:                {model_feature: false, note: "current state; display only"}
+    is_template:              {model_feature: false, note: "current state; display only"}
+    license_spdx:             {model_feature: false, note: "current state; display only"}
+    description:              {model_feature: false, note: "current state; display only"}
+    homepage_url:             {model_feature: false, note: "current state; display only"}
+    topics:                   {model_feature: false, note: "current state; display only"}
+    stargazer_count_at_fetch: {model_feature: false, note: "outcome-contaminated; only used by the live API cross-check (ADR-010)"}
+    status:                   {model_feature: false, note: "not_found rows are kept to avoid survivorship bias"}
+    source:                   {model_feature: false}
+    fetched_at:               {model_feature: false}
+  actor_age:
+    est_account_created_at:   {model_feature: true,  kind: derived_from_id, note: "isotonic id -> creation date; no leakage (ids are immutable)"}
+    est_is_extrapolated:      {model_feature: true,  kind: derived_from_id}
+  hn_stories:
+    story_count_before_D:     {model_feature: true,  note: "count of stories with created_at < D"}
+    points_before_D_minus_3d: {model_feature: true,  note: "points only for stories created before D-3 days; values are final-at-fetch, ADR-019"}
+    num_comments:             {model_feature: false, note: "same approximation as points; only via D-3d rule"}
+  trending:
+    any:                      {model_feature: false, note: "lead-time metric and display only; trending is not a predictor of itself"}

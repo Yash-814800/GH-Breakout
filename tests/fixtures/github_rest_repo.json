@@ -1,0 +1,27 @@
+{
+ "id": 103,
+ "full_name": "carol/renamed-now",
+ "created_at": "2023-05-05T00:00:00Z",
+ "fork": true,
+ "parent": {
+  "id": 42
+ },
+ "archived": true,
+ "mirror_url": null,
+ "is_template": false,
+ "language": "Rust",
+ "license": {
+  "spdx_id": "Apache-2.0"
+ },
+ "owner": {
+  "type": "User",
+  "login": "carol",
+  "id": 9
+ },
+ "description": null,
+ "homepage": null,
+ "topics": [
+  "a"
+ ],
+ "stargazers_count": 5
+}
