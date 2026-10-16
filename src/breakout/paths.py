@@ -22,6 +22,8 @@ DATA_DIR = ROOT / "data"
 LAKE_DIR = DATA_DIR / "lake"
 MANIFEST_DIR = DATA_DIR / "manifests"
 TMP_DIR = DATA_DIR / "tmp"
+DERIVED_DIR = DATA_DIR / "derived"
+ENRICH_DIR = DERIVED_DIR / "enrich"
 WAREHOUSE = DATA_DIR / "warehouse.duckdb"
 
 

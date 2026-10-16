@@ -118,6 +118,21 @@ daily:
                                   # (67 + 90 = 157); stargazer activity needs 14 + 90 = 104 days.
   max_runtime_minutes: 90
 
+enrich:                           # Phase 4 (ADR-016)
+  output_dir: data/derived/enrich # local outputs; uploaded to the derived repo under hf_prefix
+  hf_prefix: enrich
+  repo_url: https://github.com/Yash-814800/GH-Breakout   # shown in the User-Agent
+  max_rps: 1.0                    # hard ceiling per host (GitHub API, HN Algolia)
+  graphql_batch_size: 100         # node ids per GraphQL nodes() request (API maximum)
+  workers: 3                      # concurrent batches (latency ~3-5 s each); total still <= max_rps
+  meta_max_age_days: 30           # repo metadata is refetched only when older than this
+  target_window_days: 14          # metadata target set: >= candidates.min_stars_14d stars in a window
+  target_first_seen_days: 120     # ...that starts within this many days of the repo's first event
+  actor_samples: 3000             # actor_id -> account age sample size
+  actor_holdout_frac: 0.1
+  hn_start: 2015-01-01
+  hn_initial_window_days: 7       # adaptive: halved while a window returns >= 1000 hits
+
 site:
   deploy_target: github_pages     # alternatives documented in Phase 10: cloudflare_pages, vercel
   leaderboard_size: 50

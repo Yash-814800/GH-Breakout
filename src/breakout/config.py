@@ -204,6 +204,26 @@ class SiteCfg(_Section):
     explorer_max_mb: int
 
 
+class EnrichCfg(_Section):
+    """Phase 4 enrichment parameters (ADR-016)."""
+
+    output_dir: str  # local output root; mirrored under `hf_prefix` in the derived repo
+    hf_prefix: str
+    repo_url: str  # shown in the User-Agent
+    max_rps: float  # hard ceiling on outbound requests per second per host
+    graphql_batch_size: int
+    workers: int  # concurrent GraphQL batches; the shared throttle still caps requests at max_rps
+    meta_max_age_days: int
+    target_window_days: (
+        int  # a repo is a target when it got >= candidates.min_stars_14d in a window
+    )
+    target_first_seen_days: int  # ...starting within this many days of its first observed event
+    actor_samples: int
+    actor_holdout_frac: float
+    hn_start: date
+    hn_initial_window_days: int
+
+
 class OptionalCfg(_Section):
     hn_enabled: bool
     bluesky_enabled: bool
@@ -223,6 +243,7 @@ class Config(_Section):
     training: TrainingCfg
     features: FeaturesCfg
     daily: DailyCfg
+    enrich: EnrichCfg
     site: SiteCfg
     optional: OptionalCfg
 
