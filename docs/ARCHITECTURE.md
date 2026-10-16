@@ -51,6 +51,7 @@ only if it beats the current champion and the baseline.
 | `data/` (symlink → Lexar SSD NTFS partition) | lake (`bq-*`, `day-*`), manifests, staging, parity, audit | not in git; not a backup; same physical disk as `/home` (ADR-012) |
 | Hugging Face dataset/model repos (`Yasshh814/gh-breakout-{events,derived,snapshots,models}`) | the published lake (1,523 files, 114.91 GB, 2015-01..2026-10), `catalog.parquet`, cards, manifest fragments; derived tables, snapshots, models later | primary full copy (hourly era exists only here); created and filled in Phase 3 |
 | GitHub Actions | `hourly-backfill` matrix (done), daily pipeline, weekly retrain | secrets `HF_TOKEN`, `GH_ENRICH_TOKEN`; variable `HF_USER` |
+| `data/derived/enrich/` and `gh-breakout-derived/enrich/` | Phase 4 enrichment tables: name history, repo metadata, actor-age map, trending, HN stories (ADR-016..019) | rebuilt by `breakout enrich ...`; incremental |
 | Git | code, config, ledger, heartbeat, reports | tiny files only (CLAUDE.md §7) |
 
 Coverage: 2015-01..2023-05 BigQuery spine (`detail_level` 0, `source='bq'`); 2023-06-01 onward hourly

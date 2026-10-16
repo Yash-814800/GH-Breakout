@@ -329,3 +329,119 @@ ok, 2 missing (2025-06-12 17:00 and 18:00 UTC, 404 at data.gharchive.org). The h
 (estimate was 45 GB); the repo is above the ~100 GB ADR-014 expectation, so the HF best-effort storage
 risk in ADR-013/014 item 5 now applies (mitigation unchanged: keep month files only, no day files for
 finished months).
+
+## ADR-016: Phase 4 plumbing: name history, actor-age sampling, config (2026-10-16)
+**Context:** Phase 4 (`docs/phases/PHASE_04_enrichment.md`) needs a name <-> repo_id map for trending and
+HN, a monotone actor-id -> account-age map, and shared HTTP/rate-limit code. The phase file says "all
+`events` files"; the local lake has only the `bq` history, the hourly era lives on the Hub (ADR-015).
+**Decision:**
+1. **Name history is built from WatchEvent spine columns only** (`repo_id, repo_name, created_at`),
+   2015-01..2026-10-14. A repo that has never been starred is not named by anything Phase 4 enriches
+   (trending and HN entries are about starred repos), and WatchEvent is the smallest type. The human
+   approved the pull of the hourly-era WatchEvent files (`lake pull --types WatchEvent --since
+   2023-06-01`, 54 files, 4.6 GB, on the SSD under `data/lake`). Result: 46,495,707 (repo_id, name)
+   pairs over 44,921,123 repos (1.35 GB parquet).
+2. **Bounded-memory merge.** One global `GROUP BY (repo_id, repo_name)` OOMed at 1.3 GB, so month
+   aggregates are merged per `repo_id % 32` bucket and one sort-only pass writes the file (ADR-012
+   pattern). Month and bucket parts are cached in `data/staging/enrich/` keyed on file names + sizes, so
+   reruns are incremental and byte-identical in content.
+3. **`resolve_repo_ids(con, table, history)`** matches case-insensitively; interval-contains wins, then
+   most recent holder before `as_of`; a name first seen *after* `as_of` stays NULL (the repo did not
+   carry that name yet). Only history rows for the queried names are materialised (the full table is
+   too big for a 1.5 GB limit).
+4. **Actor-age sampling.** 20,000 WatchEvent rows are reservoir-sampled per month (seed 42), distinct
+   ids pooled, and 3,000 ids are taken at evenly spaced ranks (always including min and max): real
+   actor ids spaced by quantile. 2,832 of 3,000 resolved (168 x 404 = deleted accounts, skipped).
+   Isotonic regression (`IsotonicRegression`, `out_of_bounds="clip"`) gives 2,832 breakpoints; lookups
+   are ASOF steps (`actor_id >= breakpoint`), ids above the max breakpoint carry
+   `est_is_extrapolated`. The hold-out fit uses a fixed seed and 10% of the samples.
+5. **Config.** New `enrich:` section (`output_dir`, `hf_prefix`, `max_rps`, `graphql_batch_size`,
+   `workers`, `meta_max_age_days`, target-window parameters, `actor_samples`, HN start and window);
+   outputs live under `data/derived/enrich/` (git-ignored) and are uploaded to the derived repo under
+   `enrich/` with `lake.hf.upload_files` (existing commit caps).
+**Consequences:** `repo_name_history.parquet` is large (1.35 GB) for a lookup table; if the derived repo
+size becomes a problem it can be restricted to repos with >= 2 stars without changing any consumer.
+Repos starred only in the degraded era (after 2025-05-23) are named from the sparse post-collapse
+stream, so name resolution for 2026 trending/HN entries is incomplete (see PROGRESS).
+
+## ADR-017: Repo metadata is fetched by node id; allowed metadata features (2026-10-16)
+**Context:** The phase file prescribes GraphQL `repository(owner, name)` aliases built from the latest
+known name, `databaseId` verification, and a REST `/repositories/{id}` fallback for every miss. Measured
+on a 100-repo sample of the target set: 23% of lookups are gone (deleted, private or blocked) and
+renamed repos are common, so the fallback would be one REST call for roughly a quarter of 1.7 M repos
+(about 400 k calls, > 100 h at 1 request/s and over the 5,000/h core limit). GraphQL latency is
+3-5 s per 100-repo batch.
+**Decision:**
+1. **Primary path is `nodes(ids: [...])` with 100 legacy global node ids per request** (`base64(
+   "010:Repository<repo_id>")`), keyed on the immutable `repo_id`, so renames and transfers resolve
+   without any name. Verified live: 77 of 100 resolved, query cost 1 point, `databaseId` equals the
+   requested id for every returned node. The code still checks `databaseId == repo_id`; a mismatch (never
+   observed) goes to REST by id.
+2. **Null node = `status='not_found'`, source `graphql`; the row is kept.** A 60-repo sample had 14
+   nulls; REST `/repositories/{id}` returned 404 for 13 and 403 (blocked) for 1. The status therefore
+   means "unresolvable now: deleted, private or blocked", not strictly "404".
+3. **Target set** is computed with DuckDB on trusted-era WatchEvents (created_at < 2025-05-24): repos
+   with >= `candidates.min_stars_14d` (5) stars in any 14-day window starting within 120 days of their
+   first observed star. "First observed event" is the first star (the local lake has no other types for
+   the hourly era). Left-censoring: repos first starred in 2015-01..2015-04 may be older than the
+   window implies; this only widens the superset. Result: 1,684,571 repos, fetched newest cohort
+   first. Daily Phase 9 runs pass explicit ids (`--repo-ids-file`).
+4. **Throughput:** 5 concurrent batches (`enrich.workers`) behind one shared 1 request/s throttle (batch
+   latency is 3-5 s, so 3 workers reached only ~55 repos/s); measured ~95 repos/s, ~4.5 h for 1.68 M repos.
+   Resumable via shards and `--max-age-days` (default 30); SIGTERM flushes a shard and consolidates.
+5. **Feature allow-list** (`enrichment_columns` in `config/feature_dictionary.yaml`, enforced by
+   `tests/enrich/test_feature_allowlist.py`): model features are `created_at`, `is_fork` (fixed at
+   creation) and the two documented slowly-varying exceptions `primary_language` and `owner_type`. The
+   exceptions can change (language re-detection, user -> organization transfer) but rarely, and their
+   current value is the best available proxy of the value at snapshot time; the evaluation reports
+   per-year metrics so drift would show. Never features: stargazer count, description, topics,
+   homepage, archived/mirror/template flags, license, fetch status.
+**Consequences:** `not_found` repos have only `repo_id`, `status`, `fetched_at`; Phase 6 must treat
+missing metadata as "unknown", not as "not a fork". `owner_created_at` is NULL for REST-sourced rows.
+
+## ADR-018: Trending sources and robots.txt decision (2026-10-16)
+**Context:** Phase 4.4 needs a trending history for the lead-time metric.
+**Decision:**
+1. **Sources (all MIT-licensed, verified in each repo/card):**
+   - `hf_top_projects`: HF dataset `ronantakizawa/github-top-projects`, `full/data.csv`, license `mit`
+     (card). Columns `name, star_count, fork_count, repo_owner, rank, date` (no language column: the
+     all-languages page scraped from Wayback Machine snapshots). 423,098 raw rows, 2013-08-21 ..
+     2025-11-30, 2,511 distinct days. Several snapshots can fall on one date, so `rank` is not unique
+     within a date; its card documents uneven snapshot frequency (see `DATASET_ISSUES.md`).
+   - `antonkomarev`: `antonkomarev/github-trending-archive` (MIT), daily JSON per language, ordered
+     lists; `language: null` is the all-languages list; 2021-12-31 .. 2026-10-15 (all-languages lists
+     from 2023-09-09).
+   - `larsbijl`: `larsbijl/trending_archive` (MIT), daily markdown with per-language sections
+     (python, go, rust, cpp, javascript, typescript and earlier coffeescript), 2014-08-09 ..
+     2026-10-15, 4,237 days. Phase file candidate `antonkomarev/github-trending-archive` confirmed.
+   - Sources are read from shallow git clones (one clone each, no per-file requests).
+2. **Union** keyed on `(date, rank, repo_name, language_filter, source)`; `language_filter` is NULL for
+   all-languages lists. The lead-time metric must use `language_filter IS NULL` rows (days listed in
+   PROGRESS) or state otherwise.
+3. **robots.txt (checked 2026-10-16):** `https://github.com/robots.txt` has no `Disallow` for
+   `/trending` under `User-agent: *` (nor for the named AI agents); the file points automated users to
+   the API. `trending-today` re-reads robots.txt on every run, fetches `/trending?since=daily` exactly
+   once per day with the project user agent, and returns nothing (relying on the archives) if
+   `/trending` is ever disallowed. HTML is parsed from `<article class="Box-row"><h2><a href=...>`;
+   the live page returned 12 entries on the test run.
+**Consequences:** A fetched-today row has `source='github_trending'` and is preserved across
+`trending-history` rebuilds. The rank of `hf_top_projects` rows is best-effort.
+
+## ADR-019: Hacker News points and comments are fetch-time values (2026-10-16)
+**Context:** Algolia returns `points` and `num_comments` as of the fetch, not as of story time; using
+them for a snapshot `D` would leak future popularity (CLAUDE.md section 5).
+**Decision:**
+1. Stories are the Algolia `search_by_date` hits for `query=github.com` restricted to the `url`
+   attribute, `tags=story`, in adaptive windows (7 days, halved while `nbHits >= 1000`, minimum 1 h),
+   1 request/s, resumable by window (`hn_windows.parquet`). 622 windows covered 2015-01-01 ..
+   2026-10-16 (196,217 stories).
+2. Allowed features: story **counts** with `created_at < D`; `points`/`num_comments` only for stories
+   created before `D - 3 days` (most points accrue within 3 days), documented as an approximation in
+   `config/feature_dictionary.yaml` (`enrichment_columns.hn_stories`). `hn-recent` refetches the last N
+   days so values stay current; the history is a snapshot of the last fetch time (a story fetched once
+   keeps its fetch-time points).
+3. `url` is parsed to `owner/name` only for `github.com` / `www.github.com` repo URLs; reserved first
+   path segments (orgs, topics, sponsors, marketplace, features, ...) and gist/raw/pages hosts are
+   ignored. Names resolve with `resolve_repo_ids(name, story date)`.
+**Consequences:** Phase 7 must implement the `D - 3 days` rule in SQL; there is no way to reconstruct
+points at story time retroactively.

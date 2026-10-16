@@ -9,7 +9,7 @@ measured (row counts, sizes, runtimes, metrics). Future sessions rely on it.
 | 01 | Schema audit, slim schema, hourly parser | ☑ | 2026-10-12 | 9 eras audited; day 2026-10-10 ingested: 24/24 hours ok, 763,462 rows, 39 s wall clock, 12 MB lake + 24 MB staging; rerun no-op (0.5 s, files checksum-identical). See open issue on star volume. |
 | 02 | BigQuery cost plan & historical backfill | ☑ | 2026-10-13 | Spine 2015-01..2023-05 complete: 498/498 units, 101/101 months finalized, 0 failed, 522.7 GB billed, 57 GB lake (3.26 G events). Re-run performs 0 queries; `lake verify` OK (963 files). Parity PASS (2024-06-03, 2026-10-10). Hourly era from 2023-06-01 runs in Actions (ADR-011). Lake lives on the Lexar SSD, symlinked from `data/lake` (ADR-012). |
 | 03 | Lake on Hugging Face (layout, upload, sync, compaction) | ☑ | 2026-10-15 | 4 public repos; 943 files, 60.68 GB, 3.26 G rows on the Hub (44 commits); catalog + cards live; pull and `hf://` queries verified; `lake verify --remote` 0 problems; 163 tests pass. Hourly-era backfill done 2026-10-16: 1,523 files, 114.91 GB, 5.59 G rows, 142 months, 41/41 jobs ok, 2 hours missing upstream. |
-| 04 | Enrichment (repo metadata, actor age, trending, HN) | ☐ | | |
+| 04 | Enrichment (repo metadata, actor age, trending, HN) | ☑ | 2026-10-16 | 7 tables built and on the Hub (`derived/enrich/`): name history 46.5 M pairs, metadata 1,684,571 repos (76.5% found / 23.5% not_found), actor-age map median error 1.9 days, trending 1.52 M rows over 4,360 days, HN 196,217 stories; 226 tests pass. See "Phase 4 status" and ADR-016..019. |
 | 05 | dbt staging & intermediate models | ☐ | | |
 | 06 | Candidates, labels, baseline, evaluation harness | ☐ | | |
 | 07 | Point-in-time feature marts | ☐ | | |
@@ -38,7 +38,102 @@ measured (row counts, sizes, runtimes, metrics). Future sessions rely on it.
 | Stargazers API for per-repo ground truth | ✖ not available | GitHub restricted it to admins/collaborators in July 2026 (ADR-010) |
 | Live-source gate / item 5 | ☐ not started | waits for your review of the source test |
 
-## Handoff to Phase 4 (state at 2026-10-16, commit 9440924)
+## Handoff to Phase 5 (state at 2026-10-16)
+
+Phase 5 (dbt staging and intermediate models) can start. Read `docs/DECISIONS.md` ADR-016..019 first.
+- Enrichment tables are in `data/derived/enrich/` (SSD) and `Yasshh814/gh-breakout-derived` under `enrich/`:
+  `repo_name_history`, `repo_targets`, `repo_metadata`, `actor_age_samples`, `actor_id_age_map`, `trending`,
+  `hn_stories` (all `.parquet`). `hn_raw`/`hn_windows` (resume state) stay local.
+- Local lake now also holds WatchEvent files for 2023-06..2026-10 (54 files, 4.6 GB, from the Hub). Other
+  event types of the hourly era are still Hub-only: `lake pull --types ... --since 2023-06-01`.
+- dbt sources: read the enrich parquet files; `ASOF_SQL` for the actor-age join and the
+  `est_account_created_at()` helper live in `breakout.enrich.actor_age`; the `latest_names` view is
+  `breakout.enrich.names.create_latest_names`.
+- Metadata is **unknown** (not "false") for the 23.5% `not_found` repos; features from it must be NULL there.
+- Daily jobs (Phase 9): `breakout enrich repos --repo-ids-file`, `trending-today`, `hn-recent --days 3`, and a
+  monthly actor-age top-up (`actor-age --samples N`: the collector is incremental and the sample ids are
+  deterministic, so a larger `--samples` fetches only the new ids). `enrich upload` is idempotent.
+- `repo_targets` covers the trusted era only; Phase 9 must pass live candidates explicitly
+  (`--repo-ids-file`).
+
+## Phase 4 status (2026-10-16)
+
+- Code: `src/breakout/enrich/` (`http, common, names, github_meta, actor_age, trending, hn, upload`), CLI group
+  `breakout enrich names|targets|repos|actor-age|trending-history|trending-today|hn-history|hn-recent|upload`,
+  config section `enrich:`, `enrichment_columns` allow-list in `config/feature_dictionary.yaml`. 226 tests pass
+  (no live calls; fixtures `tests/fixtures/github_*.json`).
+- Re-running every command is incremental: `repos` second run 0 requests (`skipped_fresh` 1,684,571),
+  `hn-history` refetches 1 window (the open one), `trending-today` twice gives identical output, `upload` 2nd
+  run 0 commits.
+- **Name history:** 46,495,707 (repo_id, repo_name) pairs, 44,921,123 repos, 1.35 GB, built from WatchEvent
+  spine columns 2015-01..2026-10-14 (ADR-016).
+- **Repo metadata** (ADR-017): target set 1,684,571 repos (trusted era; >= 5 stars in a 14-day window starting
+  within 120 days of the first star). Fetched all: **1,289,129 ok (76.5%)**, **395,442 not_found (23.5%)**,
+  0 blocked, 0 error, 0 REST fallbacks, 0 id mismatches. About 16,900 GraphQL requests of 100 ids (cost 1
+  each), ~95 repos/s with 5 concurrent batches under one 1 request/s throttle, ~4.5 h wall clock. Found share
+  by first-star year: 2015 90.7%, 2016 87.5%, 2017 87.8%, 2018 88.0%, 2019 88.0%, 2020 83.4%, 2021 83.1%,
+  2022 81.1%, 2023 58.6%, 2024 65.3%, 2025 70.6% (recent cohorts contain many deleted spam repos). Among
+  found repos: 4.2% forks, 23.5% organization owners, 88.8% with a primary language; API `created_at` is
+  never later than a day after the first observed star (0 violations).
+- **Actor age** (ADR-016): 3,000 sampled real actor ids, 2,832 ok (168 deleted accounts, 404), 2,832
+  breakpoints, ids 17 .. 342,334,107, estimated dates 2008-01-13 .. 2026-10-14. Hold-out (10%: 283 ids, fit
+  on 2,549): **median absolute error 1.88 days, p90 4.40 days** (phase threshold 60). Median error by id decile
+  (days): 3.9, 1.8, 1.6, 1.4, 1.4, 1.6, 1.6, 1.9, 2.2, 4.2 (oldest and newest deciles are the worst). The
+  monthly top-up is scheduled in Phase 9.
+- **Trending** (ADR-018): 1,522,558 rows after dedupe (hf_top_projects 108,120; antonkomarev 879,143; larsbijl
+  535,283; github_trending 12), 4,360 distinct days 2013-08-21 .. 2026-10-16, 98.5% of rows resolved to a
+  repo_id (1,500,208). Days with >= 1 entry per month (any source, any language list):
+
+| year | 01 | 02 | 03 | 04 | 05 | 06 | 07 | 08 | 09 | 10 | 11 | 12 |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| 2013 | - | - | - | - | - | - | - | 2 | - | 2 | 1 | 1 |
+| 2014 | - | 1 | - | 1 | 1 | 1 | - | 19 | 30 | 31 | 30 | 25 |
+| 2015 | 31 | 28 | 31 | 30 | 30 | 29 | 30 | 29 | 30 | 29 | 29 | 17 |
+| 2016 | 30 | 28 | 31 | 30 | 31 | 26 | 28 | 31 | 30 | 28 | 27 | 22 |
+| 2017 | 30 | 27 | 30 | 29 | 30 | 27 | 31 | 26 | 28 | 29 | 28 | 31 |
+| 2018 | 31 | 27 | 28 | 30 | 26 | 26 | 31 | 31 | 30 | 29 | 30 | 31 |
+| 2019 | 30 | 28 | 31 | 30 | 31 | 29 | 31 | 31 | 30 | 31 | 29 | 22 |
+| 2020 | 31 | 29 | 31 | 30 | 31 | 30 | 31 | 31 | 30 | 31 | 30 | 31 |
+| 2021 | 31 | 28 | 31 | 30 | 31 | 30 | 31 | 31 | 30 | 31 | 30 | 31 |
+| 2022 | 31 | 28 | 31 | 30 | 31 | 30 | 31 | 31 | 30 | 31 | 30 | 31 |
+| 2023 | 31 | 28 | 31 | 30 | 31 | 30 | 31 | 31 | 30 | 31 | 30 | 31 |
+| 2024 | 31 | 29 | 31 | 30 | 31 | 30 | 31 | 31 | 30 | 31 | 30 | 31 |
+| 2025 | 31 | 28 | 31 | 30 | 31 | 30 | 31 | 31 | 30 | 31 | 30 | 31 |
+| 2026 | 31 | 28 | 31 | 30 | 31 | 30 | 31 | 31 | 30 | 16 | - | - |
+
+  Days with an **all-languages** list (`language_filter IS NULL`; the series the lead-time metric should
+  use):
+
+| year | 01 | 02 | 03 | 04 | 05 | 06 | 07 | 08 | 09 | 10 | 11 | 12 |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| 2013 | - | - | - | - | - | - | - | 2 | - | 2 | 1 | 1 |
+| 2014 | - | 1 | - | 1 | 1 | 1 | - | 1 | 0 | 0 | 0 | 0 |
+| 2015 | 1 | 4 | 2 | 1 | 0 | 1 | 1 | 2 | 0 | 0 | 0 | 0 |
+| 2016 | 4 | 2 | 11 | 2 | 2 | 0 | 2 | 3 | 7 | 3 | 1 | 4 |
+| 2017 | 5 | 3 | 4 | 2 | 8 | 3 | 5 | 2 | 3 | 7 | 3 | 5 |
+| 2018 | 2 | 2 | 1 | 5 | 10 | 3 | 11 | 12 | 10 | 4 | 13 | 26 |
+| 2019 | 28 | 27 | 29 | 29 | 31 | 11 | 0 | 0 | 0 | 0 | 0 | 0 |
+| 2020 | 31 | 28 | 31 | 30 | 31 | 30 | 31 | 31 | 30 | 31 | 30 | 31 |
+| 2021 | 31 | 28 | 31 | 30 | 31 | 30 | 31 | 31 | 30 | 31 | 30 | 31 |
+| 2022 | 31 | 28 | 31 | 30 | 31 | 30 | 31 | 31 | 30 | 31 | 30 | 31 |
+| 2023 | 31 | 28 | 31 | 30 | 31 | 30 | 31 | 31 | 30 | 31 | 30 | 31 |
+| 2024 | 31 | 29 | 31 | 30 | 31 | 30 | 31 | 31 | 30 | 31 | 30 | 31 |
+| 2025 | 31 | 28 | 31 | 30 | 31 | 30 | 31 | 31 | 30 | 31 | 30 | 31 |
+| 2026 | 31 | 28 | 31 | 30 | 31 | 30 | 31 | 31 | 30 | 16 | - | - |
+
+  Complete from 2020-01; 2019-07..2019-12 and most of 2014-2018 have only per-language lists (larsbijl).
+- **HN** (ADR-019): 196,217 stories linking to github.com, 2015-01-01 .. 2026-10-16, 622 windows; 189,159
+  (96.4%) parse to a repo URL and 161,087 (82.1% of stories) resolve to a repo_id. By year (stories /
+  resolved): 2015 11,934 / 10,265; 2016 14,830 / 12,996; 2017 14,894 / 13,107; 2018 13,332 / 11,725; 2019
+  13,367 / 12,056; 2020 15,761 / 14,071; 2021 12,316 / 10,973; 2022 13,141 / 11,785; 2023 15,915 / 14,444;
+  2024 16,869 / 15,382; 2025 21,368 / 17,856; 2026 32,490 / 16,427. The 2025-2026 resolve rate drops because
+  the WatchEvent name history is sparse after the 2025-05-24 capture collapse (ADR-009).
+- **Upload:** all seven tables are in the derived repo under `enrich/` (~1.48 GB; commits of 1.38 GB and
+  0.11 GB, within the caps).
+- Deviations: repos fetched by node id instead of name + REST fallback (ADR-017); name history from
+  WatchEvent only (ADR-016). Nothing outward beyond the approved pulls, uploads and API runs.
+
+## Handoff to Phase 4 (state at 2026-10-16, commit 9440924; consumed by Phase 4)
 
 Start a fresh session with: CLAUDE.md, this file, DECISIONS.md (ADR-009..015), ARCHITECTURE.md and
 `docs/phases/PHASE_04_*.md`; then write the checklist plan and wait for the human's OK.
