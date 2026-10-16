@@ -124,7 +124,7 @@ enrich:                           # Phase 4 (ADR-016)
   repo_url: https://github.com/Yash-814800/GH-Breakout   # shown in the User-Agent
   max_rps: 1.0                    # hard ceiling per host (GitHub API, HN Algolia)
   graphql_batch_size: 100         # node ids per GraphQL nodes() request (API maximum)
-  workers: 3                      # concurrent batches (latency ~3-5 s each); total still <= max_rps
+  workers: 5                      # concurrent batches (latency ~3-5 s each); total still <= max_rps
   meta_max_age_days: 30           # repo metadata is refetched only when older than this
   target_window_days: 14          # metadata target set: >= candidates.min_stars_14d stars in a window
   target_first_seen_days: 120     # ...that starts within this many days of the repo's first event

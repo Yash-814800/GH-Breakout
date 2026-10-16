@@ -152,9 +152,13 @@ def resolve_repo_ids(
 
     Names match case-insensitively (GitHub names are case-insensitive).
     """
+    # only the history rows for the queried names are materialised (the full table has ~46 M
+    # rows); the semi-join is evaluated while streaming the parquet file
     con.execute(
-        "CREATE OR REPLACE TEMP TABLE _hist AS SELECT repo_id, lower(repo_name) AS lname, "
-        f"first_seen, last_seen FROM read_parquet({sql_str(history)})"
+        f"""CREATE OR REPLACE TEMP TABLE _hist AS
+            SELECT repo_id, lower(repo_name) AS lname, first_seen, last_seen
+            FROM read_parquet({sql_str(history)})
+            WHERE lower(repo_name) IN (SELECT lower(name) FROM {names_with_dates})"""
     )
     return con.sql(
         f"""
