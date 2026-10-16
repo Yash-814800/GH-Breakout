@@ -7,7 +7,9 @@ from breakout.cli import app
 
 runner = CliRunner()
 GROUPS = ["ingest", "backfill", "lake", "enrich", "build", "ml", "daily", "publish", "ops"]
-STUB_GROUPS = [g for g in GROUPS if g not in ("ingest", "backfill", "lake")]  # real groups
+STUB_GROUPS = [
+    g for g in GROUPS if g not in ("ingest", "backfill", "lake", "enrich")
+]  # real groups
 
 
 def test_help_lists_groups():
@@ -53,3 +55,20 @@ def test_info_masks_secrets(temp_config, monkeypatch):
     assert "HF_TOKEN: set" in result.output
     assert "supersecret" not in result.output
     assert "anothersecret" not in result.output
+
+
+def test_enrich_group_lists_commands():
+    result = runner.invoke(app, ["enrich", "--help"])
+    assert result.exit_code == 0
+    for command in (
+        "names",
+        "targets",
+        "repos",
+        "actor-age",
+        "trending-history",
+        "trending-today",
+        "hn-history",
+        "hn-recent",
+        "upload",
+    ):
+        assert command in result.output

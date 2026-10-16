@@ -25,7 +25,6 @@ ENV_VARS = (
 )
 
 _STUBS = {
-    "enrich": 4,
     "build": 5,
     "ml": 6,
     "daily": 9,
@@ -46,6 +45,11 @@ def _make_stub(name: str, phase: int) -> typer.Typer:
 
 for _name, _phase in _STUBS.items():
     app.add_typer(_make_stub(_name, _phase), name=_name)
+
+enrich_app = typer.Typer(
+    help="Enrichment: names, repo metadata, actor age, trending, HN.", no_args_is_help=True
+)
+app.add_typer(enrich_app, name="enrich")
 
 backfill_app = typer.Typer(help="BigQuery historical backfill (Phase 2).", no_args_is_help=True)
 app.add_typer(backfill_app, name="backfill")
@@ -589,6 +593,188 @@ def ingest_audit_cmd(
         keep_raw=keep_raw,
     )
     typer.echo(f"wrote {out}")
+
+
+def _gh_api(cfg):
+    """Throttled GitHub API caller; the token comes from the environment and is never echoed."""
+    from breakout.enrich import http as H
+
+    token = os.environ.get("GH_ENRICH_TOKEN", "")
+    if not token:
+        typer.echo("GH_ENRICH_TOKEN is not set", err=True)
+        raise typer.Exit(2)
+    client = H.make_client(cfg.enrich.repo_url)
+    return H.GitHubApi(token, client=client, max_rps=cfg.enrich.max_rps)
+
+
+def _stop_flag():
+    import signal
+
+    flag = {"stop": False}
+
+    def handler(signum, frame):  # noqa: ARG001
+        flag["stop"] = True
+
+    signal.signal(signal.SIGTERM, handler)
+    signal.signal(signal.SIGINT, handler)
+    return lambda: flag["stop"]
+
+
+@enrich_app.command("names")
+def enrich_names_cmd(ctx: typer.Context) -> None:
+    """Build enrich/repo_name_history.parquet from the local WatchEvent lake."""
+    from breakout.enrich import names
+
+    cfg = get_config(ctx.obj["config"])
+    _require_lake(cfg)
+    typer.echo(json.dumps(names.build_name_history(cfg)))
+
+
+@enrich_app.command("targets")
+def enrich_targets_cmd(ctx: typer.Context) -> None:
+    """Compute the metadata target set (trusted era) into repo_targets.parquet."""
+    from breakout.enrich import github_meta
+
+    cfg = get_config(ctx.obj["config"])
+    _require_lake(cfg)
+    typer.echo(json.dumps(github_meta.build_targets(cfg)))
+
+
+@enrich_app.command("repos")
+def enrich_repos_cmd(
+    ctx: typer.Context,
+    repo_ids_file: Annotated[Path | None, typer.Option("--repo-ids-file")] = None,
+    limit: Annotated[int | None, typer.Option(help="max repos to fetch this run")] = None,
+    max_age_days: Annotated[int | None, typer.Option("--max-age-days")] = None,
+) -> None:
+    """Fetch GitHub metadata for the target set (incremental: fresh rows are skipped)."""
+    from breakout.enrich import github_meta
+
+    cfg = get_config(ctx.obj["config"])
+    api = _gh_api(cfg)
+    stats = github_meta.run_fetch(
+        cfg,
+        api,
+        repo_ids_file=repo_ids_file,
+        limit=limit,
+        max_age_days=max_age_days,
+        should_stop=_stop_flag(),
+    )
+    typer.echo(json.dumps({**stats.as_dict(), "http_requests": api.requests}))
+
+
+@enrich_app.command("actor-age")
+def enrich_actor_age_cmd(
+    ctx: typer.Context,
+    samples: Annotated[int | None, typer.Option(help="number of sampled actor ids")] = None,
+    skip_fetch: Annotated[bool, typer.Option("--skip-fetch")] = False,
+) -> None:
+    """Sample actor ids, fetch account creation dates, fit the isotonic id -> age map."""
+    from breakout.enrich import actor_age
+
+    cfg = get_config(ctx.obj["config"])
+    n = samples or cfg.enrich.actor_samples
+    if not skip_fetch:
+        _require_lake(cfg)
+        ids = actor_age.pick_sample_ids(cfg, n)
+        api = _gh_api(cfg)
+        typer.echo(json.dumps(actor_age.collect_samples(cfg, api, ids, should_stop=_stop_flag())))
+    typer.echo(json.dumps(actor_age.build_map(cfg), default=str))
+
+
+@enrich_app.command("trending-history")
+def enrich_trending_history_cmd(ctx: typer.Context) -> None:
+    """Union the archived trending sources and resolve repo ids."""
+    from breakout.enrich import trending
+
+    cfg = get_config(ctx.obj["config"])
+    res = trending.build_trending(cfg, trending.history_rows(cfg))
+    typer.echo(json.dumps(res))
+
+
+@enrich_app.command("trending-today")
+def enrich_trending_today_cmd(ctx: typer.Context) -> None:
+    """Fetch today's GitHub trending list (robots.txt checked) and merge it."""
+    from datetime import UTC, datetime
+
+    from breakout.enrich import http as H
+    from breakout.enrich import trending
+
+    cfg = get_config(ctx.obj["config"])
+    today = datetime.now(UTC).date()
+    with H.make_client(cfg.enrich.repo_url) as client:
+        rows = trending.trending_today(cfg, client, today)
+    if not rows:
+        typer.echo("no rows fetched (robots.txt disallows or empty page); archives unchanged")
+        return
+    import pyarrow.parquet as pq
+
+    from breakout.enrich.common import enrich_dir
+
+    path = enrich_dir(cfg) / trending.TRENDING
+    base = pq.read_table(path).to_pylist() if path.exists() else []
+    base = [r for r in base if not (r["source"] == "github_trending" and r["date"] == today)]
+    res = trending.build_trending(cfg, [*base, *rows])
+    typer.echo(json.dumps(res))
+
+
+def _hn_client(cfg):
+    from breakout.enrich import hn
+    from breakout.enrich import http as H
+
+    return hn.HnClient(H.make_client(cfg.enrich.repo_url), max_rps=cfg.enrich.max_rps)
+
+
+@enrich_app.command("hn-history")
+def enrich_hn_history_cmd(
+    ctx: typer.Context,
+    since: Annotated[str | None, typer.Option(help="YYYY-MM-DD")] = None,
+) -> None:
+    """Fetch HN stories linking to github.com from ``--since`` (resumable by window)."""
+    from datetime import UTC, date, datetime
+
+    from breakout.enrich import hn
+
+    cfg = get_config(ctx.obj["config"])
+    if not cfg.optional.hn_enabled:
+        typer.echo("optional.hn_enabled is false; nothing to do")
+        return
+    start = date.fromisoformat(since) if since else cfg.enrich.hn_start
+    res = hn.collect(cfg, _hn_client(cfg), start, datetime.now(UTC).replace(tzinfo=None))
+    typer.echo(json.dumps(res))
+    typer.echo(json.dumps(hn.build_stories(cfg), default=str))
+
+
+@enrich_app.command("hn-recent")
+def enrich_hn_recent_cmd(ctx: typer.Context, days: Annotated[int, typer.Option(min=1)] = 3) -> None:
+    """Refetch the last ``days`` days (points keep changing) and rebuild the stories table."""
+    from datetime import UTC, datetime
+
+    from breakout.enrich import hn
+
+    cfg = get_config(ctx.obj["config"])
+    if not cfg.optional.hn_enabled:
+        typer.echo("optional.hn_enabled is false; nothing to do")
+        return
+    start = hn.recent_start(days)
+    res = hn.collect(
+        cfg,
+        _hn_client(cfg),
+        start.date(),
+        datetime.now(UTC).replace(tzinfo=None),
+        refetch_from=start,
+    )
+    typer.echo(json.dumps(res))
+    typer.echo(json.dumps(hn.build_stories(cfg), default=str))
+
+
+@enrich_app.command("upload")
+def enrich_upload_cmd(ctx: typer.Context) -> None:
+    """Upload enrich/*.parquet to the derived HF repo (skips unchanged files)."""
+    from breakout.enrich import upload
+
+    cfg = get_config(ctx.obj["config"])
+    typer.echo(json.dumps(upload.upload_enrich(cfg)))
 
 
 @app.callback()
