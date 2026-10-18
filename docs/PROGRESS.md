@@ -10,7 +10,7 @@ measured (row counts, sizes, runtimes, metrics). Future sessions rely on it.
 | 02 | BigQuery cost plan & historical backfill | ☑ | 2026-10-13 | Spine 2015-01..2023-05 complete: 498/498 units, 101/101 months finalized, 0 failed, 522.7 GB billed, 57 GB lake (3.26 G events). Re-run performs 0 queries; `lake verify` OK (963 files). Parity PASS (2024-06-03, 2026-10-10). Hourly era from 2023-06-01 runs in Actions (ADR-011). Lake lives on the Lexar SSD, symlinked from `data/lake` (ADR-012). |
 | 03 | Lake on Hugging Face (layout, upload, sync, compaction) | ☑ | 2026-10-15 | 4 public repos; 943 files, 60.68 GB, 3.26 G rows on the Hub (44 commits); catalog + cards live; pull and `hf://` queries verified; `lake verify --remote` 0 problems; 163 tests pass. Hourly-era backfill done 2026-10-16: 1,523 files, 114.91 GB, 5.59 G rows, 142 months, 41/41 jobs ok, 2 hours missing upstream. |
 | 04 | Enrichment (repo metadata, actor age, trending, HN) | ☑ | 2026-10-16 | 7 tables built and on the Hub (`derived/enrich/`): name history 46.5 M pairs, metadata 1,684,571 repos (76.5% found / 23.5% not_found), actor-age map median error 1.9 days, trending 1.52 M rows over 4,360 days, HN 196,217 stories; 226 tests pass. See "Phase 4 status" and ADR-016..019. |
-| 05 | dbt staging & intermediate models | ☐ | | |
+| 05 | dbt staging & intermediate models | ☑ | 2026-10-19 | 35 models (17 staging, 18 intermediate; 5 are new prefilters or moved, ADR-020), 162 tests, all pass on the full trusted history 2015-01-01..2025-05-23: warehouse 33 GB, 4.3 G source events. Built with hash-bucketed incremental models (ADR-020). 236 pytest pass. See "Phase 5 status". |
 | 06 | Candidates, labels, baseline, evaluation harness | ☐ | | |
 | 07 | Point-in-time feature marts | ☐ | | |
 | 08 | LightGBM, calibration, SHAP, model registry | ☐ | | |
@@ -38,7 +38,40 @@ measured (row counts, sizes, runtimes, metrics). Future sessions rely on it.
 | Stargazers API for per-repo ground truth | ✖ not available | GitHub restricted it to admins/collaborators in July 2026 (ADR-010) |
 | Live-source gate / item 5 | ☐ not started | waits for your review of the source test |
 
-## Handoff to Phase 5 (state at 2026-10-16)
+## Phase 5 status (2026-10-19)
+
+- Code: `dbt/` (35 models, 1 seed, 15 sources, 162 data tests; macros `lake_events`, `window_filter`, `bucket_col`;
+  custom generic tests `no_rows_outside_window`, `monotonic_cumulative`, `birth_not_after_first_star`; singular
+  tests for star sums, no duplicate stars, row counts), `src/breakout/dbt_runner.py`, CLI `breakout build dbt -- <args>` and
+  `breakout build history [--start --end --buckets --resume-at a3 --no-test]`. `reports/phase5_spotcheck.md`
+  has the 3-repo spot check (grok-1, screenshot-to-code, llm.c). `dbt docs generate` works (`dbt/target/catalog.json`).
+- **How to run:** `GHB_WAREHOUSE=~/.cache/ghb-warehouse/warehouse.duckdb GHB_DUCKDB_TMP=~/.cache/ghb-duckdb-tmp
+  GHB_DUCKDB_MAX_TEMP=10GB GHB_DUCKDB_MEMORY=2000MB systemd-inhibit --what=sleep:idle systemd-run --user --scope -p
+  MemoryMax=4G -p MemorySwapMax=0 -p CPUQuota=100% uv run breakout build history` (resumable; background only). Keep
+  the warehouse and the spill on the local disk while building, copy the result to `data/warehouse.duckdb`.
+  Needs the lake pulled for 2023-06..2025-05 (all event types and push_daily; 62 -> 92 GB on the SSD).
+- **Row counts** (full trusted history): stg_stars 476,598,600; int_repo_star_daily 246,821,950;
+  int_star_active_repos 1,474,101; int_repo_birth 1,474,101; int_young_moving_repos 1,321,930 (89.7% of the
+  star-active repos, so the stricter candidate filters of Phase 6 do the real selecting); int_active_repo_event_days
+  183,503,814; int_bot_event_counts 15,957,085; int_repo_daily_activity 138,886,100; int_early_stars 72,671,090 =
+  int_star_events_enriched 72,671,090; int_actor_daily_activity = int_actor_cumulative_activity 429,012,535;
+  int_contributor_first_seen 26,311,258; int_contributor_sessions 155,390,270; int_core_actors_daily 45,864,602;
+  int_issue_response 8,165,076; int_pr_lifecycle 9,855,887; int_stargazer_later_actions 17,077,485;
+  int_star_cohort_retention 6,255,803; stg_bot_actors 59,586; stg_bot_actor_signals 910,182.
+- **Runtimes** (single thread, 2 GB; seconds; bucketed = sum of buckets): stg_stars 1,998 (32); int_repo_star_daily
+  134; int_star_active_repos 188; int_active_repo_event_days ~775; int_repo_birth ~98; int_bot_event_counts ~450;
+  int_contributor_first_seen ~318; int_core_actors_daily ~688; int_actor_daily_activity ~25,000 (32 buckets; the
+  slowest model, ~7 h); int_actor_cumulative_activity 429; int_star_events_enriched 1,198; int_repo_daily_activity
+  7,880 (16); int_contributor_sessions 2,556 (16); int_stargazer_later_actions 3,326 (16); stg_bot_actor_signals
+  ~1,850. A clean full build from scratch is roughly 15-20 h of wall clock; the daily window run is minutes.
+- **Findings:** `birth_not_after_first_star` was 0.157% before the re-publication fix (ADR-020 item 6), 0 after.
+  Three full-history attempts failed (OOM) and two DuckDB-on-NTFS stalls/I/O errors cost ~25 h before the design
+  in ADR-020 (bucketing, local warehouse) was reached. Reviews exist only from 2020 (empty before).
+- **For Phase 6:** `int_young_moving_repos` is only a superset; candidates still need `max_stars_total`,
+  `exclude_forks`, `exclude_bot_owned` (use `int_repo_birth.is_fork/is_mirror_like` and `stg_repo_metadata`).
+  Detail-dependent counts are NULL before 2023-06-01. `stg_stars` has a `bucket` column (repo_id % 32).
+
+## Handoff to Phase 5 (state at 2026-10-16; consumed by Phase 5)
 
 Phase 5 (dbt staging and intermediate models) can start. Read `docs/DECISIONS.md` ADR-016..019 first.
 - Enrichment tables are in `data/derived/enrich/` (SSD) and `Yasshh814/gh-breakout-derived` under `enrich/`:

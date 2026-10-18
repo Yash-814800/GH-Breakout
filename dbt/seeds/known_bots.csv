@@ -1,0 +1,26 @@
+login,reason
+k8s-ci-robot,kubernetes CI robot (not matched by suffix rule)
+tekton-robot,tekton CI robot
+heigliner-robot,CI robot
+BrewTestBot,Homebrew CI bot
+keksobot,automation account
+ursabot,Apache Arrow CI bot
+wingetbot,winget-pkgs automation
+flathubbot,Flathub automation
+jollaitbot,automation account
+botcopado,automation account
+VSCodeTriageBot,VS Code issue triage bot
+JuliaTagBot,Julia registry tag bot
+ByteLegendBot,automation account
+codestar-github-bot-1,AWS CodeStar connector
+codestar-github-bot-eu-north-1,AWS CodeStar connector
+codestar-github-bot-ap-northeast-2,AWS CodeStar connector
+codestar-github-bot-us-west-1,AWS CodeStar connector
+web-flow,GitHub web-flow committer account
+copilot-swe-agent,GitHub Copilot coding agent
+dependabot[bot],dependency updates (also matched by the [bot] rule; listed for documentation)
+renovate[bot],dependency updates
+github-actions[bot],GitHub Actions
+pre-commit-ci[bot],pre-commit.ci
+allcontributors[bot],all-contributors
+greenkeeper[bot],dependency updates (retired)

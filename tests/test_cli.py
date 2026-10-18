@@ -8,7 +8,7 @@ from breakout.cli import app
 runner = CliRunner()
 GROUPS = ["ingest", "backfill", "lake", "enrich", "build", "ml", "daily", "publish", "ops"]
 STUB_GROUPS = [
-    g for g in GROUPS if g not in ("ingest", "backfill", "lake", "enrich")
+    g for g in GROUPS if g not in ("ingest", "backfill", "lake", "enrich", "build")
 ]  # real groups
 
 
@@ -71,4 +71,11 @@ def test_enrich_group_lists_commands():
         "hn-recent",
         "upload",
     ):
+        assert command in result.output
+
+
+def test_build_group_lists_commands():
+    result = runner.invoke(app, ["build", "--help"])
+    assert result.exit_code == 0
+    for command in ("dbt", "history"):
         assert command in result.output

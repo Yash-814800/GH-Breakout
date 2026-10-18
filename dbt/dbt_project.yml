@@ -1,0 +1,33 @@
+name: breakout
+version: "1.0.0"
+config-version: 2
+profile: breakout
+
+model-paths: ["models"]
+seed-paths: ["seeds"]
+test-paths: ["tests"]
+macro-paths: ["macros"]
+clean-targets: ["target", "dbt_packages"]
+
+vars:
+  # window bounds for every staging model (events_end is exclusive)
+  events_start: "2015-01-01"
+  events_end: "2100-01-01"
+  snapshot_dates_mode: weekly_history   # weekly_history | single (Phase 7)
+  snapshot_date: null                   # used when mode = single
+  n_buckets: 32                         # hash buckets of the bucketed (incremental) models
+  bucket: null                          # build only this bucket; null = all buckets in one statement
+  # min_stars_14d, max_age_days, session_gap_minutes and detail_start_date have no default on purpose: the
+  # `breakout build dbt` wrapper passes them from config/project.yaml (single source of truth)
+
+models:
+  breakout:
+    staging:
+      +materialized: view
+    intermediate:
+      +materialized: table
+
+seeds:
+  breakout:
+    known_bots:
+      +column_types: {login: varchar, reason: varchar}

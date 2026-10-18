@@ -1,0 +1,46 @@
+version: 2
+
+sources:
+  - name: lake
+    description: >
+      Slim GH Archive event lake (Parquet, hive-partitioned by event_type/year/month), see
+      docs/data_dictionary.md. Staging reads it through the `lake_events` macro, which drops
+      duplicate local test-day files; the external_location here is the unfiltered glob (used
+      for freshness).
+    meta:
+      external_location: "read_parquet('{{ env_var(\"GHB_LAKE\") }}/events/event_type={name}/**/*.parquet', hive_partitioning = false, union_by_name = true)"
+    tables:
+      - name: WatchEvent
+        loaded_at_field: created_at
+        freshness:
+          warn_after: {count: 36, period: hour}
+          error_after: {count: 72, period: hour}
+      - name: ForkEvent
+      - name: IssuesEvent
+      - name: IssueCommentEvent
+      - name: PullRequestEvent
+      - name: PullRequestReviewEvent
+      - name: ReleaseEvent
+      - name: CreateEvent
+      - name: PublicEvent
+
+  - name: lake_push
+    tables:
+      - name: push_daily
+        description: Per (repo_id, actor_id, day) push counts; PushEvent rows are not stored.
+        meta:
+          external_location: "read_parquet('{{ env_var(\"GHB_LAKE\") }}/push_daily/**/*.parquet', hive_partitioning = false, union_by_name = true)"
+
+  - name: enrich
+    description: Phase 4 enrichment tables (breakout enrich ...), under GHB_DERIVED/enrich.
+    tables:
+      - name: repo_metadata
+        meta: {external_location: "read_parquet('{{ env_var(\"GHB_DERIVED\") }}/enrich/repo_metadata.parquet')"}
+      - name: repo_name_history
+        meta: {external_location: "read_parquet('{{ env_var(\"GHB_DERIVED\") }}/enrich/repo_name_history.parquet')"}
+      - name: actor_id_age_map
+        meta: {external_location: "read_parquet('{{ env_var(\"GHB_DERIVED\") }}/enrich/actor_id_age_map.parquet')"}
+      - name: trending
+        meta: {external_location: "read_parquet('{{ env_var(\"GHB_DERIVED\") }}/enrich/trending.parquet')"}
+      - name: hn_stories
+        meta: {external_location: "read_parquet('{{ env_var(\"GHB_DERIVED\") }}/enrich/hn_stories.parquet')"}

@@ -1,0 +1,17 @@
+breakout:
+  target: local
+  outputs:
+    local:
+      type: duckdb
+      path: "{{ env_var('GHB_WAREHOUSE', '../data/warehouse.duckdb') }}"
+      threads: "{{ env_var('GHB_DBT_THREADS', '1') | int }}"
+      extensions: [httpfs, parquet]
+      settings:
+        memory_limit: "{{ env_var('GHB_DUCKDB_MEMORY', '1500MB') }}"
+        threads: "{{ env_var('GHB_DUCKDB_THREADS', '1') | int }}"
+        preserve_insertion_order: false
+        max_temp_directory_size: "{{ env_var('GHB_DUCKDB_MAX_TEMP', '40GB') }}"
+      config_options:
+        # a connection option, not a setting: settings are re-applied per cursor and
+        # DuckDB refuses to switch the temp directory once it has been used
+        temp_directory: "{{ env_var('GHB_DUCKDB_TMP', '../data/tmp/duckdb') }}"

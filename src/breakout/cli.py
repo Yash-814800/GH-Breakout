@@ -25,7 +25,6 @@ ENV_VARS = (
 )
 
 _STUBS = {
-    "build": 5,
     "ml": 6,
     "daily": 9,
     "publish": 10,
@@ -45,6 +44,55 @@ def _make_stub(name: str, phase: int) -> typer.Typer:
 
 for _name, _phase in _STUBS.items():
     app.add_typer(_make_stub(_name, _phase), name=_name)
+
+build_app = typer.Typer(help="dbt build commands (Phase 5).", no_args_is_help=True)
+app.add_typer(build_app, name="build")
+
+
+@build_app.command(
+    "dbt",
+    context_settings={"allow_extra_args": True, "ignore_unknown_options": True},
+)
+def build_dbt_cmd(ctx: typer.Context) -> None:
+    """Run dbt with paths, caps and config vars set: ``breakout build dbt -- run --select x``."""
+    from breakout.dbt_runner import run_dbt
+
+    cfg = get_config(ctx.obj["config"])
+    raise typer.Exit(run_dbt(cfg, list(ctx.args)))
+
+
+@build_app.command("history")
+def build_history_cmd(
+    ctx: typer.Context,
+    select: Annotated[str, typer.Option(help="dbt selector")] = "known_bots staging intermediate",
+    test: Annotated[bool, typer.Option(help="run tests too (dbt build)")] = True,
+    start: Annotated[str | None, typer.Option(help="window start (default: history start)")] = None,
+    end: Annotated[
+        str | None, typer.Option(help="window end, exclusive (default: trusted end)")
+    ] = None,
+    buckets: Annotated[int, typer.Option(help="hash buckets of the big models")] = 32,
+    resume_at: Annotated[
+        str, typer.Option(help="start | a3 (skip stages already built)")
+    ] = "start",
+) -> None:
+    """Full-history build of staging + intermediate over the trusted era; logs time per model."""
+    from breakout.dbt_runner import run_history
+
+    cfg = get_config(ctx.obj["config"])
+    from datetime import date
+
+    raise typer.Exit(
+        run_history(
+            cfg,
+            select=select,
+            test=test,
+            start=date.fromisoformat(start) if start else None,
+            end=date.fromisoformat(end) if end else None,
+            n_buckets=buckets,
+            resume_at=resume_at,
+        )
+    )
+
 
 enrich_app = typer.Typer(
     help="Enrichment: names, repo metadata, actor age, trending, HN.", no_args_is_help=True

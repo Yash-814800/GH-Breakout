@@ -36,3 +36,5 @@ __pycache__/
 # OS artifacts
 .DS_Store
 Thumbs.db
+dbt/dbt_packages/
+dbt/.user.yml

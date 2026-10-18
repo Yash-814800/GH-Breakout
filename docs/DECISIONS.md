@@ -445,3 +445,53 @@ them for a snapshot `D` would leak future popularity (CLAUDE.md section 5).
    ignored. Names resolve with `resolve_repo_ids(name, story date)`.
 **Consequences:** Phase 7 must implement the `D - 3 days` rule in SQL; there is no way to reconstruct
 points at story time retroactively.
+
+## ADR-020: Phase 5 dbt design: bucketed builds, candidate-first prefilter, local warehouse (2026-10-19)
+**Context:** Phase 5 (`docs/phases/PHASE_05_dbt_staging_intermediate.md`) as written is one `dbt build` over
+the whole history. On this machine (15 GB RAM, 4 GB cgroup cap, DuckDB `memory_limit` 2 GB, 1 thread) five
+design points of the phase file did not survive contact with 4.3 G events (3 failed full builds, ~25 h of
+wall clock): single statements over the biggest tables OOM or spill past any sane cap; the NTFS (ntfs-3g)
+SSD stalls or returns I/O errors under DuckDB's write pattern.
+**Decision:**
+1. **Hash-bucketed incremental models.** The models whose single statement does not fit are
+   `incremental` with `unique_key='bucket'` (`delete+insert`) and are built one hash bucket per dbt call by
+   `breakout build history` (macros `bucket_col`, `bucket_filter`; vars `bucket`, `n_buckets`; resumable:
+   finished buckets are read from the table). Buckets of `repo_id`: `stg_stars`, `int_repo_star_daily`,
+   `int_star_active_repos` (32), `int_active_repo_event_days` (4), `int_repo_daily_activity`,
+   `int_contributor_sessions`, `int_stargazer_later_actions` (16). Buckets of `actor_id`:
+   `int_actor_daily_activity`, `int_actor_cumulative_activity`, `int_star_events_enriched` (32). With
+   `bucket` unset (small windows, the daily run) the same models build all buckets in one statement.
+   `stg_bot_actor_signals` is incremental by month, built 3 months per call.
+2. **`stg_stars` is a table, not a view** (deviation from "staging = views"): the first-star window needs
+   a (repo, actor) pair's whole history and 477 M rows do not fit in one statement.
+3. **Candidate-first prefilter** (new models): `int_star_active_repos` (>= `min_stars_14d` stars in a
+   14-day window while at most `max_age_days + 2` days after the first star; 1.47 M repos) breaks the
+   birth <-> young-moving cycle and bounds every wide scan. `int_active_repo_event_days` (non-bot events per
+   repo-day of those repos) feeds birth and the mirror-like share; `int_early_stars` restricts stargazers to
+   stars before `birth + max_age_days + 1 day` (the only stars a candidate at D can see; later stars only
+   count towards labels via `int_repo_star_daily`). `int_repo_birth` is therefore defined over star-active
+   repos, not all repos; `int_young_moving_repos` is 1,321,930 of them. `stg_bot_event_counts` moved to
+   `int_bot_event_counts` and is restricted to the same repos (bot events exist on tens of millions of repos).
+4. **Staging dedupe by construction, not by sort.** The lake guarantees one row per `event_id` across a
+   month's files (`lake verify --deep`); the macro `lake_files` drops the locally kept Phase 1 `day-*`
+   test-day files that sit beside a `month-`/`bq-` file and restricts files to the years of the window.
+   Uniqueness tests on `event_id` run on the last 90 days of the window.
+5. **Bot rule 3 (extreme non-star activity) is computed per month** (`stg_bot_actor_signals`: month x actor
+   with > 1,000 events on a day). 59,586 bot actors (login pattern, seed, volume). Known false positives
+   of the `-bot` suffix are accepted (human accounts named like `Forty-Bot`, a handful per million).
+6. **`int_repo_birth`:** a PublicEvent counts as birth only if it is not after the first star (a repo
+   starred before its PublicEvent was already public and has been re-published; this fixed 0.16% violations
+   of `birth_not_after_first_star`). `is_left_censored` = no API date and first event within 30 days of
+   `events_start`.
+7. **Detail-dependent counts are NULL before `detail_start_date`** (2023-06-01), never 0
+   (`int_repo_daily_activity`). `actor_repos_prior_90d` is a sum of daily distinct-repo counts (repo-days).
+8. **Warehouse location and spill.** Writes by DuckDB to the NTFS SSD stalled (hung FUSE request for 7 h,
+   one I/O error). The history build therefore runs with `GHB_WAREHOUSE` and `GHB_DUCKDB_TMP` on the local
+   disk (`~/.cache/ghb-warehouse`, `~/.cache/ghb-duckdb-tmp`, spill capped by `GHB_DUCKDB_MAX_TEMP`) and the
+   finished file is copied to `data/warehouse.duckdb` on the SSD. The lake stays on the SSD (read-only
+   use is fine). `temp_directory` is a connection option (`config_options`), not a setting.
+9. **Tests on huge tables are sampled:** `monotonic_cumulative` checks actors with `actor_id % 97 = 0`.
+**Consequences:** `breakout build history` is the only supported way to build the whole history (resume
+with the same command, `--resume-at a3` skips already built stages); a plain `dbt build` over the whole
+window will OOM. The daily run (Phase 9) uses a short window and builds the same models without a bucket.
+The warehouse is 33 GB; do not keep two copies on the 193 GB `/home` disk longer than needed.

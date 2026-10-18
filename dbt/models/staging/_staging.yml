@@ -1,0 +1,247 @@
+version: 2
+
+# Uniqueness tests on event ids run on the most recent 90 days of the window (full-history
+# uniqueness per month is enforced by `breakout lake verify --deep`; see ADR-020).
+
+models:
+  - name: stg_bot_actor_signals
+    description: >
+      Per (month, actor_id) bot evidence: a bot-like login and the number of days with > 1,000
+      non-star events. Incremental, built month by month in bounded memory (ADR-020).
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments: {combination_of_columns: [month, actor_id]}
+    columns:
+      - name: month
+        tests: [not_null]
+      - name: actor_id
+        tests: [not_null]
+      - name: n_busy_days
+        tests: [not_null]
+
+  - name: stg_bot_actors
+    description: >
+      Automation accounts (login ending in [bot] / -bot / _bot, the known_bots seed, or > 1,000
+      non-star events on >= 3 UTC days). Heavy starrers are NOT classified here (Phase 11).
+    columns:
+      - name: actor_id
+        tests: [not_null, unique]
+      - name: reason
+        tests:
+          - not_null
+          - accepted_values:
+              arguments: {values: [login_pattern, known_bots_seed, extreme_non_star_activity]}
+
+  - name: stg_stars
+    description: >
+      First star per (repo_id, actor_id) from WatchEvent. Re-stars are dropped and unstars are
+      invisible in GH Archive. Bot actors excluded. Materialised (incremental by repo_id hash
+      bucket, ADR-020) because the global first-star window does not fit the memory cap otherwise.
+    columns:
+      - name: repo_id
+        tests: [not_null]
+      - name: actor_id
+        tests: [not_null]
+      - name: starred_at
+        description: UTC timestamp of the first observed star.
+        tests:
+          - not_null
+          - no_rows_outside_window
+      - name: event_id
+        tests:
+          - not_null
+          - unique:
+              config: &recent {where: "starred_at >= timestamp '{{ var(\"events_end\") }}' - interval 90 day"}
+
+  - name: stg_forks
+    description: ForkEvent rows (non-bot). repo_id is the parent repository, forkee_repo_id the new fork.
+    columns:
+      - name: event_id
+        tests: [not_null, {unique: {config: &recent_c {where: "created_at >= timestamp '{{ var(\"events_end\") }}' - interval 90 day"}}}]
+      - name: created_at
+        tests: [not_null, no_rows_outside_window]
+      - name: repo_id
+        tests: [not_null]
+      - name: actor_id
+        tests: [not_null]
+      - name: forkee_repo_id
+        description: NULL when the event carries no fork id.
+
+  - name: stg_issues
+    description: IssuesEvent rows (non-bot). action/number/target_* are NULL where detail_level = 0.
+    columns:
+      - name: event_id
+        tests: [not_null, {unique: {config: *recent_c}}]
+      - name: created_at
+        tests: [not_null, no_rows_outside_window]
+      - name: repo_id
+        tests: [not_null]
+      - name: actor_id
+        tests: [not_null]
+      - name: detail_level
+        tests: [{accepted_values: {arguments: {values: [0, 1], quote: false}}}]
+      - name: action
+        tests:
+          - accepted_values:
+              arguments: {values: [opened, closed, reopened, edited, assigned, unassigned, labeled, unlabeled, deleted, transferred, pinned, unpinned, locked, unlocked, milestoned, demilestoned, typed, untyped, blocked, unblocked, sub_issue_added, sub_issue_removed, parent_issue_added, parent_issue_removed]}
+              config: {severity: warn}
+
+  - name: stg_issue_comments
+    description: IssueCommentEvent rows (comments on issues and pull requests; non-bot).
+    columns:
+      - name: event_id
+        tests: [not_null, {unique: {config: *recent_c}}]
+      - name: created_at
+        tests: [not_null, no_rows_outside_window]
+      - name: repo_id
+        tests: [not_null]
+      - name: actor_id
+        tests: [not_null]
+      - name: is_pull_request
+        description: NULL where detail_level = 0.
+      - name: action
+        tests:
+          - accepted_values:
+              arguments: {values: [created, edited, deleted]}
+              config: {severity: warn}
+
+  - name: stg_pull_requests
+    description: >
+      PullRequestEvent rows (non-bot). pr_merged only on `closed`; NULL after 2025-10-07 (ADR-007).
+    columns:
+      - name: event_id
+        tests: [not_null, {unique: {config: *recent_c}}]
+      - name: created_at
+        tests: [not_null, no_rows_outside_window]
+      - name: repo_id
+        tests: [not_null]
+      - name: actor_id
+        tests: [not_null]
+      - name: action
+        tests:
+          - accepted_values:
+              arguments: {values: [opened, closed, reopened, synchronize, edited, assigned, unassigned, labeled, unlabeled, review_requested, review_request_removed, ready_for_review, converted_to_draft, locked, unlocked, auto_merge_enabled, auto_merge_disabled, enqueued, dequeued, milestoned, demilestoned]}
+              config: {severity: warn}
+
+  - name: stg_pr_reviews
+    description: PullRequestReviewEvent rows (non-bot); exist from 2020.
+    columns:
+      - name: event_id
+        tests: [not_null, {unique: {config: *recent_c}}]
+      - name: created_at
+        tests: [not_null, no_rows_outside_window]
+      - name: repo_id
+        tests: [not_null]
+      - name: actor_id
+        tests: [not_null]
+      - name: review_state
+        tests:
+          - accepted_values:
+              arguments: {values: [approved, changes_requested, commented, dismissed, pending]}
+              config: {severity: warn}
+
+  - name: stg_releases
+    description: ReleaseEvent rows (non-bot).
+    columns:
+      - name: event_id
+        tests: [not_null, {unique: {config: *recent_c}}]
+      - name: created_at
+        tests: [not_null, no_rows_outside_window]
+      - name: repo_id
+        tests: [not_null]
+      - name: actor_id
+        tests: [not_null]
+      - name: action
+        tests:
+          - accepted_values:
+              arguments: {values: [published, created, edited, deleted, prereleased, released, unpublished]}
+              config: {severity: warn}
+
+  - name: stg_creates
+    description: CreateEvent rows (non-bot). ref_type is NULL where detail_level = 0.
+    columns:
+      - name: event_id
+        tests: [not_null, {unique: {config: *recent_c}}]
+      - name: created_at
+        tests: [not_null, no_rows_outside_window]
+      - name: repo_id
+        tests: [not_null]
+      - name: actor_id
+        tests: [not_null]
+      - name: ref_type
+        tests:
+          - accepted_values:
+              arguments: {values: [repository, branch, tag]}
+
+  - name: stg_public_events
+    description: PublicEvent rows (repository made public; non-bot).
+    columns:
+      - name: event_id
+        tests: [not_null, {unique: {config: *recent_c}}]
+      - name: created_at
+        tests: [not_null, no_rows_outside_window]
+      - name: repo_id
+        tests: [not_null]
+      - name: actor_id
+        tests: [not_null]
+
+  - name: stg_push_daily
+    description: Daily push counts per (repo_id, actor_id); PushEvent rows are not stored.
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments: {combination_of_columns: [repo_id, actor_id, day]}
+          config: {where: "day >= date '{{ var(\"events_end\") }}' - interval 90 day"}
+    columns:
+      - name: repo_id
+        tests: [not_null]
+      - name: actor_id
+        tests: [not_null]
+      - name: day
+        tests: [not_null]
+      - name: n_pushes
+        tests: [not_null]
+
+  - name: stg_repo_metadata
+    description: >
+      GitHub GraphQL metadata (Phase 4, trusted era). status 'not_found' = deleted/private/blocked:
+      every other column is then NULL = UNKNOWN, not "false".
+    columns:
+      - name: repo_id
+        tests: [not_null, unique]
+      - name: status
+        tests: [{accepted_values: {arguments: {values: [ok, not_found]}}}]
+
+  - name: stg_repo_name_history
+    description: (repo_id, repo_name) pairs seen on WatchEvents with first/last seen. Display only; never join events on names.
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments: {combination_of_columns: [repo_id, repo_name]}
+    columns:
+      - name: repo_id
+        tests: [not_null]
+      - name: repo_name
+        tests: [not_null]
+
+  - name: stg_actor_age_map
+    description: Monotone breakpoints actor_id -> estimated account creation (isotonic fit, median error ~1.9 days).
+    columns:
+      - name: actor_id_breakpoint
+        tests: [not_null, unique]
+      - name: est_created_at
+        tests: [not_null]
+
+  - name: stg_trending
+    description: GitHub Trending history. language_filter IS NULL is the all-languages list.
+    columns:
+      - name: trending_date
+        tests: [not_null]
+      - name: rank
+        tests: [not_null]
+      - name: repo_name
+        tests: [not_null]
+
+  - name: stg_hn_stories
+    description: Hacker News stories linking to GitHub. points / num_comments are fetch-time values (ADR-019).
+    columns:
+      - name: story_id
+        tests: [not_null, unique]
