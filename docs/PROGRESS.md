@@ -54,8 +54,8 @@ measured (row counts, sizes, runtimes, metrics). Future sessions rely on it.
   repos. Rows per year 2016..2025: 170k, 195k, 211k, 238k, 281k, 248k, 286k, 345k, 365k, 145k (to April).
   Positives per year: 882, 1001, 1079, 1220, 1433, 1266, 1457, 1754, 1856, 734. The floor (100 stars) never
   binds: the per-snapshot rate is the quantile's 0.5%. `breakout_abs` (>= 500 stars) is rarer: 378-948/year.
-- The warehouse with the marts is in `~/.cache/ghb-warehouse/warehouse.duckdb` only; the SSD copy
-  (`data/warehouse.duckdb`) still has Phase 5 contents. Labels are not uploaded to the Hub yet.
+- The warehouse with the marts was copied to `data/warehouse.duckdb` on the SSD (byte-identical check) and the
+  local build copy removed. `labels/candidates_labels.parquet` is on the derived Hub repo (1 commit, 33.7 MB).
 
 ## Phase 5 status (2026-10-19)
 
