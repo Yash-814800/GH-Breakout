@@ -142,6 +142,37 @@ def run_features_single(cfg: Config, d: date, *, window: tuple[date, date] | Non
     return 0
 
 
+def run_features_range(
+    cfg: Config, start: date, end: date, *, n_buckets: int = 32, test: bool = False
+) -> int:
+    """Daily snapshots ``start..end`` (inclusive) on top of a finished history build.
+
+    Phase 8 daily-vs-weekly check. Candidates, all feature groups, the mart and (at the end) the
+    labels of those days are built per repo_id bucket with the history SQL; the tastemaker tables
+    and intermediates are reused. Run it on a COPY of the warehouse: the marts gain non-Monday rows
+    and ``mart_labels`` is rebuilt for the range only.
+    """
+    ev = {
+        **R.history_vars(cfg, n_buckets=n_buckets),
+        "snapshot_dates_mode": "range",
+        "snapshot_start": start.isoformat(),
+        "snapshot_end": end.isoformat(),
+    }
+    for b in range(n_buckets):
+        log.info("range bucket %d/%d", b + 1, n_buckets)
+        rc = R.run_dbt(
+            cfg,
+            ["run", "--select", "mart_snapshot_dates", "mart_candidates", *GROUP_MODELS, MART],
+            extra_vars={**ev, "bucket": b},
+        )
+        if rc != 0:
+            return rc
+    rc = R.run_dbt(cfg, ["run", "--select", "mart_labels"], extra_vars=ev)
+    if rc == 0 and test:
+        rc = R.run_dbt(cfg, ["test", "--select", MART, *SINGULAR_TESTS], extra_vars=ev)
+    return rc
+
+
 def _git_sha() -> str:
     try:
         sha = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=P.ROOT, text=True).strip()

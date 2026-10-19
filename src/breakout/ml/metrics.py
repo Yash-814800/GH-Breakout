@@ -204,3 +204,49 @@ def lead_time_report(preds: pd.DataFrame, labels: pd.DataFrame, k: int = 25) -> 
         else [math.nan, math.nan],
         "snapshot_resolution": "weekly",
     }
+
+
+def bootstrap_pooled_pr_auc_diff(
+    a: pd.DataFrame, b: pd.DataFrame, *, n_boot: int = 1000, block: int = 4, seed: int = 42
+) -> dict[str, float]:
+    """Paired block bootstrap of ``PR-AUC(a) - PR-AUC(b)`` on the same rows (same resamples).
+
+    ``a`` and ``b`` hold the same ``(repo_id, snapshot_date)`` rows with their own ``score``.
+    ``p_not_better`` = share of resamples with a difference <= 0.
+    """
+    prep = []
+    snaps = np.sort(a["snapshot_date"].unique())
+    for d in (a, b):
+        s = d.sort_values(["score", "repo_id"], ascending=[False, True], kind="stable")
+        sc = s["score"].to_numpy()
+        prep.append(
+            (
+                pd.Index(snaps).get_indexer(s["snapshot_date"]),
+                s["label"].to_numpy(dtype=float),
+                np.concatenate([sc[1:] != sc[:-1], [True]]),
+            )
+        )
+    rng = np.random.default_rng(seed)
+    point = _weighted_ap(prep[0][1], np.ones(len(a)), prep[0][2]) - _weighted_ap(
+        prep[1][1], np.ones(len(b)), prep[1][2]
+    )
+    diffs = np.empty(n_boot)
+    for i in range(n_boot):
+        mult = np.bincount(block_indices(len(snaps), block, rng), minlength=len(snaps))
+        v = [_weighted_ap(y, mult[pos].astype(float), te) for pos, y, te in prep]
+        diffs[i] = v[0] - v[1]
+    lo, hi = np.nanpercentile(diffs, [2.5, 97.5])
+    return {
+        "diff": float(point),
+        "ci_low": float(lo),
+        "ci_high": float(hi),
+        "p_not_better": float(np.mean(diffs <= 0)),
+    }
+
+
+def paired_snapshot_diff(
+    snap_a: pd.DataFrame, snap_b: pd.DataFrame, columns: Sequence[str], **kw: Any
+) -> pd.DataFrame:
+    """Mean and 95% CI of ``a - b`` for per-snapshot metrics (paired block bootstrap)."""
+    diff = (snap_a[list(columns)] - snap_b[list(columns)]).dropna(how="all")
+    return bootstrap_ci(diff, columns=list(columns), **kw)

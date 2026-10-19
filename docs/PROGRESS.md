@@ -13,7 +13,7 @@ measured (row counts, sizes, runtimes, metrics). Future sessions rely on it.
 | 05 | dbt staging & intermediate models | ☑ | 2026-10-19 | 35 models (17 staging, 18 intermediate; 5 are new prefilters or moved, ADR-020), 162 tests, all pass on the full trusted history 2015-01-01..2025-05-23: warehouse 33 GB, 4.3 G source events. Built with hash-bucketed incremental models (ADR-020). 236 pytest pass. See "Phase 5 status". |
 | 06 | Candidates, labels, baseline, evaluation harness | ☑ | 2026-10-19 | **Corrected 2026-10-19 (ADR-024)**: repos with unknown metadata were silently dropped by a NULL in the bot-owner filter. 3 marts, 33 dbt tests pass; 486 matured snapshots, **3,098,574** candidate rows (was 2,485,109), 0.509% positive; B1 pooled PR-AUC **0.0286** [0.0246, 0.0345] (was 0.0520), P@25 0.109; 29 folds. See "Phase 6 status".
 | 07 | Point-in-time feature marts | ☑ | 2026-10-19 | 7 feature groups + mart, 71 features (68 live-available), 63 dbt tests pass; 3,098,574 training rows 2016-2025; leak test PASS on 2018-05-14, 2021-03-01, 2024-06-03 and 2026-10-12 (300 repos x 71 columns each); live build for 2026-10-15 has identical columns/types; 17 tests in tests/features. See "Phase 7 status" and ADR-022..024.
-| 08 | LightGBM, calibration, SHAP, model registry | ☐ | | |
+| 08 | LightGBM, calibration, SHAP, model registry | ☑ (HF upload pending approval) | 2026-10-19 | Model beats B1 in all 29 folds: pooled PR-AUC **0.108** [0.101, 0.113] vs 0.029, P@25 **0.241** [0.229, 0.255] vs 0.109; holdout (26 weeks to 2025-04-21) 0.158 / 0.338 vs B1 0.032 / 0.106. Sanity checks pass; calibrated ECE 0.0002. Champion `20261019-b5ff585` (local registry). Daily check: calibration over-predicts on non-Mondays (ADR-025). 310 tests pass. See "Phase 8 status". |
 | 09 | Daily pipeline, weekly retrain, health checks | ☐ | | |
 | 10 | Website (Astro) + deploy | ☐ | | |
 | 11 | Fake-star detector, similar repos, cohort retention | ☐ | | |
@@ -37,6 +37,29 @@ measured (row counts, sizes, runtimes, metrics). Future sessions rely on it.
 | Source test from a GitHub Actions runner | ☑ NO-GO | OpenDigger ~0.01 MB/s from the runner (needs >= 1), manifests 404; gharchive 54 MB/s. `reports/source_validation.md`, run 38194688025 |
 | Stargazers API for per-repo ground truth | ✖ not available | GitHub restricted it to admins/collaborators in July 2026 (ADR-010) |
 | Live-source gate / item 5 | ☐ not started | waits for your review of the source test |
+
+## Phase 8 status (2026-10-19)
+
+- Code: `breakout.ml.{dataset,train,calibrate,cv,cv_report,explain,final,registry,card,daily_check}`; CLI `breakout ml cv [--variant V]
+  [--fold N] [--report]`, `train-final`, `predict --date D`, `explain --version V`, `daily-check`; config section `model:`; dbt
+  `mart_snapshot_dates` `range` mode; `features.build.run_features_range`; 35 new tests in `tests/ml/test_model.py`. Design: ADR-025.
+- **CV** (29 folds, test snapshots 2018-02..2025-05, 2,667,524 rows, 13,558 positives): model PR-AUC 0.1081 [0.1013, 0.1134],
+  ROC-AUC 0.883, P@10 0.340, P@25 0.241, P@50 0.176; B1 0.0286 / 0.816 / 0.129 / 0.109 / 0.086. Paired difference vs B1: PR-AUC
+  +0.079 [+0.070, +0.088], P@25 +0.132 [+0.116, +0.149]. P@25 by year (model / B1): 2018 .195/.102, 2019 .181/.116, 2020 .219/.132,
+  2021 .207/.123, 2022 .252/.143, 2023 .291/.085, 2024 .306/.055, 2025 .350/.133. Lead time vs Trending (top-25): flagged before
+  Trending 22.2% (B1 8.8%), never flagged 62.8% (B1 80.1%), median lead 1 d.
+- **Ablations** (3 configs/fold, vs all features): Tier A only +0.006 PR-AUC [-0.001, +0.015]; A+B -0.003; no tastemaker -0.001;
+  no stargazer group -0.003; star-dynamics group only -0.043 [-0.054, -0.030]. Tier B / C add no measurable lift. Monotone constraints:
+  -0.001 PR-AUC, not kept.
+- **Sanity:** labels permuted within snapshot -> PR-AUC 0.0058 vs rate 0.0051 (PASS); `stars_7d`-only model 0.0290 / P@25 0.104 vs B1 0.0286 / 0.109.
+- **Calibration:** isotonic in all 29 folds; pooled OOF ECE 0.00022, Brier 0.00471 (raw score ECE 0.042: negatives are subsampled to 10%).
+- **Final model** `20261019-b5ff585` (`data/models/`, not yet on the Hub): trained 2021-04..2025-04 (last 3 months validate + calibrate),
+  holdout 2024-10-28..2025-04-21 via the evaluation model: PR-AUC 0.1578 vs B1 0.0323, P@25 0.338 vs 0.106, ECE raw 0.0366 -> 0.0009. Promoted
+  (first model must beat B1). `breakout ml predict --date 2026-10-15` prints top 10 with probabilities and sentences (the lake ends
+  2026-10-14, so the newest live features are 2026-10-15; they sit after the 2025-05 capture collapse, so those probabilities are not meaningful yet).
+- **Daily vs weekly:** see ADR-025 addendum; non-Monday calibration observed/expected 0.73 vs 0.90 on Mondays.
+- Runtimes (1 thread, 4 GB cap): `full` CV ~1 h 10, each 3-config ablation ~25 min, `train-final` ~4 min, daily range build ~35 min on a warehouse copy (deleted).
+- Figures: `reports/figures/{cv_pr_curve,cv_precision_by_year,cv_reliability,shap_importance,shap_beeswarm}.png`.
 
 ## Phase 7 status (2026-10-19)
 
@@ -350,7 +373,7 @@ before creating anything new on the Hub or starting long Actions runs in a new p
 - (Phase 3) Lake size on HF (GB), file count: 114.91 GB, 1,523 data files (+ catalog, README, 42 manifest fragments); 5,592,548,999 rows. Bootstrap (bq) part: 60.68 GB / 943 files; hourly era +54.2 GB / 580 files
 - (Phase 6, superseded by the ADR-024 correction, see "Phase 6 status") Candidates per snapshot (median), positive rate: median 4,990.5 candidates per snapshot (486 matured snapshots, 2016-01-04 .. 2025-04-21); positive rate 0.510% pooled, 0.505-0.518% per year (`breakout_rel`); 7,759 distinct positive repos. Baseline B1 (7-day velocity) pooled over 29 test folds (2018-02..2025-05): PR-AUC 0.0520 [0.0491, 0.0551], ROC-AUC 0.821, P@10 0.145, P@25 0.120 [0.113, 0.127], P@50 0.095; B2 PR-AUC 0.0405 / P@25 0.109; B3 PR-AUC 0.0447 / P@25 0.116. P@25 by year (B1): 2018 .092, 2019 .110, 2020 .120, 2021 .115, 2022 .124, 2023 .137, 2024 .133, 2025 (to Apr) .147. Lead time vs Trending (B1, top-25): 2,836 trending repos, 75.2% never flagged, 11.7% flagged before Trending, 4.6% at least 7 days before, median lead 0 d (IQR 0..2).
 - (Phase 7) Feature build: see "Phase 7 status". Training rows 3,098,574; 71 features; tastemaker base hit rate 4.85%.
-- (Phase 8) Baseline vs model PR-AUC / precision@25 (pooled and per year):
+- (Phase 8) Baseline vs model PR-AUC / precision@25 (pooled and per year): see "Phase 8 status" (B1 0.0286 / 0.109, model 0.108 / 0.241).
 - (Phase 9) Daily job runtime (median):
 
 ## Open issues / TODO for the human

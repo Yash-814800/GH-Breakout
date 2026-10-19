@@ -104,6 +104,28 @@ training:
   final_train_years: 4            # weekly retrain uses the most recent N years of matured snapshots
   k_values: [10, 25, 50]
 
+model:                            # Phase 8 (ADR-025)
+  seed: 42
+  num_threads: 1                  # laptop cap (CLAUDE.md section 10); the weekly runner may raise it
+  max_rounds: 600
+  early_stopping_rounds: 40
+  inner_validation_months: 3      # last months of a fold's training dates (after an embargo) for stopping + calibration
+  negative_sample: 0.1            # keep 10% of negatives per training row set, all positives (calibrate on unsampled data)
+  min_positives_isotonic: 200     # fewer validation positives -> Platt scaling
+  search_n_configs: 12
+  ablation_n_configs: 3
+  grid:
+    num_leaves: [15, 31, 63]
+    min_data_in_leaf: [50, 200, 500]
+    feature_fraction: [0.6, 0.8]
+    learning_rate: [0.03, 0.05]
+    lambda_l2: [0, 5]
+  scale_pos_weight: [1.0, 3.0]    # 1.0 = none
+  monotone_features: [stars_7d, sg_share_experienced]
+  permutation_tolerance: 2.0      # label-permuted PR-AUC must stay below 2x the positive rate
+  n_boot: 1000
+  holdout_months: 6               # most recent matured block held out for the final model's evaluation / promotion
+
 features:
   windows_days: [1, 3, 7, 14, 28]
   stargazer_activity_lookback_days: 90

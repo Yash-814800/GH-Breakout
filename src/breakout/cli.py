@@ -64,6 +64,79 @@ def ml_baseline_cmd(
     typer.echo(f"wrote {baseline.REPORT}")
 
 
+@ml_app.command("cv")
+def ml_cv_cmd(
+    ctx: typer.Context,
+    variant: Annotated[
+        list[str] | None, typer.Option("--variant", help="CV variant(s); default: full")
+    ] = None,
+    fold: Annotated[
+        list[int] | None, typer.Option("--fold", help="only these fold numbers")
+    ] = None,
+    report: Annotated[bool, typer.Option(help="write reports/model_cv.md from the shards")] = False,
+    n_boot: Annotated[
+        int | None, typer.Option(help="bootstrap resamples (default: config)")
+    ] = None,
+) -> None:
+    """Rolling-origin CV of the LightGBM model (resumable); ``--report`` renders the report."""
+    from breakout.ml import cv
+
+    cfg = get_config(ctx.obj["config"])
+    if report:
+        from breakout.ml import cv_report
+
+        cv_report.run(cfg, n_boot=n_boot)
+        typer.echo(f"wrote {cv_report.REPORT}")
+        return
+    cv.run(cfg, variant or ["full"], fold)
+    typer.echo("ok")
+
+
+@ml_app.command("train-final")
+def ml_train_final_cmd(
+    ctx: typer.Context,
+    monotone: Annotated[
+        bool | None, typer.Option(help="monotone constraints (default: the CV decision)")
+    ] = None,
+) -> None:
+    """Train + holdout-evaluate, package data/models/<version>/ and apply the promotion rule."""
+    from breakout.ml import final
+
+    cfg = get_config(ctx.obj["config"])
+    res = final.train_final(cfg, monotone=monotone)
+    typer.echo(json.dumps(res, indent=2))
+
+
+@ml_app.command("explain")
+def ml_explain_cmd(
+    ctx: typer.Context, version: Annotated[str, typer.Option(help="model version")]
+) -> None:
+    """Global SHAP figures (reports/figures) of a packaged model."""
+    from breakout.ml import final
+
+    res = final.explain_figures(get_config(ctx.obj["config"]), version)
+    top = list(res["importance"].items())[:10]
+    typer.echo(json.dumps({"files": res["files"], "top10": top}, indent=1))
+
+
+@ml_app.command("predict")
+def ml_predict_cmd(
+    ctx: typer.Context,
+    date_: Annotated[str, typer.Option("--date", help="snapshot date D (YYYY-MM-DD)")],
+    top: Annotated[int, typer.Option(help="rows to print")] = 10,
+    features_file: Annotated[str | None, typer.Option(help="live features parquet")] = None,
+) -> None:
+    """Score a live features file with the champion and print the top rows with explanations."""
+    from breakout.ml import final
+
+    cfg = get_config(ctx.obj["config"])
+    out = final.predict_date(cfg, date_, top, features_file)
+    for i, r in out.iterrows():
+        typer.echo(f"{i + 1:>2}. {r['repo']}  p={r['prob']:.3%}  (score {r['raw_score']:.4f})")
+        typer.echo(f"    {r['explanation']}")
+    typer.echo(f"model {out['model_version'].iloc[0]}")
+
+
 build_app = typer.Typer(help="dbt build commands (Phase 5).", no_args_is_help=True)
 app.add_typer(build_app, name="build")
 
@@ -131,6 +204,37 @@ def build_labels_cmd(
     typer.echo(json.dumps(summary, indent=2, default=str))
     if upload:
         typer.echo(json.dumps(le.upload_labels(cfg)))
+
+
+@ml_app.command("daily-check")
+def ml_daily_check_cmd(
+    ctx: typer.Context,
+    version: Annotated[str, typer.Option(help="model version under data/models")],
+    start: Annotated[str | None, typer.Option(help="first day (build + export)")] = None,
+    end: Annotated[str | None, typer.Option(help="last day, inclusive (build + export)")] = None,
+    build: Annotated[
+        bool, typer.Option(help="dbt-build the daily range (warehouse COPY!)")
+    ] = False,
+    buckets: Annotated[int, typer.Option(help="repo_id hash buckets")] = 32,
+) -> None:
+    """Daily-vs-weekly check: build (optional), export, score and write daily_check.json."""
+    from datetime import date as _date
+
+    from breakout.features import build as fb
+    from breakout.ml import daily_check as dc
+
+    cfg = get_config(ctx.obj["config"])
+    if build:
+        if not (start and end):
+            raise typer.BadParameter("--build needs --start and --end")
+        rc = fb.run_features_range(
+            cfg, _date.fromisoformat(start), _date.fromisoformat(end), n_buckets=buckets
+        )
+        if rc != 0:
+            raise typer.Exit(rc)
+    if start and end:
+        dc.export_range(fb.warehouse_path(), _date.fromisoformat(start), _date.fromisoformat(end))
+    typer.echo(f"wrote {dc.run(cfg, version)}")
 
 
 @build_app.command("features")

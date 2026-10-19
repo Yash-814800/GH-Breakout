@@ -1,0 +1,108 @@
+{
+  "version": "20261019-b5ff585",
+  "dates": [
+    "2025-03-25",
+    "2025-04-21"
+  ],
+  "n_snapshots": 28,
+  "by_weekday": [
+    {
+      "weekday": "Mon",
+      "snapshots": 4,
+      "rows": 51574,
+      "positives": 261,
+      "PR-AUC": 0.2017326689,
+      "P@25": 0.41,
+      "B1 P@25": 0.16,
+      "expected positives": 290.905210397,
+      "observed/expected": 0.897199468
+    },
+    {
+      "weekday": "Tue",
+      "snapshots": 4,
+      "rows": 53062,
+      "positives": 267,
+      "PR-AUC": 0.1883695022,
+      "P@25": 0.34,
+      "B1 P@25": 0.16,
+      "expected positives": 361.0352551993,
+      "observed/expected": 0.739539965
+    },
+    {
+      "weekday": "Wed",
+      "snapshots": 4,
+      "rows": 53240,
+      "positives": 268,
+      "PR-AUC": 0.1689824491,
+      "P@25": 0.37,
+      "B1 P@25": 0.14,
+      "expected positives": 373.5741656347,
+      "observed/expected": 0.7173943614
+    },
+    {
+      "weekday": "Thu",
+      "snapshots": 4,
+      "rows": 52383,
+      "positives": 264,
+      "PR-AUC": 0.1927581165,
+      "P@25": 0.42,
+      "B1 P@25": 0.17,
+      "expected positives": 391.6434465736,
+      "observed/expected": 0.6740825164
+    },
+    {
+      "weekday": "Fri",
+      "snapshots": 4,
+      "rows": 51718,
+      "positives": 261,
+      "PR-AUC": 0.2246642545,
+      "P@25": 0.4,
+      "B1 P@25": 0.17,
+      "expected positives": 380.4095610008,
+      "observed/expected": 0.6861026293
+    },
+    {
+      "weekday": "Sat",
+      "snapshots": 4,
+      "rows": 51629,
+      "positives": 261,
+      "PR-AUC": 0.1785091916,
+      "P@25": 0.39,
+      "B1 P@25": 0.19,
+      "expected positives": 357.860033316,
+      "observed/expected": 0.7293354264
+    },
+    {
+      "weekday": "Sun",
+      "snapshots": 4,
+      "rows": 51736,
+      "positives": 260,
+      "PR-AUC": 0.1700442746,
+      "P@25": 0.35,
+      "B1 P@25": 0.19,
+      "expected positives": 309.3437425762,
+      "observed/expected": 0.8404889584
+    }
+  ],
+  "p_at_k_monday_minus_other": {
+    "diff": 0.03166666666666662,
+    "ci_low": -0.00833333333333336,
+    "ci_high": 0.07500000000000001
+  },
+  "observed_over_expected": {
+    "monday": 0.8971994679772481,
+    "other": 0.7272756698973517
+  },
+  "ece_all": 0.0017046258429025294,
+  "pooled": {
+    "n_rows": 365342.0,
+    "n_pos": 1842.0,
+    "positive_rate": 0.005041851196960656,
+    "pr_auc": 0.18294534426807696,
+    "roc_auc": 0.9305693530296445,
+    "brier": 0.004528305482761679,
+    "log_loss": 0.022361006305505873,
+    "ece": 0.0017046258429025294
+  },
+  "markdown": "Daily snapshots 2025-03-25 .. 2025-04-21 (28 days) scored with the evaluation model of `20261019-b5ff585` (trained without these dates), features and labels from the history SQL on a warehouse copy.\n\n| weekday | snapshots | rows | positives | PR-AUC | P@25 | B1 P@25 | expected positives | observed/expected |\n|---|---|---|---|---|---|---|---|---|\n| Mon | 4 | 51574 | 261 | 0.202 | 0.410 | 0.160 | 290.905 | 0.897 |\n| Tue | 4 | 53062 | 267 | 0.188 | 0.340 | 0.160 | 361.035 | 0.740 |\n| Wed | 4 | 53240 | 268 | 0.169 | 0.370 | 0.140 | 373.574 | 0.717 |\n| Thu | 4 | 52383 | 264 | 0.193 | 0.420 | 0.170 | 391.643 | 0.674 |\n| Fri | 4 | 51718 | 261 | 0.225 | 0.400 | 0.170 | 380.410 | 0.686 |\n| Sat | 4 | 51629 | 261 | 0.179 | 0.390 | 0.190 | 357.860 | 0.729 |\n| Sun | 4 | 51736 | 260 | 0.170 | 0.350 | 0.190 | 309.344 | 0.840 |\n\n- Mean precision@25: Mondays minus other days +0.032 [-0.008, +0.075] (bootstrap over days).\n- Observed / expected positives (calibration): Mondays 0.90, other days 0.73 (1.00 = perfectly calibrated).\n- Calibrated-probability ECE over all days: 0.00170.\n- With 4-5 snapshots per weekday each cell is noisy; the comparison that matters is Monday versus the rest."
+}

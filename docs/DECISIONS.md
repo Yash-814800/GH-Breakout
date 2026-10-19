@@ -637,3 +637,56 @@ were rebuilt for the whole trusted history, the labels export and the baseline r
 - Live scoring needs metadata for new candidates: `primary_language` / `owner_type` are 'Unknown' for every repo created
   after the trusted era until Phase 9 fetches them (`breakout enrich repos --repo-ids-file`); training contains a large
   'Unknown' share now (not_found repos), so the model sees the category.
+
+## ADR-025: Phase 8 model design, evaluation and promotion (2026-10-19)
+**Context:** Phase 8 (`docs/phases/PHASE_08_model.md`) leaves compute, holdout and promotion details open. The
+corrected B1 baseline (ADR-024) is the bar: pooled PR-AUC 0.0286, P@25 0.109. The laptop has 15 GB RAM and one worker
+under a 4 GB cap (CLAUDE.md section 10).
+**Decision:**
+1. **Features:** `model_features(live_only=True)`: 68 allowed + live-available features (the research-only merge features and
+   `era_post_2025_10` are out). `dataset.load_training` loads one year at a time (float32; a plain 3.1 M x 71 load peaked at
+   4 GB and was OOM-killed). Keys / label columns as features raise an `AssertionError`.
+2. **Negative subsampling (allowed by the phase file):** 10% of the negatives of the fitting rows, all positives
+   (`model.negative_sample`). The inner-validation rows are never sampled, so early stopping (AP) and the calibrator see the real
+   0.5% balance. Raw scores are therefore not probabilities (raw ECE 0.042); the calibrated ones are (ECE 0.0002 pooled OOF).
+   Reason: 29 folds x 12 configs on 1.5-3 M rows would not finish on one thread; with sampling a fold takes 0.5-4 min.
+3. **Inner split:** the last 3 months of a fold's training dates validate; fitting dates end `embargo_days` (30) before them.
+   Search: 12 seeded configs drawn from the grid x `scale_pos_weight` {1, 3}, best inner-validation AP; the binned datasets are
+   shared across configs (`feature_pre_filter=false`). Ablations use 3 configs and are compared with a 3-config run on all features
+   (`abl_full_cheap`), not with the 12-config run.
+4. **Calibration:** isotonic regression on the inner validation predictions (Platt when < 200 positives; never needed, all 29
+   folds had >= 200), stored as JSON breakpoints (`np.interp`), clipped to [1e-6, 1].
+5. **Monotone constraints** (`stars_7d`, `sg_share_experienced`) were run as a full variant: PR-AUC -0.0011, P@25 -0.003 vs
+   unconstrained; rule "keep only if not worse" -> no constraints.
+6. **Explanations:** the dictionary's `high` / `low` phrases are chosen by comparing the row's value with the training
+   median, except for features whose `high` phrase describes a small value (`age_days`, `days_since_first_star`, every `hours`
+   feature): those use the opposite comparison. Sentence = "Flagged because ..." (top 3 positive) + "Held back by: ..." (top 2
+   negative). Missing values are skipped. The dictionary file was not edited (its hash is in the training manifest).
+7. **Holdout and promotion:** holdout = the last `model.holdout_months` (6) of matured snapshots (2024-10-28 .. 2025-04-21,
+   26 snapshots). An *evaluation model* trained only on dates before the holdout minus the embargo (same recipe) produces the
+   holdout predictions used for the promotion rule (PR-AUC and mean P@25: both point differences > 0, neither paired CI entirely
+   below 0; against B1 and, when there is one, the champion). The *shipped model* trains on the last 4 years minus the last 3
+   months (validation / calibration) and is **not refit on all data**: the calibrator describes exactly that booster. Version =
+   `YYYYMMDD-<git sha>`. A champion trained later than a candidate's holdout start has seen part of that holdout; Phase 9 must
+   compare on a block neither has trained on.
+8. **Locations:** packages in `data/models/<version>/` (+ `eval_model/`, `holdout_predictions.parquet`), `registry.json` beside
+   them; uploaded to the models repo by `registry.upload_version` only with the human's approval.
+9. **Daily check:** `mart_snapshot_dates` got a `range` mode (daily dates between `snapshot_start` and `snapshot_end`);
+   `breakout ml daily-check --build` runs the history SQL for those days on a **copy** of the warehouse (the real marts keep
+   weekly rows only) and scores them with the evaluation model.
+**Consequences:**
+- Tier A alone is as good as everything (abl_tier_A PR-AUC +0.006 [-0.001, +0.015] vs all features; P@25 +0.001): the
+  detail (Tier B) and enrichment (Tier C) features add no measurable lift on the 2018-2025 CV. They stay in the model (they cost
+  nothing and Tier B exists only from 2023); the claim of the phase file that they help is not supported by this data.
+- The model's gain over B1 is large and present in every fold (PR-AUC 0.108 vs 0.029, P@25 0.241 vs 0.109) but most of it
+  comes from recent-day velocity (`stars_1d`, `stars_3d`) that B1 ignores: a star-dynamics-only model reaches PR-AUC 0.064.
+- `era_post_2025_10` cannot be evaluated: the trusted era ends before the payload trim.
+- Live scoring after 2025-05-23 runs on degraded star capture (ADR-009) and with 'Unknown' metadata; the leaderboard
+  probabilities are calibrated to the trusted era.
+
+**Addendum (daily check result, 2026-10-19):** scoring 28 daily snapshots (2025-03-25..04-21) with the evaluation model:
+precision@25 is similar on Mondays and other days (Monday minus other +0.032 [-0.008, +0.075]) but the calibration is
+not: observed / expected positives are 0.90 on Mondays and 0.73 on the other days (the model over-predicts, more so on
+non-Mondays; pooled daily ECE 0.0017). The booster and calibrator saw only Monday snapshots. **Phase 9 must not publish
+daily probabilities from the Monday calibrator unchanged**: either train / calibrate on daily snapshots (the
+`range` mode makes them) or apply a documented scale correction. Ranking quality is unaffected within the noise.

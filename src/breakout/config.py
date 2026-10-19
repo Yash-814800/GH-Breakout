@@ -183,6 +183,32 @@ class TrainingCfg(_Section):
     k_values: list[int]
 
 
+class ModelCfg(_Section):
+    """LightGBM training and evaluation settings (Phase 8, ADR-025)."""
+
+    seed: int
+    num_threads: int
+    max_rounds: int  # upper bound of boosting rounds (early stopping on the inner validation)
+    early_stopping_rounds: int
+    inner_validation_months: (
+        int  # last months of a fold's training dates used for stopping + calibration
+    )
+    negative_sample: float  # share of negatives kept per training snapshot (all positives kept)
+    min_positives_isotonic: int  # fewer validation positives than this -> Platt scaling
+    search_n_configs: int  # configs drawn (seeded) from the grid
+    ablation_n_configs: int
+    grid: dict[
+        str, list[float]
+    ]  # num_leaves, min_data_in_leaf, feature_fraction, learning_rate, lambda_l2
+    scale_pos_weight: list[float]  # values tried in the search (1.0 = none)
+    monotone_features: list[str]  # non-decreasing constraints (evaluated as a flag)
+    permutation_tolerance: (
+        float  # label-permutation PR-AUC must be below this multiple of the positive rate
+    )
+    n_boot: int
+    holdout_months: int  # most recent matured block held out from the evaluation model
+
+
 class TastemakerCfg(_Section):
     """Co-star ('tastemaker') score parameters (Phase 7, ADR-022)."""
 
@@ -253,6 +279,7 @@ class Config(_Section):
     candidates: CandidatesCfg
     labels: LabelsCfg
     training: TrainingCfg
+    model: ModelCfg
     features: FeaturesCfg
     daily: DailyCfg
     enrich: EnrichCfg

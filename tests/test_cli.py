@@ -102,3 +102,9 @@ def test_build_group_lists_commands():
     assert result.exit_code == 0
     for command in ("dbt", "history"):
         assert command in result.output
+
+
+def test_ml_group_lists_phase8_commands():
+    result = runner.invoke(app, ["ml", "--help"])
+    for cmd in ("cv", "train-final", "predict", "daily-check"):
+        assert cmd in result.output

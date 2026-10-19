@@ -13,8 +13,10 @@ vars:
   # window bounds for every staging model (events_end is exclusive)
   events_start: "2015-01-01"
   events_end: "2100-01-01"
-  snapshot_dates_mode: weekly_history   # weekly_history | single (Phase 7)
+  snapshot_dates_mode: weekly_history   # weekly_history | single (Phase 7) | range (Phase 8)
   snapshot_date: null                   # used when mode = single
+  snapshot_start: null                  # mode = range: first and last day (inclusive)
+  snapshot_end: null
   n_buckets: 32                         # hash buckets of the bucketed (incremental) models
   bucket: null                          # build only this bucket; null = all buckets in one statement
   # Phase 6 vars (max_stars_total, exclude_*, horizon_days, relative_*, absolute_min_gain, first_snapshot,
