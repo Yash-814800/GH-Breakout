@@ -25,7 +25,6 @@ ENV_VARS = (
 )
 
 _STUBS = {
-    "ml": 6,
     "daily": 9,
     "publish": 10,
     "ops": 9,
@@ -44,6 +43,26 @@ def _make_stub(name: str, phase: int) -> typer.Typer:
 
 for _name, _phase in _STUBS.items():
     app.add_typer(_make_stub(_name, _phase), name=_name)
+
+ml_app = typer.Typer(help="Modelling and evaluation (Phase 6+).", no_args_is_help=True)
+app.add_typer(ml_app, name="ml")
+
+
+@ml_app.command("baseline")
+def ml_baseline_cmd(
+    ctx: typer.Context,
+    n_boot: Annotated[int, typer.Option(help="bootstrap resamples for the CIs")] = 1000,
+    labels_file: Annotated[
+        Path | None, typer.Option(help="exported candidates_labels.parquet")
+    ] = None,
+) -> None:
+    """Score the velocity baselines on the rolling-origin folds; write reports/baseline.md."""
+    from breakout.ml import baseline
+
+    cfg = get_config(ctx.obj["config"])
+    baseline.run(cfg, labels_file, n_boot=n_boot)
+    typer.echo(f"wrote {baseline.REPORT}")
+
 
 build_app = typer.Typer(help="dbt build commands (Phase 5).", no_args_is_help=True)
 app.add_typer(build_app, name="build")
@@ -92,6 +111,26 @@ def build_history_cmd(
             resume_at=resume_at,
         )
     )
+
+
+@build_app.command("labels")
+def build_labels_cmd(
+    ctx: typer.Context,
+    test: Annotated[bool, typer.Option(help="run the mart tests")] = True,
+    build: Annotated[bool, typer.Option(help="run dbt (off = export only)")] = True,
+    upload: Annotated[bool, typer.Option(help="upload the export to the derived repo")] = False,
+) -> None:
+    """Build snapshot dates, candidates and labels (dbt), export to Parquet, print the summary."""
+    from breakout.dbt_runner import run_labels
+    from breakout.ml import labels_export as le
+
+    cfg = get_config(ctx.obj["config"])
+    if build and (rc := run_labels(cfg, test=test)) != 0:
+        raise typer.Exit(rc)
+    summary = le.export_labels()
+    typer.echo(json.dumps(summary, indent=2, default=str))
+    if upload:
+        typer.echo(json.dumps(le.upload_labels(cfg)))
 
 
 enrich_app = typer.Typer(

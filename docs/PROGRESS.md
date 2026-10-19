@@ -11,7 +11,7 @@ measured (row counts, sizes, runtimes, metrics). Future sessions rely on it.
 | 03 | Lake on Hugging Face (layout, upload, sync, compaction) | ☑ | 2026-10-15 | 4 public repos; 943 files, 60.68 GB, 3.26 G rows on the Hub (44 commits); catalog + cards live; pull and `hf://` queries verified; `lake verify --remote` 0 problems; 163 tests pass. Hourly-era backfill done 2026-10-16: 1,523 files, 114.91 GB, 5.59 G rows, 142 months, 41/41 jobs ok, 2 hours missing upstream. |
 | 04 | Enrichment (repo metadata, actor age, trending, HN) | ☑ | 2026-10-16 | 7 tables built and on the Hub (`derived/enrich/`): name history 46.5 M pairs, metadata 1,684,571 repos (76.5% found / 23.5% not_found), actor-age map median error 1.9 days, trending 1.52 M rows over 4,360 days, HN 196,217 stories; 226 tests pass. See "Phase 4 status" and ADR-016..019. |
 | 05 | dbt staging & intermediate models | ☑ | 2026-10-19 | 35 models (17 staging, 18 intermediate; 5 are new prefilters or moved, ADR-020), 162 tests, all pass on the full trusted history 2015-01-01..2025-05-23: warehouse 33 GB, 4.3 G source events. Built with hash-bucketed incremental models (ADR-020). 236 pytest pass. See "Phase 5 status". |
-| 06 | Candidates, labels, baseline, evaluation harness | ☐ | | |
+| 06 | Candidates, labels, baseline, evaluation harness | ☑ | 2026-10-19 | 3 marts, 31 dbt tests pass (1 warn-severity test, 0 rows); 486 matured snapshots, 2,485,109 candidate rows, 0.510% positive; B1 pooled PR-AUC 0.0520 [0.0491, 0.0551], P@25 0.120; 29 folds. See "Phase 6 status". |
 | 07 | Point-in-time feature marts | ☐ | | |
 | 08 | LightGBM, calibration, SHAP, model registry | ☐ | | |
 | 09 | Daily pipeline, weekly retrain, health checks | ☐ | | |
@@ -37,6 +37,25 @@ measured (row counts, sizes, runtimes, metrics). Future sessions rely on it.
 | Source test from a GitHub Actions runner | ☑ NO-GO | OpenDigger ~0.01 MB/s from the runner (needs >= 1), manifests 404; gharchive 54 MB/s. `reports/source_validation.md`, run 38194688025 |
 | Stargazers API for per-repo ground truth | ✖ not available | GitHub restricted it to admins/collaborators in July 2026 (ADR-010) |
 | Live-source gate / item 5 | ☐ not started | waits for your review of the source test |
+
+## Phase 6 status (2026-10-19)
+
+- Code: dbt `models/marts/{mart_snapshot_dates,mart_candidates,mart_labels}.sql` + `_marts.yml`, macro
+  `latest_ingested_day`, singular tests `candidates_no_forks`, `labels_only_matured`, `labels_positive_rate`
+  (warn), `candidates_known_repos`; Python `breakout.ml.{splits,metrics,baseline,labels_export}`; CLI
+  `breakout build labels [--no-build] [--upload]` and `breakout ml baseline [--n-boot]`; `reports/baseline.md`,
+  `reports/metrics/baseline.json`, two PNGs. Tests: 24 new `tests/ml` tests + CLI/config-var tests.
+- **How to run:** same env/caps as Phase 5 (local warehouse), then `breakout build labels` (dbt marts, tests,
+  export to `data/derived/labels/candidates_labels.parquet`, 33 MB) and `breakout ml baseline`.
+- **Runtimes / memory:** `mart_candidates` 32 buckets x ~20 s, peak RSS 2.1 GB (4 GB cap, 2 GB DuckDB limit);
+  `mart_labels` 20 s; snapshot dates <1 s; baseline report ~1.5 min with 1,000 bootstrap resamples.
+- **Numbers:** 486 matured snapshots (490 total; the last four, 2025-04-28..05-19, are unmatured and have
+  candidates but no labels); 2,485,109 candidate-label rows, 850,187 distinct repos, 7,759 distinct positive
+  repos. Rows per year 2016..2025: 170k, 195k, 211k, 238k, 281k, 248k, 286k, 345k, 365k, 145k (to April).
+  Positives per year: 882, 1001, 1079, 1220, 1433, 1266, 1457, 1754, 1856, 734. The floor (100 stars) never
+  binds: the per-snapshot rate is the quantile's 0.5%. `breakout_abs` (>= 500 stars) is rarer: 378-948/year.
+- The warehouse with the marts is in `~/.cache/ghb-warehouse/warehouse.duckdb` only; the SSD copy
+  (`data/warehouse.duckdb`) still has Phase 5 contents. Labels are not uploaded to the Hub yet.
 
 ## Phase 5 status (2026-10-19)
 
@@ -250,7 +269,7 @@ before creating anything new on the Hub or starting long Actions runs in a new p
   push_daily rows (M) / pushes (M): 2015 37.3/104; 2016 52.3/165; 2017 67.4/219; 2018 79.3/258; 2019 92.8/313; 2020 120.6/434; 2021 131.7/490; 2022 169.4/662; 2023 82.5/317.
 - (Phase 2 ops) BigQuery backfill wall clock ~18 h on one worker under a 4 GB cap; merge peak RSS 1.0-1.9 GB; 4 failed attempts fixed by per-day finalization (ADR-012)
 - (Phase 3) Lake size on HF (GB), file count: 114.91 GB, 1,523 data files (+ catalog, README, 42 manifest fragments); 5,592,548,999 rows. Bootstrap (bq) part: 60.68 GB / 943 files; hourly era +54.2 GB / 580 files
-- (Phase 6) Candidates per snapshot (median), positive rate:
+- (Phase 6) Candidates per snapshot (median), positive rate: median 4,990.5 candidates per snapshot (486 matured snapshots, 2016-01-04 .. 2025-04-21); positive rate 0.510% pooled, 0.505-0.518% per year (`breakout_rel`); 7,759 distinct positive repos. Baseline B1 (7-day velocity) pooled over 29 test folds (2018-02..2025-05): PR-AUC 0.0520 [0.0491, 0.0551], ROC-AUC 0.821, P@10 0.145, P@25 0.120 [0.113, 0.127], P@50 0.095; B2 PR-AUC 0.0405 / P@25 0.109; B3 PR-AUC 0.0447 / P@25 0.116. P@25 by year (B1): 2018 .092, 2019 .110, 2020 .120, 2021 .115, 2022 .124, 2023 .137, 2024 .133, 2025 (to Apr) .147. Lead time vs Trending (B1, top-25): 2,836 trending repos, 75.2% never flagged, 11.7% flagged before Trending, 4.6% at least 7 days before, median lead 0 d (IQR 0..2).
 - (Phase 8) Baseline vs model PR-AUC / precision@25 (pooled and per year):
 - (Phase 9) Daily job runtime (median):
 

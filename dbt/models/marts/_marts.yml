@@ -1,0 +1,67 @@
+version: 2
+
+models:
+  - name: mart_snapshot_dates
+    description: >
+      Snapshot dates D (world as known at D 00:00 UTC). weekly_history = Mondays from
+      training.first_snapshot; single = var snapshot_date. is_label_matured = D + horizon <= latest ingested day + 1.
+    columns:
+      - name: snapshot_date
+        tests: [not_null, unique]
+      - name: is_label_matured
+        tests: [not_null]
+
+  - name: mart_candidates
+    description: >
+      Grain (repo_id, snapshot_date). THE candidate definition for training and live scoring
+      (same SQL, mode single for live). Young, small, moving, not fork / mirror / bot-owned.
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments: {combination_of_columns: [repo_id, snapshot_date]}
+    columns:
+      - name: repo_id
+        tests: [not_null]
+      - name: snapshot_date
+        tests: [not_null]
+      - name: age_days
+        tests:
+          - not_null
+          - dbt_utils.accepted_range: {arguments: {min_value: 0, max_value: "{{ var('max_age_days') }}"}}
+      - name: stars_total_before
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              arguments: {min_value: 0, max_value: "{{ var('max_stars_total') }}", inclusive: false}
+      - name: stars_14d
+        tests:
+          - not_null
+          - dbt_utils.accepted_range: {arguments: {min_value: "{{ var('min_stars_14d') }}"}}
+      - name: stars_7d
+        tests: [not_null, {dbt_utils.accepted_range: {arguments: {min_value: 0}}}]
+      - name: stars_prev_7d
+        tests: [not_null, {dbt_utils.accepted_range: {arguments: {min_value: 0}}}]
+      - name: stars_1d
+        tests: [not_null, {dbt_utils.accepted_range: {arguments: {min_value: 0}}}]
+
+  - name: mart_labels
+    description: >
+      Grain (repo_id, snapshot_date), candidates on matured snapshot dates only. Outcomes in
+      [D, D + horizon). The relative threshold is per snapshot over all candidates.
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments: {combination_of_columns: [repo_id, snapshot_date]}
+    columns:
+      - name: repo_id
+        tests: [not_null]
+      - name: snapshot_date
+        tests: [not_null]
+      - name: gain_30d
+        tests: [not_null, {dbt_utils.accepted_range: {arguments: {min_value: 0}}}]
+      - name: threshold_rel
+        tests: [not_null, {dbt_utils.accepted_range: {arguments: {min_value: "{{ var('relative_floor_gain') }}"}}}]
+      - name: breakout_rel
+        tests: [not_null]
+      - name: breakout_abs
+        tests: [not_null]
+      - name: trending_covered
+        tests: [not_null]

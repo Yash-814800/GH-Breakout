@@ -495,3 +495,36 @@ SSD stalls or returns I/O errors under DuckDB's write pattern.
 with the same command, `--resume-at a3` skips already built stages); a plain `dbt build` over the whole
 window will OOM. The daily run (Phase 9) uses a short window and builds the same models without a bucket.
 The warehouse is 33 GB; do not keep two copies on the 193 GB `/home` disk longer than needed.
+
+## ADR-021: Phase 6 candidates, labels and evaluation design (2026-10-19)
+**Context:** Phase 6 (`docs/phases/PHASE_06_labels_baseline_eval.md`) left several details open.
+**Decision:**
+1. **Latest ingested day** (`latest_ingested_day` macro): the day of the newest star in `stg_stars` if that star
+   is in hour 23, otherwise the day before; capped at `events_end - 1`. Snapshots run to that day + 1;
+   `is_label_matured = D + horizon <= latest + 1`. With `trusted_end` 2025-05-23 the last matured snapshot is
+   2025-04-21 (Monday; the exact limit 2025-04-24 is not a Monday).
+2. **Candidates by cumulative sums + ASOF**, not window sums per (repo, D): one cumulative table per repo and
+   four ASOF lookups (D, D-1, D-7, D-14) give all star windows. `mart_candidates` is incremental per `repo_id`
+   bucket (unique key `bucket, snapshot_date`) so that live mode (`snapshot_dates_mode = single`) never
+   deletes history rows. Mirror-like repos are always excluded; `exclude_forks` governs `is_fork`.
+   `not_found` repos (unknown metadata) stay candidates (ADR-017). Bot owner = owner part of the name last
+   seen before D matches the bot login pattern, the `known_bots` seed, bot logins from the bot-actor signals,
+   or the metadata `owner_id` is a bot actor. Owners that are bots only by volume and have no known login are
+   not caught.
+3. **Labels** as specified. `first_trending_date` and `trending_covered` use only all-languages lists
+   (`language_filter IS NULL`, ADR-018); `trending_covered` = at least 54 of the 60 days of the window have such
+   a list (so most of 2014-2018 and 2019-07..12 count as not covered; the lead-time report rests on 2019-01..05 and 2020 onward).
+   `days_to_threshold` is the first day offset where forward cumulative stars reach `threshold_rel`.
+4. **Folds:** calendar blocks of `test_window_months`; first block starts on the first of the month on or after
+   first snapshot + `min_train_years`; train = matured dates `<= test_start - embargo_days`; `make_folds`
+   also requires the horizon and raises if `embargo_days < horizon_days`. Blocks may be shorter at the end.
+5. **Metrics:** precision@k = hits / k; AP and recall@k only for snapshots with a positive; ties by `repo_id`.
+   CIs: moving-block bootstrap (4 consecutive weekly snapshots) over snapshot dates, 1,000 resamples; the
+   pooled PR-AUC CI reuses a once-sorted order with snapshot multiplicities as weights.
+6. **Lead time** is measured against the repo's earliest observed Trending date in covered windows; a flag at
+   or after the Trending date is not "early". Weekly resolution caps the precision of the lead.
+7. **Dependencies:** `pandas` and `matplotlib` moved to runtime dependencies (already locked); mypy ignores
+   pandas stubs.
+**Consequences:** the baseline B1 is the bar for Phase 8: PR-AUC 0.0520, P@25 0.120 (pooled). Label rate is
+0.51% by construction; every year is evaluated separately. Live scoring must call `mart_candidates` with
+`snapshot_dates_mode: single` and a warehouse that contains the staging/intermediate tables of the daily window.

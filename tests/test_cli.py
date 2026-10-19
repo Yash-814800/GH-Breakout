@@ -8,7 +8,7 @@ from breakout.cli import app
 runner = CliRunner()
 GROUPS = ["ingest", "backfill", "lake", "enrich", "build", "ml", "daily", "publish", "ops"]
 STUB_GROUPS = [
-    g for g in GROUPS if g not in ("ingest", "backfill", "lake", "enrich", "build")
+    g for g in GROUPS if g not in ("ingest", "backfill", "lake", "enrich", "build", "ml")
 ]  # real groups
 
 
@@ -24,6 +24,17 @@ def test_stub_groups(group):
     result = runner.invoke(app, [group])
     assert result.exit_code == 0
     assert "not implemented yet (Phase" in result.output
+
+
+def test_ml_group_lists_baseline():
+    result = runner.invoke(app, ["ml", "--help"])
+    assert result.exit_code == 0
+    assert "baseline" in result.output
+
+
+def test_build_group_lists_labels():
+    result = runner.invoke(app, ["build", "--help"])
+    assert "labels" in result.output
 
 
 def test_ingest_group_lists_commands():

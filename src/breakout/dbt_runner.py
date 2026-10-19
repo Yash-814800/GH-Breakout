@@ -48,6 +48,15 @@ def config_vars(cfg: Config) -> dict[str, Any]:
     return {
         "min_stars_14d": cfg.candidates.min_stars_14d,
         "max_age_days": cfg.candidates.max_age_days,
+        "max_stars_total": cfg.candidates.max_stars_total,
+        "exclude_forks": cfg.candidates.exclude_forks,
+        "exclude_bot_owned": cfg.candidates.exclude_bot_owned,
+        "horizon_days": cfg.labels.horizon_days,
+        "relative_quantile": cfg.labels.relative_quantile,
+        "relative_floor_gain": cfg.labels.relative_floor_gain,
+        "absolute_min_gain": cfg.labels.absolute_min_gain,
+        "first_snapshot": cfg.training.first_snapshot.isoformat(),
+        "snapshot_weekday": cfg.training.snapshot_weekday,
         "session_gap_minutes": cfg.features.session_gap_minutes,
         "detail_start_date": (cfg.history.detail_start_date or cfg.history.start_date).isoformat(),
     }
@@ -213,6 +222,25 @@ def run_history(
         log.info("%-70s %9.1fs", uid, secs)
     if _warehouse().exists():
         log.info("warehouse size: %.2f GB", _warehouse().stat().st_size / 1e9)
+    return rc
+
+
+MARTS_CANDIDATES = ["mart_candidates"]
+MARTS_TEST = ["mart_snapshot_dates", "mart_candidates", "mart_labels"]
+
+
+def run_labels(cfg: Config, *, test: bool = True, n_buckets: int = 32) -> int:
+    """Snapshot dates, candidates (bucketed, resumable) and labels over the trusted history."""
+    hv = history_vars(cfg, n_buckets=n_buckets)
+    if (rc := run_dbt(cfg, ["run", "--select", "mart_snapshot_dates"], extra_vars=hv)) != 0:
+        return rc
+    if (rc := run_bucketed(cfg, MARTS_CANDIDATES, extra_vars=hv)) != 0:
+        return rc
+    rc = run_dbt(cfg, ["run", "--select", "mart_labels"], extra_vars=hv)
+    if test and rc == 0:
+        rc = run_dbt(cfg, ["test", "--select", *MARTS_TEST], extra_vars=hv)
+    for uid, secs in sorted(TIMINGS.items(), key=lambda kv: -kv[1])[:8]:
+        log.info("%-60s %9.1fs", uid, secs)
     return rc
 
 

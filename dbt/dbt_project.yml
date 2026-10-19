@@ -17,6 +17,8 @@ vars:
   snapshot_date: null                   # used when mode = single
   n_buckets: 32                         # hash buckets of the bucketed (incremental) models
   bucket: null                          # build only this bucket; null = all buckets in one statement
+  # Phase 6 vars (max_stars_total, exclude_*, horizon_days, relative_*, absolute_min_gain, first_snapshot,
+  # snapshot_weekday) also come from config/project.yaml through the wrapper, with no default here.
   # min_stars_14d, max_age_days, session_gap_minutes and detail_start_date have no default on purpose: the
   # `breakout build dbt` wrapper passes them from config/project.yaml (single source of truth)
 
@@ -25,6 +27,8 @@ models:
     staging:
       +materialized: view
     intermediate:
+      +materialized: table
+    marts:
       +materialized: table
 
 seeds:

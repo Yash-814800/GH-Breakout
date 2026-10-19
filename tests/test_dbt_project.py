@@ -86,6 +86,11 @@ def test_config_vars_come_from_config():
     assert v["min_stars_14d"] == cfg.candidates.min_stars_14d
     assert v["max_age_days"] == cfg.candidates.max_age_days
     assert v["session_gap_minutes"] == cfg.features.session_gap_minutes
+    assert v["max_stars_total"] == cfg.candidates.max_stars_total
+    assert v["horizon_days"] == cfg.labels.horizon_days
+    assert v["relative_quantile"] == cfg.labels.relative_quantile
+    assert v["first_snapshot"] == cfg.training.first_snapshot.isoformat()
+    assert v["snapshot_weekday"] == cfg.training.snapshot_weekday
     h = history_vars(cfg)
     assert h["events_start"] == cfg.history.start_date.isoformat()
     assert h["events_end"] > cfg.history.trusted_end.isoformat()  # exclusive end
