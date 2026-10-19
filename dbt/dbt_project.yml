@@ -30,8 +30,12 @@ models:
       +materialized: table
     marts:
       +materialized: table
+    features:
+      +materialized: incremental
 
 seeds:
   breakout:
     known_bots:
       +column_types: {login: varchar, reason: varchar}
+    top_languages:
+      +column_types: {language: varchar}

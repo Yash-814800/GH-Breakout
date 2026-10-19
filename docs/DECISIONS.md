@@ -528,3 +528,112 @@ The warehouse is 33 GB; do not keep two copies on the 193 GB `/home` disk longer
 **Consequences:** the baseline B1 is the bar for Phase 8: PR-AUC 0.0520, P@25 0.120 (pooled). Label rate is
 0.51% by construction; every year is evaluated separately. Live scoring must call `mart_candidates` with
 `snapshot_dates_mode: single` and a warehouse that contains the staging/intermediate tables of the daily window.
+
+## ADR-022: Phase 7 feature design: tastemaker, groups, deviations from the phase file (2026-10-19)
+**Context:** Phase 7 (`docs/phases/PHASE_07_features.md`) specifies seven feature groups. Implementing them on the
+real tables (`int_*` of Phase 5, `mart_candidates` of Phase 6) forced several definitions that the file leaves open or
+that cannot be built as written.
+**Decision:**
+1. **Layout.** `dbt/models/features/`: `feat_<group>` (incremental, `unique_key=[bucket, snapshot_date]`, built per
+   `repo_id` hash bucket, `on_schema_change: fail`) and `mart_repo_features` = `mart_candidates` keys LEFT JOIN all
+   groups (`dbt_utils.star`). Every group also carries `_max_input_ts` (newest source timestamp used, test-only,
+   not in the mart; `dbt/tests/features_no_future_inputs.sql` fails on any value `>= snapshot_date`). The mart has
+   `bucket, repo_id, snapshot_date` plus 71 features, no name column, no calendar feature.
+2. **`int_repo_daily_activity` gained `n_comment_events` and `n_pr_events`** (all-era totals per type). Without them
+   `pr_events_14d`, `comment_events_14d` and the event-type entropy would be NULL before 2023-06-01 (the existing
+   columns are detail-dependent). The table was rebuilt (16 buckets, same SQL otherwise).
+3. **Tastemaker** (`int_actor_early_stars`, `int_actor_early_cum`, `int_repo_first_hit`, `int_tastemaker_thresholds`):
+   an *early star* is a first star made while the repo had `< max_stars_total` stars (rank among its first stars) and
+   was `<= max_age_days` old: the candidate universe. `is_hit` = the repo gains `>= absolute_min_gain` (500) first stars
+   on the days `(star_day, star_day + 60]` (day granularity). `outcome_day = star_day + 60`; a consumer at D joins with
+   `D > outcome_day` (an ASOF join, strictly), which is the day-granular form of `outcome_known_at < D` and is the
+   conservative one. Score `(hits + alpha) / (early + alpha + beta)` with alpha 1, beta 50 (`features.tastemaker`).
+   The monthly "top 1%" threshold is computed from `(early_known, hits_known)` state counts (running sum of +1/-1
+   deltas per state) instead of scanning the actor table per month, and uses the last month boundary `<= D`.
+   Ties at the threshold stay in the group (the threshold is the smallest score whose cumulative share reaches
+   99%). Beta: the base hit rate of early stars (43,137,077 early stars with an observable outcome, 2,090,675 hits)
+   is 4.85% (8.5% in 2015, 3.0% in 2023, 4.3% in 2025), so beta = 20 (prior mean 1/21 = 4.8%); alpha stays 1.
+   `int_actor_early_stars` has 5,568,720 actors with an early star; the top-1% group is built from the 18.5 M
+   actor states with >= 5 known early stars.
+4. **Deviations from 7.1 (all documented in the dictionary):**
+   - `distinct_actors_14d` -> `actor_days_14d` (sum of daily distinct non-bot actors; an exact distinct count over a
+     window would need another pass over every event table); `issue_comments_14d` -> `comment_events_14d` (comments on
+     issues and PRs together; the split is detail-only); `distinct_pushers_28d` is exact (from
+     `int_core_actors_daily.pushed`).
+   - Sessions: start-based counts use `session_start in [D-28, D)` (the start of a session depends only on earlier
+     events). Duration, size and "top actor share" use only sessions complete as of D, i.e. `session_end + gap < D`
+     (an event after D within the gap would have extended it). `new_contributors_28d` counts actors whose
+     `session_id = 1` starts in the window (non-push activity), not `int_contributor_first_seen` (which includes push
+     days). `top_actor_share_28d` is over contribution events, not all non-star events (actor-level push / fork
+     counts are not materialised).
+   - `owner_is_org` is not built: the staging models carry no `org_id`; `owner_type` (Tier C) says the same.
+     `owner_prior_breakouts` uses `int_repo_first_hit` (an early star followed by 500 stars in 60 days, known before D).
+   - Tier B NULL rule: a covered window with no event is 0, a window without any detail day is NULL;
+     `detail_coverage_28d` = detail days / 28. `core_actor_count_90d` is NULL on and before `detail_start_date`.
+     Merge features are NULL for windows that reach `features.payload_trim_date` (2025-10-07); `era_post_2025_10`
+     and the merge features are `live_available: false` (constant 0 in training / flag removed in live payloads).
+   - `primary_language`: a seed `top_languages` (the 30 most frequent languages among candidate repos) maps the rest
+     to `Other`; NULL and not-found repos are `Unknown`.
+5. **Dictionary** (`config/feature_dictionary.yaml`): the Phase 1 loader fields (`tier, description, requires,
+   live_available`) plus the 7.3 fields (`group, dtype, unit, allowed, leakage_notes, explain_template{high,low}`);
+   `sentence` of the Phase 1 example is replaced by `explain_template`. `validate(strict=True)` checks them; a unit
+   test compares the dictionary with the columns of the mart in both directions.
+**Consequences:** the training table (`mart_repo_features` + labels) is 71 features; the live champion's set is the
+`live_available` subset (68). Detail features are research-only before 2023-11-08 (ADR-010).
+
+## ADR-023: Phase 7 leakage defences and test design (2026-10-19)
+**Context:** 7.2 asks for a time-travel test that rebuilds the features with all inputs truncated at D. A rebuild from
+raw events of the 15-20 hour Phase 5 pipeline per test date is not practical, and sessions / tastemaker states have
+look-ahead structure that needs care.
+**Decision:**
+1. **Time-travel test** (`breakout build leak-test --date D ... --sample 300`, `breakout.features.leak`): a
+   deterministic sample of the candidates of D is copied (with everything the feature SQL reads for them: their
+   stargazers' other early stars, their owners' repos) into two small DuckDB files, one complete and one cut at D
+   (`time < D` on each table's own timestamp column; late first responses / closes / merges / reviews of issues and PRs
+   become NULL; a session that straddles D ends one second before D). The tastemaker models are rebuilt inside the
+   copies from the truncated early stars; only the month thresholds (they need every actor) are copied. The real dbt
+   models run on both (`snapshot_dates_mode: single`, `events_end = D`) and every column of every sampled
+   `(repo_id, D)` must be equal (floats within 1e-9). The complete copy is also compared with the real history mart
+   (copy fidelity). Mutation check: changing `<` to `<=` in `feat_star_dynamics` or `>` to `>=` in the tastemaker ASOF
+   join makes the test fail (done on the synthetic world, see tests).
+   Limit: the derived columns of the materialised intermediates (`actor_events_prior_90d`, sessions, birth) are not
+   rebuilt from raw events; they are covered by their own construction and the Phase 5 tests.
+2. **Synthetic world** (`tests/features/synth.py`, `test_feature_models.py`): a tiny warehouse with the upstream
+   tables, hand-computed expectations for every group (boundary days D-1/D/D+1, a hit that becomes known exactly on
+   the day after `outcome_day`, sessions inside the gap, Tier B NULL vs 0, owner case-insensitivity), and the leak test
+   itself. It found two real bugs while writing (NULL in an `avg` over a boolean, an ambiguous `USING`).
+3. **Guard tests in dbt:** `features_no_future_inputs` (all rows, all groups), `features_star_windows_match_candidates`
+   (the independent star windows equal Phase 6's), `features_tier_b_null_before_detail`, `features_row_parity`
+   (one mart row per candidate), `features_stg_stars_bucket_layout` (the `bucket = repo_id % 32` pruning).
+4. **Long builds run from a frozen copy of `dbt/`** (`GHB_DBT_DIR`): an edit of a model while a bucketed job is running
+   aborted the next bucket (a seed referenced by a new model did not exist yet).
+**Consequences:** `DBT_DIR` can be overridden by `GHB_DBT_DIR`; E501 is ignored in `src/breakout/features/` and
+`tests/features/` (inline SQL).
+
+## ADR-024: Phase 6 correction: repos with unknown metadata were silently dropped from the candidates (2026-10-19)
+**Context:** Building the live single-date features (Phase 7) returned zero candidates for 2026-10-15. Cause: the
+bot-owner filter of `mart_candidates` is `where not (regexp(...) or login in (...) or owner_id in (select actor_id
+from stg_bot_actors))`. For a repo without metadata `owner_id` is NULL, so `owner_id in (...)` is NULL, the whole
+predicate is NULL and the row is dropped. ADR-017/021 say the opposite ("`not_found` repos stay candidates, unknown is
+not false"), and the Phase 6 checks did not catch it because 100% of the 861,799 candidate repos had metadata (the
+23.5% `not_found` repos of the target set were exactly the ones removed). In the live daily run none of the new repos
+has metadata yet, so the bug would have emptied the leaderboard.
+**Decision:** `coalesce(owner_id in (...), false)` in `mart_candidates`; new dbt test `candidates_keep_unknown_metadata`
+(fails when a candidate table over 1,000 rows has no candidate without metadata). `mart_candidates` and `mart_labels`
+were rebuilt for the whole trusted history, the labels export and the baseline report were regenerated.
+**Consequences (Phase 6 numbers change, the old ones were survivorship-biased):**
+- Candidate-label rows 2,485,109 -> **3,098,574** (+24.7%), distinct repos 850,187 -> **1,125,113**, distinct positive
+  repos 7,759 -> **9,606**, median candidates per snapshot 4,990.5 -> **5,626.5**, positive rate 0.510% -> 0.509%
+  (by construction, 486 matured snapshots unchanged).
+- Baseline B1 (7-day velocity), pooled over the 29 folds: PR-AUC 0.0520 [0.0491, 0.0551] -> **0.0286 [0.0246, 0.0345]**,
+  ROC-AUC 0.821 -> 0.816, P@10 0.145 -> 0.129, P@25 0.120 -> **0.109 [0.100, 0.118]**, P@50 0.095 -> 0.086; B2 PR-AUC
+  0.0405 -> 0.0197, B3 0.0447 -> 0.0227. The newly included repos (deleted / blocked accounts, largely spam and star
+  farms) have high velocity and often do not stay: they are exactly what the fake-star detector (Phase 11) targets, and
+  the bar for Phase 8 is this lower, honest baseline. B1 precision@25 by year is now 0.102 (2018), 0.116, 0.132,
+  0.123, 0.143 (2022), **0.085 (2023), 0.055 (2024)**, 0.133 (2025, to April): in 2023-24, when the found share of the
+  target repos is only 59-65%, velocity alone is a poor ranker. `reports/baseline.md` has the full tables.
+- The Hugging Face copy `labels/candidates_labels.parquet` (derived repo) is still the old file until the human approves
+  a new upload (`breakout build labels --no-build --upload`); the local export is current.
+- Live scoring needs metadata for new candidates: `primary_language` / `owner_type` are 'Unknown' for every repo created
+  after the trusted era until Phase 9 fetches them (`breakout enrich repos --repo-ids-file`); training contains a large
+  'Unknown' share now (not_found repos), so the model sees the category.

@@ -3,7 +3,8 @@
   Grain (repo_id, day) for young-moving repos over the whole window. One UNION ALL of slim
   per-type projections, then one GROUP BY. Counts that need payload detail (action, ref_type,
   is_pull_request, merged flag) are NULL on days before detail_start_date (detail_level 0), never 0.
-  Bots are excluded in staging. Built in 16 repo_id hash buckets (ADR-020).
+  n_issue_events, n_comment_events and n_pr_events count every event of the type (all eras, spine only);
+  Phase 7 uses them for era-independent activity features. Bots are excluded in staging. Built in 16 repo_id hash buckets (ADR-020).
 #}
 with y as (select repo_id from {{ ref('int_young_moving_repos') }} where {{ bucket_filter('repo_id') }}),
 u as (
@@ -44,6 +45,8 @@ ev as (
         count(*) filter (where k = 'issue')::integer as n_issue_events,
         count(*) filter (where k = 'issue' and a = 'opened')::integer as _issues_opened,
         count(*) filter (where k = 'issue' and a = 'closed')::integer as _issues_closed,
+        count(*) filter (where k = 'issue_comment')::integer as n_comment_events,
+        count(*) filter (where k = 'pr')::integer as n_pr_events,
         count(*) filter (where k = 'issue_comment' and flag = false)::integer as _issue_comments,
         count(*) filter (where k = 'issue_comment' and flag = true)::integer as _pr_comments,
         count(*) filter (where k = 'pr' and a = 'opened')::integer as _prs_opened,
@@ -68,6 +71,8 @@ select
     case when day >= date '{{ var("detail_start_date") }}' then coalesce(_issues_opened, 0) end as n_issues_opened,
     case when day >= date '{{ var("detail_start_date") }}' then coalesce(_issues_closed, 0) end as n_issues_closed,
     coalesce(n_issue_events, 0) as n_issue_events,
+    coalesce(n_comment_events, 0) as n_comment_events,
+    coalesce(n_pr_events, 0) as n_pr_events,
     case when day >= date '{{ var("detail_start_date") }}' then coalesce(_issue_comments, 0) end as n_issue_comments,
     case when day >= date '{{ var("detail_start_date") }}' then coalesce(_pr_comments, 0) end as n_pr_comments,
     case when day >= date '{{ var("detail_start_date") }}' then coalesce(_prs_opened, 0) end as n_prs_opened,

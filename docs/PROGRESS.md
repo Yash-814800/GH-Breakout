@@ -11,8 +11,8 @@ measured (row counts, sizes, runtimes, metrics). Future sessions rely on it.
 | 03 | Lake on Hugging Face (layout, upload, sync, compaction) | ☑ | 2026-10-15 | 4 public repos; 943 files, 60.68 GB, 3.26 G rows on the Hub (44 commits); catalog + cards live; pull and `hf://` queries verified; `lake verify --remote` 0 problems; 163 tests pass. Hourly-era backfill done 2026-10-16: 1,523 files, 114.91 GB, 5.59 G rows, 142 months, 41/41 jobs ok, 2 hours missing upstream. |
 | 04 | Enrichment (repo metadata, actor age, trending, HN) | ☑ | 2026-10-16 | 7 tables built and on the Hub (`derived/enrich/`): name history 46.5 M pairs, metadata 1,684,571 repos (76.5% found / 23.5% not_found), actor-age map median error 1.9 days, trending 1.52 M rows over 4,360 days, HN 196,217 stories; 226 tests pass. See "Phase 4 status" and ADR-016..019. |
 | 05 | dbt staging & intermediate models | ☑ | 2026-10-19 | 35 models (17 staging, 18 intermediate; 5 are new prefilters or moved, ADR-020), 162 tests, all pass on the full trusted history 2015-01-01..2025-05-23: warehouse 33 GB, 4.3 G source events. Built with hash-bucketed incremental models (ADR-020). 236 pytest pass. See "Phase 5 status". |
-| 06 | Candidates, labels, baseline, evaluation harness | ☑ | 2026-10-19 | 3 marts, 31 dbt tests pass (1 warn-severity test, 0 rows); 486 matured snapshots, 2,485,109 candidate rows, 0.510% positive; B1 pooled PR-AUC 0.0520 [0.0491, 0.0551], P@25 0.120; 29 folds. See "Phase 6 status". |
-| 07 | Point-in-time feature marts | ☐ | | |
+| 06 | Candidates, labels, baseline, evaluation harness | ☑ | 2026-10-19 | **Corrected 2026-10-19 (ADR-024)**: repos with unknown metadata were silently dropped by a NULL in the bot-owner filter. 3 marts, 33 dbt tests pass; 486 matured snapshots, **3,098,574** candidate rows (was 2,485,109), 0.509% positive; B1 pooled PR-AUC **0.0286** [0.0246, 0.0345] (was 0.0520), P@25 0.109; 29 folds. See "Phase 6 status".
+| 07 | Point-in-time feature marts | ☑ | 2026-10-19 | 7 feature groups + mart, 71 features (68 live-available), 63 dbt tests pass; 3,098,574 training rows 2016-2025; leak test PASS on 2018-05-14, 2021-03-01, 2024-06-03 and 2026-10-12 (300 repos x 71 columns each); live build for 2026-10-15 has identical columns/types; 17 tests in tests/features. See "Phase 7 status" and ADR-022..024.
 | 08 | LightGBM, calibration, SHAP, model registry | ☐ | | |
 | 09 | Daily pipeline, weekly retrain, health checks | ☐ | | |
 | 10 | Website (Astro) + deploy | ☐ | | |
@@ -38,8 +38,60 @@ measured (row counts, sizes, runtimes, metrics). Future sessions rely on it.
 | Stargazers API for per-repo ground truth | ✖ not available | GitHub restricted it to admins/collaborators in July 2026 (ADR-010) |
 | Live-source gate / item 5 | ☐ not started | waits for your review of the source test |
 
+## Phase 7 status (2026-10-19)
+
+- Code: dbt `models/features/{feat_star_dynamics,feat_activity,feat_stargazers,feat_tastemaker,feat_owner,feat_detail,
+  feat_enrich,mart_repo_features}` + `_features.yml`, intermediates `int_actor_early_stars`, `int_actor_early_cum`,
+  `int_repo_first_hit`, `int_tastemaker_thresholds`, macro `shannon_entropy_bits`, seed `top_languages` (30 languages),
+  5 singular tests (`features_no_future_inputs`, `features_star_windows_match_candidates`,
+  `features_tier_b_null_before_detail`, `features_row_parity`, `features_stg_stars_bucket_layout`) and
+  `candidates_keep_unknown_metadata`; Python `breakout.features.{build,leak,eda,publish}`; CLI `breakout build
+  features --history | --date D`, `build leak-test`, `build feature-eda`; `config/feature_dictionary.yaml` (71 entries);
+  `int_repo_daily_activity` gained `n_comment_events`, `n_pr_events` (rebuilt, 138,886,100 rows unchanged).
+  Tests: `tests/features/` (17: hand-computed synthetic world + leak machinery + export/EDA helpers), dictionary and CLI tests.
+- **How to run:** same env/caps as Phase 5 (local `GHB_WAREHOUSE`), from a frozen copy of `dbt/` (`GHB_DBT_DIR`, runbook), then
+  `breakout build features --history` (resumable by bucket; runs the dbt tests and exports the training table).
+- **Build time** (single thread, 2 GB, 32 buckets, sum of the dbt-reported model times; dbt start-up adds ~12 s per call):
+  `int_actor_early_stars` 176 s, `int_actor_early_cum` 40 s, `int_tastemaker_thresholds` 18 s; `feat_activity` 439 s,
+  `feat_stargazers` 342 s, `feat_owner` 315 s, `feat_tastemaker` 235 s, `feat_detail` 125 s, `feat_star_dynamics` 105 s,
+  `feat_enrich` 11 s, `mart_repo_features` 122 s. The history build is ~12 min (intermediates) + ~31 min (groups) of wall clock.
+  Peak model memory measured on real data (one bucket): 1.1-1.6 GB RSS with the 2 GB DuckDB limit.
+- **Rows:** `mart_repo_features` 3,146,887 rows (4 unmatured snapshots included); training table (matured snapshots only)
+  3,098,574 rows, 71 features + 7 label columns, `data/derived/training/features_labels/year=2016..2025/part-0.parquet`
+  (139 MB), `feature_manifest.json`. Per year: 190,364 / 217,516 / 235,103 / 262,977 / 311,582 / 279,747 / 341,416 /
+  547,801 / 513,712 / 198,356 (2016..2025).
+- **Tastemaker:** 43,137,077 early stars with an observable outcome, hit rate 4.85% (8.5% in 2015, 3.0% in 2023); 5,568,720
+  actors, 29,067,175 (actor, outcome-day) states, 18,514,068 with >= 5 known early stars; beta = 20 (ADR-022).
+- **NULL rates** (`reports/metrics/feature_null_rates.json`, `reports/feature_eda.md`): Tier B features are 100% NULL up to
+  2022 and 44% in 2023 (detail starts 2023-06-01), 0% from 2024 for the count features and 72-85% for the ratio / median
+  ones (no issue or PR in the window). Tier A with sparse support: `days_since_last_release` 81-87% (no release),
+  `median_session_minutes_28d` / `top_actor_share_28d` / `first_time_contributor_rate_28d` 45-65% (no contribution
+  session), `sg_retention_*` 19-29%, `star_max_hour_share_7d` 10-23%, `hn_max_points_aged` 95-99%.
+- **Leak test** (`breakout build leak-test`, 300 sampled candidates, 71 columns, full world vs inputs truncated at D):
+  `2018-05-14 PASS (60 columns have non-NULL values; the 11 Tier B columns are NULL before 2023)`, `2021-03-01 PASS (first of
+  a month: threshold boundary M == D)`, `2024-06-03 PASS (71/71)`, `2026-10-12 PASS (after the 2025-10-07 payload trim, on a
+  window warehouse, 68/71)`; each also reproduces the real mart rows exactly (0 differing). Mutation check: `>=` instead of `>`
+  on the outcome day or `<=` instead of `<` on the star day make the synthetic leak test fail.
+- **Live build:** window warehouse 2026-05-01..2026-10-14 built with the daily-run shape (no buckets): 34 dbt models in 3 min,
+  `lake pull` of that window 4.0 GB / 190 files; `breakout build features --date 2026-10-15` (the newest possible date: the lake
+  ends 2026-10-14) gives 1,253 candidates and `data/derived/live/features_2026-10-15.parquet` with the **same 74 columns,
+  order and types** as the training table. 2026-10-12: 1,396 candidates. Metadata of these repos is not fetched yet (Phase 9).
+- **EDA:** top univariate ROC-AUCs `stars_3d` 0.817, `stars_7d` 0.811, `actor_days_14d` 0.784, `stars_1d` 0.779,
+  `sg_tm_max_14d` 0.779 (tastemaker), `sg_n` 0.774; `star_max_hour_share_7d` 0.241 (a one-hour burst points away from a breakout).
+  11 correlation clusters at |rho| >= 0.8 (e.g. `stars_14d`/`sg_n`/`actor_days_14d`).
+- Hugging Face: `training/` upload recorded in the Phase 7 hand-off below.
+
 ## Phase 6 status (2026-10-19)
 
+- **Correction (ADR-024):** the numbers below were measured before a NULL-semantics bug was found (repos with unknown
+  metadata were dropped from `mart_candidates`). After the fix: 3 marts, 33 dbt tests pass; 486 matured snapshots, **3,098,574**
+  candidate-label rows, 1,125,113 distinct repos, 9,606 distinct positive repos, median 5,626.5 candidates per snapshot,
+  0.509% positive; rows per year 2016..2025: 190k, 218k, 235k, 263k, 312k, 280k, 341k, 548k, 514k, 198k; positives:
+  981, 1117, 1204, 1348, 1585, 1418, 1734, 2778, 2605, 1003 (`breakout_abs`: 638, 739, 644, 600, 645, 519, 554, 980,
+  820, 393). B1 pooled PR-AUC 0.0286 [0.0246, 0.0345], ROC-AUC 0.816, P@10 0.129, P@25 0.109 [0.100, 0.118], P@50 0.086;
+  B2 0.0197 / 0.098; B3 0.0227 / 0.105. B1 P@25 by year: 2018 .102, 2019 .116, 2020 .132, 2021 .123, 2022 .143, 2023 .085,
+  2024 .055, 2025 .133. Lead time vs Trending (B1): 3,053 trending repos, 80.1% never flagged, 8.8% flagged before Trending.
+  `mart_candidates` rebuilt in 293 s (32 buckets), `mart_labels` 20 s. The old figures are kept below for the record.
 - Code: dbt `models/marts/{mart_snapshot_dates,mart_candidates,mart_labels}.sql` + `_marts.yml`, macro
   `latest_ingested_day`, singular tests `candidates_no_forks`, `labels_only_matured`, `labels_positive_rate`
   (warn), `candidates_known_repos`; Python `breakout.ml.{splits,metrics,baseline,labels_export}`; CLI
@@ -269,7 +321,8 @@ before creating anything new on the Hub or starting long Actions runs in a new p
   push_daily rows (M) / pushes (M): 2015 37.3/104; 2016 52.3/165; 2017 67.4/219; 2018 79.3/258; 2019 92.8/313; 2020 120.6/434; 2021 131.7/490; 2022 169.4/662; 2023 82.5/317.
 - (Phase 2 ops) BigQuery backfill wall clock ~18 h on one worker under a 4 GB cap; merge peak RSS 1.0-1.9 GB; 4 failed attempts fixed by per-day finalization (ADR-012)
 - (Phase 3) Lake size on HF (GB), file count: 114.91 GB, 1,523 data files (+ catalog, README, 42 manifest fragments); 5,592,548,999 rows. Bootstrap (bq) part: 60.68 GB / 943 files; hourly era +54.2 GB / 580 files
-- (Phase 6) Candidates per snapshot (median), positive rate: median 4,990.5 candidates per snapshot (486 matured snapshots, 2016-01-04 .. 2025-04-21); positive rate 0.510% pooled, 0.505-0.518% per year (`breakout_rel`); 7,759 distinct positive repos. Baseline B1 (7-day velocity) pooled over 29 test folds (2018-02..2025-05): PR-AUC 0.0520 [0.0491, 0.0551], ROC-AUC 0.821, P@10 0.145, P@25 0.120 [0.113, 0.127], P@50 0.095; B2 PR-AUC 0.0405 / P@25 0.109; B3 PR-AUC 0.0447 / P@25 0.116. P@25 by year (B1): 2018 .092, 2019 .110, 2020 .120, 2021 .115, 2022 .124, 2023 .137, 2024 .133, 2025 (to Apr) .147. Lead time vs Trending (B1, top-25): 2,836 trending repos, 75.2% never flagged, 11.7% flagged before Trending, 4.6% at least 7 days before, median lead 0 d (IQR 0..2).
+- (Phase 6, superseded by the ADR-024 correction, see "Phase 6 status") Candidates per snapshot (median), positive rate: median 4,990.5 candidates per snapshot (486 matured snapshots, 2016-01-04 .. 2025-04-21); positive rate 0.510% pooled, 0.505-0.518% per year (`breakout_rel`); 7,759 distinct positive repos. Baseline B1 (7-day velocity) pooled over 29 test folds (2018-02..2025-05): PR-AUC 0.0520 [0.0491, 0.0551], ROC-AUC 0.821, P@10 0.145, P@25 0.120 [0.113, 0.127], P@50 0.095; B2 PR-AUC 0.0405 / P@25 0.109; B3 PR-AUC 0.0447 / P@25 0.116. P@25 by year (B1): 2018 .092, 2019 .110, 2020 .120, 2021 .115, 2022 .124, 2023 .137, 2024 .133, 2025 (to Apr) .147. Lead time vs Trending (B1, top-25): 2,836 trending repos, 75.2% never flagged, 11.7% flagged before Trending, 4.6% at least 7 days before, median lead 0 d (IQR 0..2).
+- (Phase 7) Feature build: see "Phase 7 status". Training rows 3,098,574; 71 features; tastemaker base hit rate 4.85%.
 - (Phase 8) Baseline vs model PR-AUC / precision@25 (pooled and per year):
 - (Phase 9) Daily job runtime (median):
 

@@ -18,7 +18,9 @@ from breakout.logging import get_logger
 
 log = get_logger(__name__)
 
-DBT_DIR = P.ROOT / "dbt"
+# GHB_DBT_DIR lets a long build run from a frozen copy of the project (edits to dbt/ would
+# otherwise break the next bucket of a running job)
+DBT_DIR = Path(os.environ.get("GHB_DBT_DIR") or P.ROOT / "dbt")
 DERIVED_DIR = P.DERIVED_DIR
 DEFAULT_MEMORY = "1500MB"
 
@@ -58,6 +60,13 @@ def config_vars(cfg: Config) -> dict[str, Any]:
         "first_snapshot": cfg.training.first_snapshot.isoformat(),
         "snapshot_weekday": cfg.training.snapshot_weekday,
         "session_gap_minutes": cfg.features.session_gap_minutes,
+        "payload_trim_date": cfg.features.payload_trim_date.isoformat(),
+        "tm_lookahead_days": cfg.features.tastemaker.lookahead_days,
+        "tm_alpha": cfg.features.tastemaker.alpha,
+        "tm_beta": cfg.features.tastemaker.beta,
+        "tm_min_known": cfg.features.tastemaker.min_known,
+        "tm_top_quantile": cfg.features.tastemaker.top_quantile,
+        "hn_enabled": cfg.optional.hn_enabled,
         "detail_start_date": (cfg.history.detail_start_date or cfg.history.start_date).isoformat(),
     }
 
@@ -227,6 +236,15 @@ def run_history(
 
 MARTS_CANDIDATES = ["mart_candidates"]
 MARTS_TEST = ["mart_snapshot_dates", "mart_candidates", "mart_labels"]
+# Phase 7 singular tests that also depend on the candidate marts need the feature tables, so the
+# Phase 6 build excludes them (`breakout build features` runs them)
+FEATURE_SINGULAR_TESTS = [
+    "features_no_future_inputs",
+    "features_star_windows_match_candidates",
+    "features_tier_b_null_before_detail",
+    "features_row_parity",
+    "features_stg_stars_bucket_layout",
+]
 
 
 def run_labels(cfg: Config, *, test: bool = True, n_buckets: int = 32) -> int:
@@ -238,7 +256,11 @@ def run_labels(cfg: Config, *, test: bool = True, n_buckets: int = 32) -> int:
         return rc
     rc = run_dbt(cfg, ["run", "--select", "mart_labels"], extra_vars=hv)
     if test and rc == 0:
-        rc = run_dbt(cfg, ["test", "--select", *MARTS_TEST], extra_vars=hv)
+        rc = run_dbt(
+            cfg,
+            ["test", "--select", *MARTS_TEST, "--exclude", *FEATURE_SINGULAR_TESTS],
+            extra_vars=hv,
+        )
     for uid, secs in sorted(TIMINGS.items(), key=lambda kv: -kv[1])[:8]:
         log.info("%-60s %9.1fs", uid, secs)
     return rc

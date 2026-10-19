@@ -6,7 +6,12 @@ from breakout import features_dict as fd
 
 
 def test_shipped_dictionary_is_valid() -> None:
-    assert fd.load() == {}  # populated in Phase 7; the file must already validate
+    feats = fd.load()
+    assert len(feats) >= 60
+    assert {e["tier"] for e in feats.values()} == {"A", "B", "C"}
+    # the merge features read the PR merged flag, which live payloads do not carry
+    assert feats["prs_merged_28d"]["live_available"] is False
+    assert "prs_merged_28d" not in fd.live_features(feats)
 
 
 def _entry(**kw):
@@ -37,3 +42,43 @@ def test_live_features_lists_only_live_available() -> None:
         {"features": {"a": _entry(), "b": _entry(live_available=False), "c": _entry()}}
     )
     assert fd.live_features(feats) == ["a", "c"]
+
+
+def _full(**kw):
+    base = _entry(
+        group="g",
+        dtype="int",
+        unit="u",
+        allowed=True,
+        leakage_notes="n",
+        explain_template={"high": "h", "low": "l"},
+    )
+    base.update(kw)
+    return base
+
+
+def test_strict_mode_requires_phase7_fields() -> None:
+    assert fd.validate({"features": {"f": _full()}}, strict=True)
+    with pytest.raises(fd.FeatureDictionaryError, match="leakage_notes"):
+        fd.validate({"features": {"f": _entry()}}, strict=True)
+    with pytest.raises(fd.FeatureDictionaryError, match="explain_template"):
+        fd.validate({"features": {"f": _full(explain_template={"high": "h"})}}, strict=True)
+    with pytest.raises(fd.FeatureDictionaryError, match="dtype"):
+        fd.validate({"features": {"f": _full(dtype="str")}}, strict=True)
+
+
+def test_compare_with_columns_ignores_keys_and_reports_both_directions() -> None:
+    feats = {"a": _full(), "b": _full()}
+    assert fd.compare_with_columns(feats, ["bucket", "repo_id", "snapshot_date", "a", "b"]) == (
+        [],
+        [],
+    )
+    assert fd.compare_with_columns(feats, ["repo_id", "a", "c"]) == (["c"], ["b"])
+
+
+def test_model_features_respects_allowed_and_live() -> None:
+    feats = fd.validate(
+        {"features": {"a": _full(), "b": _full(live_available=False), "c": _full(allowed=False)}}
+    )
+    assert fd.model_features(feats) == ["a"]
+    assert fd.model_features(feats, live_only=False) == ["a", "b"]

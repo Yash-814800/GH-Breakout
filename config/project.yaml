@@ -108,6 +108,13 @@ features:
   windows_days: [1, 3, 7, 14, 28]
   stargazer_activity_lookback_days: 90
   session_gap_minutes: 30
+  payload_trim_date: 2025-10-07   # GitHub trimmed Events payloads: PR merged flag / author NULL from here (ADR-003/007)
+  tastemaker:                     # Phase 7 co-star score (ADR-022)
+    lookahead_days: 60            # an early star is a hit if the repo gains >= labels.absolute_min_gain in this window
+    alpha: 1.0                    # smoothed score (hits + alpha) / (early_stars + alpha + beta)
+    beta: 20.0                    # prior mean alpha/(alpha+beta) = 4.8% ~ base hit rate of early stars (4.85%, ADR-022)
+    min_known: 5                  # early stars with a known outcome needed to enter the top group
+    top_quantile: 0.01            # top 1% of actors with >= min_known, as of the last month boundary before D
 
 daily:
   run_hour_utc: 3                 # cron is approximate; GitHub may delay scheduled runs

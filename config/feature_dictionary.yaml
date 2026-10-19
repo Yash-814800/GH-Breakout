@@ -1,5 +1,5 @@
 # Feature dictionary (single source of truth for feature names, descriptions and SHAP sentences).
-# Populated in Phase 7. Every entry MUST declare `live_available` (ADR-010):
+# Phase 7: one entry per column of mart_repo_features (unit test). Every entry MUST declare `live_available` (ADR-010):
 #   true  = reproducible from the live source (post-2025-10-07 payloads, plus the API-first subset
 #           if that mode is adopted). The live champion trains only on these.
 #   false = needs fields that the live source does not carry (see LIVE_NULL_FIELDS in
@@ -7,7 +7,9 @@
 # `requires` lists the slim-schema columns a feature reads, as {type: <event type>, column: <col>};
 # validation rejects `live_available: true` when a required column is NULL in live payloads.
 #
-# Example (illustrative; real entries arrive with Phase 7):
+# Entry fields: group, tier (A|B|C), dtype (int|float|bool|category), unit, description, allowed (model may use),
+# leakage_notes, live_available, requires, explain_template {high, low} (phrases with {value} / {pct}).
+# Old-style example (kept for reference; 'sentence' is now explain_template):
 #   stars_7d:
 #     tier: A
 #     description: "Stars received in the 7 days before the snapshot"
@@ -20,7 +22,1071 @@
 #     requires: [{type: PullRequestEvent, column: pr_merged}]
 #     live_available: false      # pr_merged is NULL in post-2025-10-07 payloads
 version: 1
-features: {}
+features:
+  stars_1d:
+    group: star_dynamics
+    tier: A
+    dtype: int
+    unit: stars
+    description: Stars received in the last 1 day
+    allowed: true
+    leakage_notes: first stars with day < D
+    live_available: true
+    requires:
+    - type: WatchEvent
+      column: created_at
+    explain_template:
+      high: '{value} stars yesterday'
+      low: no stars yesterday
+  stars_3d:
+    group: star_dynamics
+    tier: A
+    dtype: int
+    unit: stars
+    description: Stars received in the last 3 days
+    allowed: true
+    leakage_notes: first stars with day < D
+    live_available: true
+    requires:
+    - type: WatchEvent
+      column: created_at
+    explain_template:
+      high: '{value} stars in the last 3 days'
+      low: few stars in the last 3 days
+  stars_7d:
+    group: star_dynamics
+    tier: A
+    dtype: int
+    unit: stars
+    description: Stars received in the last 7 days
+    allowed: true
+    leakage_notes: first stars with day < D
+    live_available: true
+    requires:
+    - type: WatchEvent
+      column: created_at
+    explain_template:
+      high: '{value} stars in the last week'
+      low: few stars in the last week
+  stars_14d:
+    group: star_dynamics
+    tier: A
+    dtype: int
+    unit: stars
+    description: Stars received in the last 14 days
+    allowed: true
+    leakage_notes: first stars with day < D
+    live_available: true
+    requires:
+    - type: WatchEvent
+      column: created_at
+    explain_template:
+      high: '{value} stars in the last two weeks'
+      low: few stars in the last two weeks
+  stars_28d:
+    group: star_dynamics
+    tier: A
+    dtype: int
+    unit: stars
+    description: Stars received in the last 28 days
+    allowed: true
+    leakage_notes: first stars with day < D
+    live_available: true
+    requires:
+    - type: WatchEvent
+      column: created_at
+    explain_template:
+      high: '{value} stars in the last four weeks'
+      low: few stars in the last four weeks
+  stars_total_before:
+    group: star_dynamics
+    tier: A
+    dtype: int
+    unit: stars
+    description: Cumulative stars observed before D
+    allowed: true
+    leakage_notes: first stars with day < D
+    live_available: true
+    requires:
+    - type: WatchEvent
+      column: created_at
+    explain_template:
+      high: already has {value} stars
+      low: very few stars so far
+  star_accel_7d:
+    group: star_dynamics
+    tier: A
+    dtype: int
+    unit: stars
+    description: Stars in the last 7 days minus stars in the 7 days before
+    allowed: true
+    leakage_notes: first stars with day < D
+    live_available: true
+    requires:
+    - type: WatchEvent
+      column: created_at
+    explain_template:
+      high: gaining {value} more stars per week than the week before
+      low: star growth is slowing down
+  star_ratio_7d:
+    group: star_dynamics
+    tier: A
+    dtype: float
+    unit: ratio
+    description: (stars last 7d + 1) / (stars previous 7d + 1)
+    allowed: true
+    leakage_notes: first stars with day < D
+    live_available: true
+    requires:
+    - type: WatchEvent
+      column: created_at
+    explain_template:
+      high: star growth is {value}x last week's pace
+      low: star growth is flat or slowing
+  days_since_first_star:
+    group: star_dynamics
+    tier: A
+    dtype: int
+    unit: days
+    description: Days from the first observed star to D
+    allowed: true
+    leakage_notes: first star day < D
+    live_available: true
+    requires:
+    - type: WatchEvent
+      column: created_at
+    explain_template:
+      high: first starred only {value} days ago
+      low: has been collecting stars for a while
+  age_days:
+    group: star_dynamics
+    tier: A
+    dtype: int
+    unit: days
+    description: Days since the repository's birth (mart_candidates definition)
+    allowed: true
+    leakage_notes: birth_at < D
+    live_available: true
+    requires:
+    - type: WatchEvent
+      column: created_at
+    explain_template:
+      high: only {value} days old
+      low: '{value} days old'
+  star_active_days_14d:
+    group: star_dynamics
+    tier: A
+    dtype: int
+    unit: days
+    description: Days among the last 14 with at least one star
+    allowed: true
+    leakage_notes: first stars with day < D
+    live_available: true
+    requires:
+    - type: WatchEvent
+      column: created_at
+    explain_template:
+      high: stars arrived on {value} of the last 14 days
+      low: stars arrived on few days
+  star_gini_14d:
+    group: star_dynamics
+    tier: A
+    dtype: float
+    unit: gini
+    description: Gini coefficient of the 14 daily star counts (zeros included); 0 = even, 1 = one-day spike
+    allowed: true
+    leakage_notes: first stars with day < D
+    live_available: true
+    requires:
+    - type: WatchEvent
+      column: created_at
+    explain_template:
+      high: stars are concentrated in a few days
+      low: stars arrive evenly over time
+  star_max_day_share_14d:
+    group: star_dynamics
+    tier: A
+    dtype: float
+    unit: share
+    description: Largest single-day share of the stars of the last 14 days
+    allowed: true
+    leakage_notes: first stars with day < D
+    live_available: true
+    requires:
+    - type: WatchEvent
+      column: created_at
+    explain_template:
+      high: '{pct} of recent stars came on one day'
+      low: stars are spread over many days
+  star_max_hour_share_7d:
+    group: star_dynamics
+    tier: A
+    dtype: float
+    unit: share
+    description: Largest single-hour share of the stars of the last 7 days
+    allowed: true
+    leakage_notes: stars with timestamp < D
+    live_available: true
+    requires:
+    - type: WatchEvent
+      column: created_at
+    explain_template:
+      high: '{pct} of the last week''s stars came in one hour'
+      low: stars are spread over many hours
+  forks_7d:
+    group: activity
+    tier: A
+    dtype: int
+    unit: forks
+    description: Forks in the last 7 days
+    allowed: true
+    leakage_notes: ForkEvent day < D
+    live_available: true
+    requires:
+    - type: ForkEvent
+      column: created_at
+    explain_template:
+      high: '{value} forks last week'
+      low: no recent forks
+  forks_14d:
+    group: activity
+    tier: A
+    dtype: int
+    unit: forks
+    description: Forks in the last 14 days
+    allowed: true
+    leakage_notes: ForkEvent day < D
+    live_available: true
+    requires:
+    - type: ForkEvent
+      column: created_at
+    explain_template:
+      high: '{value} forks in two weeks'
+      low: no recent forks
+  fork_star_ratio_14d:
+    group: activity
+    tier: A
+    dtype: float
+    unit: ratio
+    description: forks_14d / (stars_14d + 1)
+    allowed: true
+    leakage_notes: day < D
+    live_available: true
+    requires:
+    - type: ForkEvent
+      column: created_at
+    explain_template:
+      high: '{value} forks per star'
+      low: stars without forks
+  actor_days_14d:
+    group: activity
+    tier: A
+    dtype: int
+    unit: actor-days
+    description: Sum over the last 14 days of the distinct non-bot actors per day (actor-days, not distinct actors)
+    allowed: true
+    leakage_notes: day < D
+    live_available: true
+    requires:
+    - type: WatchEvent
+      column: created_at
+    explain_template:
+      high: '{value} active user-days in two weeks'
+      low: very little human activity
+  issue_events_14d:
+    group: activity
+    tier: A
+    dtype: int
+    unit: events
+    description: IssuesEvent count in the last 14 days (any action)
+    allowed: true
+    leakage_notes: day < D
+    live_available: true
+    requires:
+    - type: IssuesEvent
+      column: created_at
+    explain_template:
+      high: '{value} issue events in two weeks'
+      low: no issue activity
+  comment_events_14d:
+    group: activity
+    tier: A
+    dtype: int
+    unit: events
+    description: IssueCommentEvent count in the last 14 days (issues and PRs)
+    allowed: true
+    leakage_notes: day < D
+    live_available: true
+    requires:
+    - type: IssueCommentEvent
+      column: created_at
+    explain_template:
+      high: '{value} comments in two weeks'
+      low: no discussion yet
+  pr_events_14d:
+    group: activity
+    tier: A
+    dtype: int
+    unit: events
+    description: PullRequestEvent count in the last 14 days (any action)
+    allowed: true
+    leakage_notes: day < D
+    live_available: true
+    requires:
+    - type: PullRequestEvent
+      column: created_at
+    explain_template:
+      high: '{value} pull request events in two weeks'
+      low: no pull request activity
+  reviews_14d:
+    group: activity
+    tier: A
+    dtype: int
+    unit: events
+    description: PullRequestReviewEvent count in the last 14 days
+    allowed: true
+    leakage_notes: day < D
+    live_available: true
+    requires:
+    - type: PullRequestReviewEvent
+      column: created_at
+    explain_template:
+      high: '{value} reviews in two weeks'
+      low: no code reviews
+  releases_total_before:
+    group: activity
+    tier: A
+    dtype: int
+    unit: releases
+    description: ReleaseEvent count before D
+    allowed: true
+    leakage_notes: day < D
+    live_available: true
+    requires:
+    - type: ReleaseEvent
+      column: created_at
+    explain_template:
+      high: '{value} releases so far'
+      low: no release yet
+  days_since_last_release:
+    group: activity
+    tier: A
+    dtype: int
+    unit: days
+    description: Days from the latest release before D to D (NULL if none)
+    allowed: true
+    leakage_notes: day < D
+    live_available: true
+    requires:
+    - type: ReleaseEvent
+      column: created_at
+    explain_template:
+      high: released {value} days ago
+      low: no recent release
+  push_active_days_14d:
+    group: activity
+    tier: A
+    dtype: int
+    unit: days
+    description: Days among the last 14 with at least one push
+    allowed: true
+    leakage_notes: push_daily day < D
+    live_available: true
+    requires:
+    - type: PushEvent
+      column: created_at
+    explain_template:
+      high: pushed on {value} of the last 14 days
+      low: few recent pushes
+  distinct_pushers_28d:
+    group: activity
+    tier: A
+    dtype: int
+    unit: actors
+    description: Distinct actors who pushed in the last 28 days
+    allowed: true
+    leakage_notes: day < D
+    live_available: true
+    requires:
+    - type: PushEvent
+      column: actor_id
+    explain_template:
+      high: '{value} different people pushed code'
+      low: only one person pushes code
+  event_type_entropy_14d:
+    group: activity
+    tier: A
+    dtype: float
+    unit: bits
+    description: Shannon entropy of the mix of event types (stars, forks, issues, comments, PRs, reviews, pushes)
+      in 14 days
+    allowed: true
+    leakage_notes: day < D
+    live_available: true
+    requires:
+    - type: WatchEvent
+      column: created_at
+    explain_template:
+      high: activity is spread over many event types
+      low: activity is one-dimensional (mostly stars)
+  distinct_contributors_28d:
+    group: activity
+    tier: A
+    dtype: int
+    unit: actors
+    description: Distinct actors who started an issue/PR/comment/review session in the last 28 days
+    allowed: true
+    leakage_notes: session_start in [D-28, D)
+    live_available: true
+    requires:
+    - type: IssueCommentEvent
+      column: actor_id
+    explain_template:
+      high: '{value} different contributors in four weeks'
+      low: almost no contributors
+  new_contributors_28d:
+    group: activity
+    tier: A
+    dtype: int
+    unit: actors
+    description: Contributors whose first-ever session on the repo started in the last 28 days
+    allowed: true
+    leakage_notes: session_start in [D-28, D)
+    live_available: true
+    requires:
+    - type: IssueCommentEvent
+      column: actor_id
+    explain_template:
+      high: '{value} new contributors in four weeks'
+      low: no new contributors
+  first_time_contributor_rate_28d:
+    group: activity
+    tier: A
+    dtype: float
+    unit: share
+    description: new_contributors_28d / distinct_contributors_28d
+    allowed: true
+    leakage_notes: session_start in [D-28, D)
+    live_available: true
+    requires:
+    - type: IssueCommentEvent
+      column: actor_id
+    explain_template:
+      high: '{pct} of contributors are new'
+      low: contributors are mostly returning ones
+  top_actor_share_28d:
+    group: activity
+    tier: A
+    dtype: float
+    unit: share
+    description: Share of contribution events (completed sessions of the last 28 days) by the single most active
+      actor
+    allowed: true
+    leakage_notes: session_end + gap < D
+    live_available: true
+    requires:
+    - type: IssueCommentEvent
+      column: actor_id
+    explain_template:
+      high: '{pct} of the discussion comes from one person'
+      low: discussion is spread over many people
+  sessions_28d:
+    group: activity
+    tier: A
+    dtype: int
+    unit: sessions
+    description: Contribution sessions that started in the last 28 days (30-minute gap rule)
+    allowed: true
+    leakage_notes: session_start in [D-28, D)
+    live_available: true
+    requires:
+    - type: IssueCommentEvent
+      column: created_at
+    explain_template:
+      high: '{value} contribution sessions in four weeks'
+      low: few contribution sessions
+  median_session_minutes_28d:
+    group: activity
+    tier: A
+    dtype: float
+    unit: minutes
+    description: Median length of the completed contribution sessions of the last 28 days
+    allowed: true
+    leakage_notes: session_end + gap < D
+    live_available: true
+    requires:
+    - type: IssueCommentEvent
+      column: created_at
+    explain_template:
+      high: contributors stay engaged for {value} minutes per session
+      low: contributions are one-off comments
+  distinct_session_actors_28d:
+    group: activity
+    tier: A
+    dtype: int
+    unit: actors
+    description: Distinct actors with a completed contribution session in the last 28 days
+    allowed: true
+    leakage_notes: session_end + gap < D
+    live_available: true
+    requires:
+    - type: IssueCommentEvent
+      column: actor_id
+    explain_template:
+      high: '{value} people completed contribution sessions'
+      low: few people engaged
+  sg_n:
+    group: stargazers
+    tier: A
+    dtype: int
+    unit: stars
+    description: First stars in the last 14 days (stargazer sample size)
+    allowed: true
+    leakage_notes: star day < D
+    live_available: true
+    requires:
+    - type: WatchEvent
+      column: actor_id
+    explain_template:
+      high: '{value} stars in two weeks'
+      low: few recent stargazers
+  sg_share_experienced:
+    group: stargazers
+    tier: A
+    dtype: float
+    unit: share
+    description: Share of the last 14 days' stars from accounts with >= 10 events and >= 2 repos in the 90 days
+      before the star
+    allowed: true
+    leakage_notes: actor activity strictly before the star day
+    live_available: true
+    requires:
+    - type: WatchEvent
+      column: actor_id
+    explain_template:
+      high: '{pct} of recent stars come from experienced accounts'
+      low: most recent stars come from accounts with little prior activity
+  sg_median_account_age_days:
+    group: stargazers
+    tier: A
+    dtype: float
+    unit: days
+    description: Median estimated account age of recent stargazers at star time (from the actor id)
+    allowed: true
+    leakage_notes: actor id is immutable
+    live_available: true
+    requires:
+    - type: WatchEvent
+      column: actor_id
+    explain_template:
+      high: stargazers have accounts that are {value} days old
+      low: stargazers are brand-new accounts
+  sg_share_account_lt_30d:
+    group: stargazers
+    tier: A
+    dtype: float
+    unit: share
+    description: Share of recent stars from accounts younger than 30 days
+    allowed: true
+    leakage_notes: actor id is immutable
+    live_available: true
+    requires:
+    - type: WatchEvent
+      column: actor_id
+    explain_template:
+      high: '{pct} of recent stars come from accounts under 30 days old'
+      low: recent stars come from established accounts
+  sg_share_zero_prior_activity:
+    group: stargazers
+    tier: A
+    dtype: float
+    unit: share
+    description: Share of recent stars from accounts with no event in the 90 days before the star day
+    allowed: true
+    leakage_notes: actor activity strictly before the star day
+    live_available: true
+    requires:
+    - type: WatchEvent
+      column: actor_id
+    explain_template:
+      high: '{pct} of recent stars come from accounts with no prior activity'
+      low: recent stargazers were active before
+  sg_median_stars_same_day:
+    group: stargazers
+    tier: A
+    dtype: float
+    unit: stars
+    description: Median number of stars the recent stargazers gave on the same day
+    allowed: true
+    leakage_notes: star day < D
+    live_available: true
+    requires:
+    - type: WatchEvent
+      column: actor_id
+    explain_template:
+      high: stargazers star many repos per day (median {value})
+      low: stargazers star selectively
+  sg_share_bulk_starrers:
+    group: stargazers
+    tier: A
+    dtype: float
+    unit: share
+    description: Share of recent stars from accounts that starred >= 50 repos that day
+    allowed: true
+    leakage_notes: star day < D
+    live_available: true
+    requires:
+    - type: WatchEvent
+      column: actor_id
+    explain_template:
+      high: '{pct} of recent stars come from bulk starring accounts'
+      low: no bulk starring accounts
+  sg_retention_any_28d:
+    group: stargazers
+    tier: A
+    dtype: float
+    unit: share
+    description: 'Of stargazers from [D-28, D-7): share who forked, opened an issue/PR or commented on the repo
+      before D'
+    allowed: true
+    leakage_notes: action_at < D
+    live_available: true
+    requires:
+    - type: WatchEvent
+      column: actor_id
+    - type: ForkEvent
+      column: actor_id
+    explain_template:
+      high: '{pct} of recent stargazers went on to engage with the repo'
+      low: stargazers star and leave
+  sg_retention_fork_28d:
+    group: stargazers
+    tier: A
+    dtype: float
+    unit: share
+    description: 'Of stargazers from [D-28, D-7): share who forked the repo before D'
+    allowed: true
+    leakage_notes: action_at < D
+    live_available: true
+    requires:
+    - type: WatchEvent
+      column: actor_id
+    - type: ForkEvent
+      column: actor_id
+    explain_template:
+      high: '{pct} of recent stargazers forked it'
+      low: stargazers rarely fork
+  sg_retention_issue_or_pr_28d:
+    group: stargazers
+    tier: A
+    dtype: float
+    unit: share
+    description: 'Of stargazers from [D-28, D-7): share who opened an issue or PR before D'
+    allowed: true
+    leakage_notes: action_at < D
+    live_available: true
+    requires:
+    - type: WatchEvent
+      column: actor_id
+    - type: ForkEvent
+      column: actor_id
+    explain_template:
+      high: '{pct} of recent stargazers opened an issue or PR'
+      low: stargazers do not open issues or PRs
+  sg_tm_mean_14d:
+    group: tastemaker
+    tier: A
+    dtype: float
+    unit: score
+    description: Mean smoothed tastemaker score of the last 14 days' stargazers (hit rate of their earlier early
+      stars, outcome known before D)
+    allowed: true
+    leakage_notes: outcome_day < D, strictly
+    live_available: true
+    requires:
+    - type: WatchEvent
+      column: actor_id
+    explain_template:
+      high: recent stargazers have a good track record of finding breakouts early
+      low: recent stargazers have no track record of finding breakouts
+  sg_tm_max_14d:
+    group: tastemaker
+    tier: A
+    dtype: float
+    unit: score
+    description: Highest tastemaker score among the last 14 days' stargazers
+    allowed: true
+    leakage_notes: outcome_day < D, strictly
+    live_available: true
+    requires:
+    - type: WatchEvent
+      column: actor_id
+    explain_template:
+      high: one recent stargazer has an excellent record of early breakout picks
+      low: no stargazer with a good record
+  sg_tm_top_count_14d:
+    group: tastemaker
+    tier: A
+    dtype: int
+    unit: actors
+    description: Recent stargazers with >= 5 known early stars and a score in the top 1% (as of the last month boundary)
+    allowed: true
+    leakage_notes: outcome_day < D; threshold from month start <= D
+    live_available: true
+    requires:
+    - type: WatchEvent
+      column: actor_id
+    explain_template:
+      high: '{value} top tastemakers starred it recently'
+      low: no top tastemakers among stargazers
+  sg_tm_known_share_14d:
+    group: tastemaker
+    tier: A
+    dtype: float
+    unit: share
+    description: Share of recent stargazers with any early star whose outcome is known
+    allowed: true
+    leakage_notes: outcome_day < D, strictly
+    live_available: true
+    requires:
+    - type: WatchEvent
+      column: actor_id
+    explain_template:
+      high: most stargazers have a known track record
+      low: most stargazers have no track record yet
+  owner_prior_repos_seen:
+    group: owner
+    tier: A
+    dtype: int
+    unit: repos
+    description: Other repos that carried a name with the same owner prefix and were first seen before D
+    allowed: true
+    leakage_notes: first_seen < D; display-level owner key (renames add noise)
+    live_available: true
+    requires:
+    - type: WatchEvent
+      column: actor_id
+    explain_template:
+      high: the owner has {value} other repos
+      low: the owner has no other repos
+  owner_prior_breakouts:
+    group: owner
+    tier: A
+    dtype: int
+    unit: repos
+    description: 'Of the owner''s other repos: those that are known hits (60-day absolute rule) before D'
+    allowed: true
+    leakage_notes: first_hit_outcome_day < D
+    live_available: true
+    requires:
+    - type: WatchEvent
+      column: actor_id
+    explain_template:
+      high: the owner has built {value} breakout repos before
+      low: the owner has no earlier breakouts
+  detail_coverage_28d:
+    group: detail
+    tier: B
+    dtype: float
+    unit: share
+    description: Share of the last 28 days that lie in the payload-detail era (detail_level 1)
+    allowed: true
+    leakage_notes: calendar
+    live_available: true
+    requires:
+    - type: WatchEvent
+      column: created_at
+    explain_template:
+      high: detail features cover the whole window
+      low: detail features are not available
+  issues_opened_28d:
+    group: detail
+    tier: B
+    dtype: int
+    unit: issues
+    description: Issues opened in the last 28 days (NULL without detail coverage)
+    allowed: true
+    leakage_notes: day < D
+    live_available: true
+    requires:
+    - type: IssuesEvent
+      column: action
+    explain_template:
+      high: '{value} issues opened in four weeks'
+      low: no issues opened
+  issues_closed_28d:
+    group: detail
+    tier: B
+    dtype: int
+    unit: issues
+    description: Issues closed in the last 28 days
+    allowed: true
+    leakage_notes: day < D
+    live_available: true
+    requires:
+    - type: IssuesEvent
+      column: action
+    explain_template:
+      high: '{value} issues closed in four weeks'
+      low: no issues closed
+  issue_close_ratio_28d:
+    group: detail
+    tier: B
+    dtype: float
+    unit: ratio
+    description: issues_closed_28d / issues_opened_28d
+    allowed: true
+    leakage_notes: day < D
+    live_available: true
+    requires:
+    - type: IssuesEvent
+      column: action
+    explain_template:
+      high: maintainers close {pct} of the issues they get
+      low: issues are piling up
+  median_first_response_hours_28d:
+    group: detail
+    tier: B
+    dtype: float
+    unit: hours
+    description: Median hours to the first non-author comment, over issues opened in the last 28 days and answered
+      before D
+    allowed: true
+    leakage_notes: first_response_at < D
+    live_available: true
+    requires:
+    - type: IssueCommentEvent
+      column: is_pull_request
+    explain_template:
+      high: issues get a first reply within {value} hours
+      low: issues wait long for a reply
+  share_issues_responded_48h:
+    group: detail
+    tier: B
+    dtype: float
+    unit: share
+    description: 'Of issues opened in [D-28, D-2): share answered within 48 hours (and before D)'
+    allowed: true
+    leakage_notes: first_response_at < D
+    live_available: true
+    requires:
+    - type: IssueCommentEvent
+      column: is_pull_request
+    explain_template:
+      high: '{pct} of issues get an answer within two days'
+      low: most issues get no quick answer
+  prs_opened_28d:
+    group: detail
+    tier: B
+    dtype: int
+    unit: PRs
+    description: Pull requests opened in the last 28 days
+    allowed: true
+    leakage_notes: day < D
+    live_available: true
+    requires:
+    - type: PullRequestEvent
+      column: action
+    explain_template:
+      high: '{value} pull requests opened in four weeks'
+      low: no pull requests
+  prs_merged_28d:
+    group: detail
+    tier: B
+    dtype: int
+    unit: PRs
+    description: 'Pull requests merged in the last 28 days (NULL from payload_trim_date: merged flag removed)'
+    allowed: true
+    leakage_notes: day < D
+    live_available: false
+    requires:
+    - type: PullRequestEvent
+      column: pr_merged
+    explain_template:
+      high: '{value} pull requests merged in four weeks'
+      low: no merged pull requests
+  median_merge_hours_28d:
+    group: detail
+    tier: B
+    dtype: float
+    unit: hours
+    description: Median hours from opening to merge of PRs merged in the last 28 days (NULL from payload_trim_date)
+    allowed: true
+    leakage_notes: merged_at < D
+    live_available: false
+    requires:
+    - type: PullRequestEvent
+      column: pr_merged
+    explain_template:
+      high: pull requests are merged within {value} hours
+      low: pull requests wait long to be merged
+  core_actor_count_90d:
+    group: detail
+    tier: B
+    dtype: int
+    unit: actors
+    description: Distinct actors with maintainer evidence (push, PR close, owner) in the last 90 days
+    allowed: true
+    leakage_notes: day < D
+    live_available: true
+    requires:
+    - type: PushEvent
+      column: actor_id
+    explain_template:
+      high: '{value} maintainers are active'
+      low: a single maintainer
+  external_pr_authors_28d:
+    group: detail
+    tier: B
+    dtype: int
+    unit: actors
+    description: Distinct PR openers in the last 28 days who are not core actors
+    allowed: true
+    leakage_notes: opened_at < D
+    live_available: true
+    requires:
+    - type: PullRequestEvent
+      column: action
+    explain_template:
+      high: '{value} outside contributors opened pull requests'
+      low: no outside contributors
+  tags_created_total_before:
+    group: detail
+    tier: B
+    dtype: int
+    unit: tags
+    description: Tags created since the detail era began, before D
+    allowed: true
+    leakage_notes: day < D
+    live_available: true
+    requires:
+    - type: CreateEvent
+      column: ref_type
+    explain_template:
+      high: '{value} tags created'
+      low: no tags created
+  era_post_2025_10:
+    group: detail
+    tier: B
+    dtype: int
+    unit: flag
+    description: 1 if D is on or after the Events API payload trim (2025-10-07); constant 0 in every training row
+    allowed: false
+    leakage_notes: calendar; constant 0 in every training row, so allowed is false
+    live_available: false
+    requires:
+    - type: WatchEvent
+      column: created_at
+    explain_template:
+      high: snapshot is after the payload trim
+      low: snapshot is before the payload trim
+  primary_language:
+    group: enrich
+    tier: C
+    dtype: category
+    unit: language
+    description: Primary language (top 30 by frequency else Other; Unknown if missing). Slowly-varying documented
+      exception (ADR-017)
+    allowed: true
+    leakage_notes: slowly varying exception, ADR-017
+    live_available: true
+    requires: []
+    explain_template:
+      high: written in {value}
+      low: language unknown
+  owner_type:
+    group: enrich
+    tier: C
+    dtype: category
+    unit: type
+    description: User / Organization / Unknown. Slowly-varying documented exception (ADR-017)
+    allowed: true
+    leakage_notes: slowly varying exception, ADR-017
+    live_available: true
+    requires: []
+    explain_template:
+      high: owned by {value}
+      low: owner type unknown
+  birth_from_public_event:
+    group: enrich
+    tier: C
+    dtype: int
+    unit: flag
+    description: 1 if the repo's birth is a PublicEvent (made public) rather than creation
+    allowed: true
+    leakage_notes: event time <= first star
+    live_available: true
+    requires:
+    - type: PublicEvent
+      column: created_at
+    explain_template:
+      high: was made public rather than created
+      low: was created as a public repo
+  days_api_created_to_birth:
+    group: enrich
+    tier: C
+    dtype: int
+    unit: days
+    description: Days between the API creation date (fixed) and birth_at; > 0 for repos made public later
+    allowed: true
+    leakage_notes: created_at is fixed at creation
+    live_available: true
+    requires: []
+    explain_template:
+      high: existed privately for {value} days before going public
+      low: was public from the start
+  hn_stories_before_14d:
+    group: enrich
+    tier: C
+    dtype: int
+    unit: stories
+    description: Hacker News stories linking to the repo created in the last 14 days (NULL if HN disabled)
+    allowed: true
+    leakage_notes: story created_at < D
+    live_available: true
+    requires: []
+    explain_template:
+      high: '{value} Hacker News stories in two weeks'
+      low: not on Hacker News
+  hn_stories_before_3d:
+    group: enrich
+    tier: C
+    dtype: int
+    unit: stories
+    description: Hacker News stories created in the last 3 days
+    allowed: true
+    leakage_notes: story created_at < D
+    live_available: true
+    requires: []
+    explain_template:
+      high: was on Hacker News in the last 3 days
+      low: not on Hacker News recently
+  hn_max_points_aged:
+    group: enrich
+    tier: C
+    dtype: int
+    unit: points
+    description: Max HN points among stories created in [D-30, D-3) (fetch-time points, aged >= 3 days, ADR-019)
+    allowed: true
+    leakage_notes: story created_at < D - 3 days
+    live_available: true
+    requires: []
+    explain_template:
+      high: a Hacker News post reached {value} points
+      low: no notable Hacker News post
+  hn_any_before:
+    group: enrich
+    tier: C
+    dtype: int
+    unit: flag
+    description: 1 if any Hacker News story linked to the repo before D
+    allowed: true
+    leakage_notes: story created_at < D
+    live_available: true
+    requires: []
+    explain_template:
+      high: has been on Hacker News
+      low: has not been on Hacker News
 
 # Phase 4 enrichment columns (ADR-017). `model_feature: true` marks the only columns the model may
 # read; everything else is display-only or a join key. Never use anything fetched "as of now" that

@@ -69,3 +69,28 @@ the audit trail). Never squash `gh-breakout-snapshots`; `hf.PROTECTED_REPOS` blo
 
 **If Hugging Face throttles or refuses.** Keep `bq` history in the repo and publish the hourly era
 as month files only (ADR-014 item 5); tell the human before deleting anything remotely.
+
+## Feature marts (Phase 7)
+
+Models: `int_actor_early_stars`, `int_actor_early_cum`, `int_repo_first_hit`, `int_tastemaker_thresholds`
+(tastemaker inputs), `feat_{star_dynamics,activity,stargazers,tastemaker,owner,detail,enrich}` and
+`mart_repo_features` (dbt `models/features/`). All of them read only rows strictly before the snapshot
+date; `_max_input_ts` of each group is checked by `dbt/tests/features_no_future_inputs.sql`.
+
+| Task | Command |
+|---|---|
+| History build + tests + export (resumable per bucket) | `systemd-run --user --scope -p MemoryMax=4G -p MemorySwapMax=0 -p CPUQuota=100% uv run breakout build features --history` (background; same env as Phase 5: local `GHB_WAREHOUSE`, `GHB_DUCKDB_*`) |
+| Rebuild after a feature SQL change | add `--full-refresh` (drops the feature tables; the schema-change check is `fail`) |
+| Export only | `uv run breakout build features --history --no-build` |
+| Upload the training table | `... --history --no-build --upload` (needs approval: derived repo, `training/`) |
+| Live features of one date | `uv run breakout build features --date YYYY-MM-DD [--window-start --window-end]` (warehouse must hold the daily window's staging / intermediate tables) |
+| Leak test | `uv run breakout build leak-test --date 2018-05-14 --date 2024-06-03 --sample 300 [--warehouse W]` |
+| EDA report | `uv run breakout build feature-eda` |
+
+**Do not edit `dbt/` while a bucketed build is running** (the next bucket's `dbt` call compiles the whole
+project and a half-written model aborts the job). For long jobs run from a frozen copy: `cp -r dbt
+~/.cache/ghb-dbt-snapshot` and set `GHB_DBT_DIR`, `DBT_TARGET_PATH`, `DBT_LOG_PATH` to it.
+
+**Adding a feature.** Add the column to a `feat_*` model, register it in `config/feature_dictionary.yaml`
+(`tests/test_features_dict.py` and the dictionary<->mart check fail otherwise), run
+`tests/features` (hand-computed synthetic expectations plus the leak machinery), then rebuild.

@@ -37,6 +37,18 @@ def test_build_group_lists_labels():
     assert "labels" in result.output
 
 
+def test_build_group_lists_feature_commands():
+    result = runner.invoke(app, ["build", "--help"])
+    for command in ("features", "leak-test", "feature-eda"):
+        assert command in result.output
+
+
+def test_build_features_needs_exactly_one_mode():
+    for args in (["build", "features"], ["build", "features", "--history", "--date", "2025-01-06"]):
+        result = runner.invoke(app, args)
+        assert result.exit_code != 0
+
+
 def test_ingest_group_lists_commands():
     result = runner.invoke(app, ["ingest", "--help"])
     assert result.exit_code == 0

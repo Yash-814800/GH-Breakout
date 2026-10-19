@@ -133,6 +133,101 @@ def build_labels_cmd(
         typer.echo(json.dumps(le.upload_labels(cfg)))
 
 
+@build_app.command("features")
+def build_features_cmd(
+    ctx: typer.Context,
+    history: Annotated[
+        bool, typer.Option("--history", help="weekly snapshots, trusted history")
+    ] = False,
+    date_: Annotated[str | None, typer.Option("--date", help="single live snapshot date")] = None,
+    test: Annotated[bool, typer.Option(help="run the dbt tests of the feature models")] = True,
+    build: Annotated[bool, typer.Option(help="run dbt (off = export only)")] = True,
+    full_refresh: Annotated[bool, typer.Option(help="drop and rebuild the feature tables")] = False,
+    buckets: Annotated[int, typer.Option(help="repo_id hash buckets")] = 32,
+    export: Annotated[bool, typer.Option(help="export the training / live Parquet files")] = True,
+    upload: Annotated[bool, typer.Option(help="upload training/ to the derived repo")] = False,
+    window_start: Annotated[str | None, typer.Option(help="--date: events window start")] = None,
+    window_end: Annotated[
+        str | None, typer.Option(help="--date: events window end (exclusive)")
+    ] = None,
+) -> None:
+    """Point-in-time feature marts: --history (training table) or --date D (live features)."""
+    from datetime import date as _date
+
+    from breakout.features import build as fb
+
+    if history == (date_ is not None):
+        raise typer.BadParameter("pass exactly one of --history and --date YYYY-MM-DD")
+    cfg = get_config(ctx.obj["config"])
+    if history:
+        if (
+            build
+            and (
+                rc := fb.run_features(cfg, n_buckets=buckets, test=test, full_refresh=full_refresh)
+            )
+            != 0
+        ):
+            raise typer.Exit(rc)
+        if export:
+            manifest = fb.export_training(cfg)
+            typer.echo(
+                json.dumps(
+                    {k: manifest[k] for k in ("rows_total", "rows_per_year", "dbt_git_sha")},
+                    indent=2,
+                )
+            )
+        if upload:
+            from breakout.features import publish
+
+            typer.echo(json.dumps(publish.upload_training(cfg)))
+        return
+    d = _date.fromisoformat(date_)  # type: ignore[arg-type]
+    window = (
+        (_date.fromisoformat(window_start), _date.fromisoformat(window_end))
+        if window_start and window_end
+        else None
+    )
+    if build and (rc := fb.run_features_single(cfg, d, window=window)) != 0:
+        raise typer.Exit(rc)
+    out = fb.export_live(d)
+    ok, msg = fb.schemas_match(out)
+    typer.echo(f"wrote {out}; schema vs training table: {'OK' if ok else 'MISMATCH'}: {msg}")
+    if not ok:
+        raise typer.Exit(1)
+
+
+@build_app.command("leak-test")
+def build_leak_test_cmd(
+    ctx: typer.Context,
+    date_: Annotated[list[str], typer.Option("--date", help="snapshot date (repeat for several)")],
+    sample: Annotated[int, typer.Option(help="candidates sampled per date")] = 300,
+    warehouse: Annotated[Path | None, typer.Option(help="warehouse holding the date")] = None,
+) -> None:
+    """Time-travel test: features at D from inputs truncated at D must equal the normal ones."""
+    from datetime import date as _date
+
+    from breakout.features import leak
+
+    cfg = get_config(ctx.obj["config"])
+    failed = False
+    for ds in date_:
+        res = leak.run_leak_test(cfg, _date.fromisoformat(ds), sample, warehouse)
+        typer.echo(res.summary())
+        for diff in res.differences:
+            typer.echo(f"  DIFF {diff}")
+        failed |= not res.passed
+    raise typer.Exit(1 if failed else 0)
+
+
+@build_app.command("feature-eda")
+def build_feature_eda_cmd(ctx: typer.Context) -> None:
+    """Write reports/feature_eda.md (+ small PNGs) from the exported training table."""
+    from breakout.features import eda
+
+    cfg = get_config(ctx.obj["config"])
+    typer.echo(f"wrote {eda.run(cfg)}")
+
+
 enrich_app = typer.Typer(
     help="Enrichment: names, repo metadata, actor age, trending, HN.", no_args_is_help=True
 )

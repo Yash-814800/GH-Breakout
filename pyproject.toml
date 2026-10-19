@@ -47,6 +47,9 @@ select = ["E", "F", "I", "UP", "B", "SIM"]
 "src/breakout/ops/capture_quality.py" = ["E501"]
 # the baseline report is markdown assembled from long f-strings
 "src/breakout/ml/baseline.py" = ["E501"]
+# Phase 7: inline SQL and markdown report text
+"src/breakout/features/*.py" = ["E501"]
+"tests/features/*.py" = ["E501"]
 
 [tool.mypy]
 python_version = "3.12"
@@ -70,5 +73,5 @@ dev = [
 ]
 
 [[tool.mypy.overrides]]
-module = ["pyarrow", "pyarrow.*", "sklearn", "sklearn.*", "pandas", "pandas.*"]
+module = ["pyarrow", "pyarrow.*", "sklearn", "sklearn.*", "pandas", "pandas.*", "scipy", "scipy.*"]
 ignore_missing_imports = true

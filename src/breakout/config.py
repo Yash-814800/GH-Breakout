@@ -183,10 +183,22 @@ class TrainingCfg(_Section):
     k_values: list[int]
 
 
+class TastemakerCfg(_Section):
+    """Co-star ('tastemaker') score parameters (Phase 7, ADR-022)."""
+
+    lookahead_days: int  # an early star is a hit if the repo gains >= absolute_min_gain within this
+    alpha: float  # smoothing: score = (hits + alpha) / (early_stars + alpha + beta)
+    beta: float
+    min_known: int  # early stars needed before an actor can be in the top-quantile group
+    top_quantile: float  # share of such actors that counts as 'top' (0.01 = top 1%)
+
+
 class FeaturesCfg(_Section):
     windows_days: list[int]
     stargazer_activity_lookback_days: int
     session_gap_minutes: int
+    tastemaker: TastemakerCfg
+    payload_trim_date: date  # PR merged flag / author vanish from this day on (ADR-003/007)
 
 
 class DailyCfg(_Section):

@@ -54,6 +54,7 @@ only if it beats the current champion and the baseline.
 | `data/derived/enrich/` and `gh-breakout-derived/enrich/` | Phase 4 enrichment tables: name history, repo metadata, actor-age map, trending, HN stories (ADR-016..019) | rebuilt by `breakout enrich ...`; incremental |
 | `data/warehouse.duckdb` (SSD copy) and `~/.cache/ghb-warehouse/` (build copy) | Phase 5 dbt warehouse: staging + intermediate tables for the trusted history (33 GB, 4.3 G source events; ADR-020) | built by `breakout build history` on the local disk (the NTFS SSD stalls under DuckDB writes), copied to the SSD afterwards; not in git, rebuildable |
 | `data/derived/labels/` | Phase 6 export `candidates_labels.parquet` (candidates joined with labels, matured snapshots, 33 MB) | rebuilt by `breakout build labels`; the marts live in the warehouse |
+| `data/derived/training/` and `gh-breakout-derived/training/` | Phase 7 training table `features_labels/year=YYYY/part-0.parquet` (mart_repo_features + labels of matured snapshots) and `feature_manifest.json` (feature list, dictionary hash, dbt git sha, rows per year); the warehouse holds the marts `feat_*` and `mart_repo_features` | rebuilt by `breakout build features --history`; live files `data/derived/live/features_D.parquet` have the same columns and types (ADR-022) |
 | Git | code, config, ledger, heartbeat, reports | tiny files only (CLAUDE.md §7) |
 
 Coverage: 2015-01..2023-05 BigQuery spine (`detail_level` 0, `source='bq'`); 2023-06-01 onward hourly

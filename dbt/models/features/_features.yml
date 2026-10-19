@@ -1,0 +1,124 @@
+version: 2
+
+models:
+  - name: feat_star_dynamics
+    description: >
+      Tier A. Star counts over 1/3/7/14/28 days, acceleration, burstiness (Gini, max day / hour share). Windows [D-n, D). Grain (repo_id, snapshot_date), one row per candidate; every source row is strictly before
+      snapshot_date. `_max_input_ts` (newest source timestamp used) is test-only.
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments: {combination_of_columns: [repo_id, snapshot_date]}
+    columns:
+      - name: repo_id
+        tests: [not_null]
+      - name: snapshot_date
+        tests: [not_null]
+      - name: stars_14d
+        tests: [{dbt_utils.accepted_range: {arguments: {min_value: "{{ var('min_stars_14d') }}"}}}]
+      - name: star_gini_14d
+        tests: [{dbt_utils.accepted_range: {arguments: {min_value: -0.000001, max_value: 1}}}]
+      - name: star_max_day_share_14d
+        tests: [{dbt_utils.accepted_range: {arguments: {min_value: 0, max_value: 1}}}]
+      - name: star_max_hour_share_7d
+        tests: [{dbt_utils.accepted_range: {arguments: {min_value: 0, max_value: 1}}}]
+  - name: feat_activity
+    description: >
+      Tier A. Forks, issues, comments, PRs, reviews, releases, pushes, contributors and sessions in the last 14/28 days. Grain (repo_id, snapshot_date), one row per candidate; every source row is strictly before
+      snapshot_date. `_max_input_ts` (newest source timestamp used) is test-only.
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments: {combination_of_columns: [repo_id, snapshot_date]}
+    columns:
+      - name: repo_id
+        tests: [not_null]
+      - name: snapshot_date
+        tests: [not_null]
+      - name: event_type_entropy_14d
+        tests: [{dbt_utils.accepted_range: {arguments: {min_value: -0.000001, max_value: 3}}}]
+      - name: top_actor_share_28d
+        tests: [{dbt_utils.accepted_range: {arguments: {min_value: 0, max_value: 1}}}]
+  - name: feat_stargazers
+    description: >
+      Tier A with actor-age enrichment. Quality of the first stars in [D-14, D) and retention so far of those in [D-28, D-7). Grain (repo_id, snapshot_date), one row per candidate; every source row is strictly before
+      snapshot_date. `_max_input_ts` (newest source timestamp used) is test-only.
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments: {combination_of_columns: [repo_id, snapshot_date]}
+    columns:
+      - name: repo_id
+        tests: [not_null]
+      - name: snapshot_date
+        tests: [not_null]
+      - name: sg_share_experienced
+        tests: [{dbt_utils.accepted_range: {arguments: {min_value: 0, max_value: 1}}}]
+      - name: sg_retention_any_28d
+        tests: [{dbt_utils.accepted_range: {arguments: {min_value: 0, max_value: 1}}}]
+  - name: feat_tastemaker
+    description: >
+      Tier A. Co-star signal: how well the recent stargazers picked early stars whose outcome was known before D. Grain (repo_id, snapshot_date), one row per candidate; every source row is strictly before
+      snapshot_date. `_max_input_ts` (newest source timestamp used) is test-only.
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments: {combination_of_columns: [repo_id, snapshot_date]}
+    columns:
+      - name: repo_id
+        tests: [not_null]
+      - name: snapshot_date
+        tests: [not_null]
+      - name: sg_tm_mean_14d
+        tests: [{dbt_utils.accepted_range: {arguments: {min_value: 0, max_value: 1}}}]
+  - name: feat_owner
+    description: >
+      Tier A. Owner-level prior repos and known hits before D (display-level owner key). Grain (repo_id, snapshot_date), one row per candidate; every source row is strictly before
+      snapshot_date. `_max_input_ts` (newest source timestamp used) is test-only.
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments: {combination_of_columns: [repo_id, snapshot_date]}
+    columns:
+      - name: repo_id
+        tests: [not_null]
+      - name: snapshot_date
+        tests: [not_null]
+  - name: feat_detail
+    description: >
+      Tier B. Payload-detail features (issue response, PR merge, core actors); NULL without detail coverage. Grain (repo_id, snapshot_date), one row per candidate; every source row is strictly before
+      snapshot_date. `_max_input_ts` (newest source timestamp used) is test-only.
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments: {combination_of_columns: [repo_id, snapshot_date]}
+    columns:
+      - name: repo_id
+        tests: [not_null]
+      - name: snapshot_date
+        tests: [not_null]
+      - name: detail_coverage_28d
+        tests: [not_null, {dbt_utils.accepted_range: {arguments: {min_value: 0, max_value: 1}}}]
+  - name: feat_enrich
+    description: >
+      Tier C. Allowed repo metadata fields and Hacker News counts before D. Grain (repo_id, snapshot_date), one row per candidate; every source row is strictly before
+      snapshot_date. `_max_input_ts` (newest source timestamp used) is test-only.
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments: {combination_of_columns: [repo_id, snapshot_date]}
+    columns:
+      - name: repo_id
+        tests: [not_null]
+      - name: snapshot_date
+        tests: [not_null]
+      - name: owner_type
+        tests: [not_null, {accepted_values: {arguments: {values: [User, Organization, Unknown]}}}]
+      - name: primary_language
+        tests: [not_null]
+  - name: mart_repo_features
+    description: >
+      Grain (repo_id, snapshot_date): the model input. mart_candidates keys LEFT JOIN all feat_* groups.
+      Same SQL for the weekly history and for live scoring. Every column except the keys is registered in
+      config/feature_dictionary.yaml (unit test).
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments: {combination_of_columns: [repo_id, snapshot_date]}
+    columns:
+      - name: repo_id
+        tests: [not_null]
+      - name: snapshot_date
+        tests: [not_null]

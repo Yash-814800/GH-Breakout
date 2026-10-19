@@ -120,6 +120,10 @@ models:
         tests: [not_null]
       - name: n_distinct_actors
         tests: [not_null]
+      - name: n_comment_events
+        tests: [not_null]
+      - name: n_pr_events
+        tests: [not_null, {dbt_utils.expression_is_true: {arguments: {expression: ">= coalesce(n_prs_opened, 0)"}}}]
 
   - name: int_actor_daily_activity
     description: >
@@ -248,3 +252,62 @@ models:
         tests: [not_null, {dbt_utils.expression_is_true: {arguments: {expression: ">= 1"}}}]
       - name: share_any_90d
         tests: [{dbt_utils.expression_is_true: {arguments: {expression: "between 0 and 1"}}}]
+
+  - name: int_actor_early_stars
+    description: >
+      Tastemaker input (ADR-022). Grain (repo_id, actor_id): early first stars (repo < max_stars_total
+      stars and <= max_age_days old at the star) with is_hit = the repo gained >= absolute_min_gain first stars
+      on the days (star_day, star_day + tm_lookahead_days]. Consumers must use `D > outcome_day`.
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments: {combination_of_columns: [repo_id, actor_id]}
+    columns:
+      - name: repo_id
+        tests: [not_null]
+      - name: actor_id
+        tests: [not_null]
+      - name: outcome_day
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              arguments: {expression: "> star_day"}
+      - name: is_hit
+        tests: [not_null]
+
+  - name: int_actor_early_cum
+    description: >
+      Per actor, running counts of early stars and hits whose outcome is known as of outcome_day (state holds
+      from outcome_day + 1 until next_outcome_day). Grain (actor_id, outcome_day).
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments: {combination_of_columns: [actor_id, outcome_day]}
+    columns:
+      - name: actor_id
+        tests: [not_null]
+      - name: early_stars_known
+        tests: [not_null, {dbt_utils.expression_is_true: {arguments: {expression: ">= 1"}}}]
+      - name: hits_known
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              arguments: {expression: "between 0 and early_stars_known"}
+
+  - name: int_repo_first_hit
+    description: Grain repo_id; first_hit_outcome_day = day after which the repo is a known hit (tastemaker rule). Used by feat_owner with `< D`.
+    columns:
+      - name: repo_id
+        tests: [not_null, unique]
+      - name: first_hit_outcome_day
+        tests: [not_null]
+
+  - name: int_tastemaker_thresholds
+    description: >
+      Grain month (first of month). Smallest smoothed tastemaker score still in the top tm_top_quantile of
+      actors with >= tm_min_known known early stars as of that month boundary.
+    columns:
+      - name: month
+        tests: [not_null, unique]
+      - name: score_threshold
+        tests: [not_null]
+      - name: n_actors
+        tests: [not_null, {dbt_utils.expression_is_true: {arguments: {expression: "> 0"}}}]
