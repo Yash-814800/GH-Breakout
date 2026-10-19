@@ -252,7 +252,12 @@ def run(cfg: Config) -> Path:
             pd.DataFrame(prev, columns=["year", "rows", "positives", "positive rate"]).astype(
                 {"year": "int64", "rows": "int64", "positives": "int64"}
             ),
-            {"year": "{:d}", "rows": "{:,d}", "positives": "{:,d}", "positive rate": "{:.3%}"},
+            {
+                "year": "{:.0f}",
+                "rows": "{:,.0f}",
+                "positives": "{:,.0f}",
+                "positive rate": "{:.3%}",
+            },
         )
     )
     md.append("## Top 20 features by univariate AUC\n")

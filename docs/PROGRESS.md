@@ -79,7 +79,11 @@ measured (row counts, sizes, runtimes, metrics). Future sessions rely on it.
 - **EDA:** top univariate ROC-AUCs `stars_3d` 0.817, `stars_7d` 0.811, `actor_days_14d` 0.784, `stars_1d` 0.779,
   `sg_tm_max_14d` 0.779 (tastemaker), `sg_n` 0.774; `star_max_hour_share_7d` 0.241 (a one-hour burst points away from a breakout).
   11 correlation clusters at |rho| >= 0.8 (e.g. `stars_14d`/`sg_n`/`actor_days_14d`).
-- Hugging Face: `training/` upload recorded in the Phase 7 hand-off below.
+- Hugging Face: `training/` is on the derived repo (11 files, 145 MB, one commit; a second upload run is a no-op). The
+  manifest records dbt git sha `3ee9068` and the dictionary sha256 (`49d9891c...`). `labels/candidates_labels.parquet` on the
+  Hub is still the pre-correction file (see Open issues).
+- Warehouse: the finished local build copy (`~/.cache/ghb-warehouse/`) was copied to `data/warehouse.duckdb` on the SSD
+  (byte-identical check); the previous SSD file is kept as `data/warehouse.duckdb.phase6` until the human approves deleting it.
 
 ## Phase 6 status (2026-10-19)
 
@@ -141,6 +145,29 @@ measured (row counts, sizes, runtimes, metrics). Future sessions rely on it.
 - **For Phase 6:** `int_young_moving_repos` is only a superset; candidates still need `max_stars_total`,
   `exclude_forks`, `exclude_bot_owned` (use `int_repo_birth.is_fork/is_mirror_like` and `stg_repo_metadata`).
   Detail-dependent counts are NULL before 2023-06-01. `stg_stars` has a `bucket` column (repo_id % 32).
+
+## Handoff to Phase 8 (state at 2026-10-19)
+
+Start a fresh session with CLAUDE.md, this file, DECISIONS.md (ADR-020..024), ARCHITECTURE.md and `docs/phases/PHASE_08_*.md`.
+- **Training table:** `data/derived/training/features_labels/year=YYYY/part-0.parquet` (also on the derived Hub repo under
+  `training/`), 3,098,574 rows, the 71 features of `config/feature_dictionary.yaml` then the label columns (`breakout_rel`
+  primary, `breakout_abs`, `gain_30d`, `threshold_rel`, ...) after `bucket, repo_id, snapshot_date`. `feature_manifest.json` lists
+  features, live features (68), the dictionary hash and the dbt git sha. Read feature sets through
+  `breakout.features_dict.model_features(feats, live_only=True)` (allowed AND live-available); `era_post_2025_10` is not allowed
+  (constant 0 in training). Categoricals: `primary_language` (30 + Other + Unknown), `owner_type`.
+- **Folds / baseline:** `breakout.ml.splits.make_folds` and `reports/baseline.md` (B1 pooled PR-AUC 0.0286, P@25 0.109 after the
+  ADR-024 correction; B1 P@25 collapses to 0.085 / 0.055 in 2023 / 2024). A model has to beat these on PR-AUC and P@k.
+- **Do not train the live champion on anything outside `live_available`**; the merge features (`prs_merged_28d`,
+  `median_merge_hours_28d`) are research-only. Tier B features are NULL before 2023-06-01: LightGBM handles NaN, and
+  `detail_coverage_28d` says how much of the window is covered.
+- **Tastemaker** features use outcomes known before D only (strict `D > outcome_day`); do not add a feature that reads
+  `gain_lookahead` or `is_hit` of a star whose `outcome_day >= D`. Any new feature must pass `breakout build leak-test`.
+- **Live:** `breakout build features --date D` needs a warehouse with the daily window's staging / intermediate tables. The
+  recipe used for the test: `breakout lake pull` the window (all raw types + `--push-daily`), then
+  `dbt run --select staging intermediate` unbucketed with `events_start/end` (3 min for 5 months), then `build features --date`.
+  Metadata (`primary_language`, `owner_type`, `days_api_created_to_birth`) is 'Unknown' / NULL for repos created after the trusted
+  era until Phase 9 fetches it.
+- `stg_stars.bucket` must be `repo_id % 32` (feature pruning, tested): build any window warehouse with the default 32 buckets.
 
 ## Handoff to Phase 5 (state at 2026-10-16; consumed by Phase 5)
 
@@ -328,6 +355,8 @@ before creating anything new on the Hub or starting long Actions runs in a new p
 
 ## Open issues / TODO for the human
 
+- **Review ADR-024** (Phase 6 correction): candidates now include repos with unknown metadata; the Phase 6 headline numbers changed (B1 PR-AUC 0.0520 -> 0.0286). The Hub copy `labels/candidates_labels.parquet` is stale until you approve `uv run breakout build labels --no-build --upload`.
+- Approve deleting `data/warehouse.duckdb.phase6` (33 GB, superseded by the Phase 7 warehouse) when you are happy; nothing was deleted under `data/`.
 - ~~ADR-011 hourly backfill~~ done 2026-10-16 (Actions matrix, 41 jobs). Nothing heavy runs locally. `data/staging` (5.4 GB) is safe to delete (ask the human first).
 
 - ~~Approve the BigQuery spine extraction~~ done 2026-10-13.

@@ -216,3 +216,7 @@ local resources as scarce.
    the whole lake; pull only the types and dates a step needs.
 8. **Repo and Actions actions** (create/delete HF repos, uploads, `gh workflow run`, pushes) need explicit
    approval in each new session; the human's Phase 3 approvals do not carry over.
+9. **Long dbt jobs run from a frozen copy of `dbt/`** (Phase 7, ADR-023): `cp -r dbt ~/.cache/ghb-dbt-snapshot` and set
+   `GHB_DBT_DIR`, `DBT_TARGET_PATH`, `DBT_LOG_PATH` to it. Every bucket is a separate `dbt` call that compiles the whole project, so
+   an edit of any model while the job runs aborts it. The warehouse build copy lives in `~/.cache/ghb-warehouse/` (local disk), the
+   finished file is copied to `data/warehouse.duckdb`.
