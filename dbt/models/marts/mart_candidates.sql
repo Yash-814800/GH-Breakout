@@ -89,6 +89,6 @@ from named
 where not (
     regexp_matches(split_part(coalesce(repo_name_at_D, ''), '/', 1), '(\[bot\]|[-_]bot)$', 'i')
     or lower(split_part(coalesce(repo_name_at_D, ''), '/', 1)) in (select login from bot_logins)
-    or owner_id in (select actor_id from {{ ref('stg_bot_actors') }})
+    or coalesce(owner_id in (select actor_id from {{ ref('stg_bot_actors') }}), false)
 )
 {% endif %}
