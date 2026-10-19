@@ -81,9 +81,9 @@ measured (row counts, sizes, runtimes, metrics). Future sessions rely on it.
   11 correlation clusters at |rho| >= 0.8 (e.g. `stars_14d`/`sg_n`/`actor_days_14d`).
 - Hugging Face: `training/` is on the derived repo (11 files, 145 MB, one commit; a second upload run is a no-op). The
   manifest records dbt git sha `3ee9068` and the dictionary sha256 (`49d9891c...`). `labels/candidates_labels.parquet` on the
-  Hub is still the pre-correction file (see Open issues).
+  Hub was re-uploaded with the corrected file (41.9 MB, 1 commit) with the human's approval.
 - Warehouse: the finished local build copy (`~/.cache/ghb-warehouse/`) was copied to `data/warehouse.duckdb` on the SSD
-  (byte-identical check); the previous SSD file is kept as `data/warehouse.duckdb.phase6` until the human approves deleting it.
+  (byte-identical check); the superseded Phase 6 file was deleted with the human's approval.
 
 ## Phase 6 status (2026-10-19)
 
@@ -355,8 +355,7 @@ before creating anything new on the Hub or starting long Actions runs in a new p
 
 ## Open issues / TODO for the human
 
-- **Review ADR-024** (Phase 6 correction): candidates now include repos with unknown metadata; the Phase 6 headline numbers changed (B1 PR-AUC 0.0520 -> 0.0286). The Hub copy `labels/candidates_labels.parquet` is stale until you approve `uv run breakout build labels --no-build --upload`.
-- Approve deleting `data/warehouse.duckdb.phase6` (33 GB, superseded by the Phase 7 warehouse) when you are happy; nothing was deleted under `data/`.
+- **Review ADR-024** (Phase 6 correction): candidates now include repos with unknown metadata; the Phase 6 headline numbers changed (B1 PR-AUC 0.0520 -> 0.0286). The corrected labels are on the Hub.
 - ~~ADR-011 hourly backfill~~ done 2026-10-16 (Actions matrix, 41 jobs). Nothing heavy runs locally. `data/staging` (5.4 GB) is safe to delete (ask the human first).
 
 - ~~Approve the BigQuery spine extraction~~ done 2026-10-13.
