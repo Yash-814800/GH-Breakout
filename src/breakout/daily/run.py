@@ -445,6 +445,14 @@ def daily_run(
         # Save live features parquet
         live_feat_path.parent.mkdir(parents=True, exist_ok=True)
         feat_df.to_parquet(live_feat_path, index=False)
+        if not no_upload:
+            hf_mod.put_small_files(
+                hf_mod.get_api(),
+                cfg,
+                "derived",
+                [hf_mod.UploadItem(live_feat_path, f"live/features/date={target_date}.parquet")],
+                f"live features for {target_date}",
+            )
 
         if n_candidates > 0:
             pred = reg_mod.predict(model, feat_df, explain=False)

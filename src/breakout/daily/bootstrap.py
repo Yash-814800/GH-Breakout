@@ -77,6 +77,21 @@ def pull_enrich(cfg: Config) -> int:
     return len(got)
 
 
+def pull_prefix(cfg: Config, prefix: str) -> int:
+    """Download every file under ``prefix`` of the derived repo into the local derived dir."""
+    api = hf.get_api()
+    paths = [f.path for f in hf.remote_list(api, cfg, "derived", prefix)]
+    return len(hf.download_files(api, cfg, "derived", paths, P.DERIVED_DIR))
+
+
+def bootstrap_weekly(cfg: Config) -> dict[str, Any]:
+    """Inputs of the weekly retrain: training rows, labels, live features and the registry."""
+    out = {p: pull_prefix(cfg, p) for p in ("training", "labels", "live")}
+    reg_mod.load_champion(cfg, pull=True)
+    log.info("Weekly bootstrap done: %s", out)
+    return out
+
+
 def bootstrap(cfg: Config, target_date: date) -> dict[str, Any]:
     """Pull what a fresh runner lacks. Idempotent: present, verified files are not refetched."""
     out: dict[str, Any] = {}
@@ -87,6 +102,7 @@ def bootstrap(cfg: Config, target_date: date) -> dict[str, Any]:
     out["manifest_rows"] = pull_manifest(cfg)
     out["window_files"] = pull_window(cfg, target_date)
     out["enrich_files"] = pull_enrich(cfg)
+    out["live_files"] = pull_prefix(cfg, "live")
     if not state_mod.TASTEMAKER_STATE_PATH.exists():
         state_mod.pull_state(cfg)
     reg_mod.load_champion(cfg, pull=True)

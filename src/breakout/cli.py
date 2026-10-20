@@ -125,12 +125,19 @@ def ml_promote_cmd(
     if_better: Annotated[
         bool, typer.Option("--if-better", help="only promote if candidate beats B1 and champion")
     ] = True,
+    upload: Annotated[
+        bool, typer.Option("--upload", help="push the candidate, champion and registry to the Hub")
+    ] = False,
 ) -> None:
     """Promote candidate model to champion if holdout rule passes."""
     from breakout.ml import final
+    from breakout.ml import registry as reg_mod
 
     cfg = get_config(ctx.obj["config"])
     res = final.promote_candidate(cfg, version=candidate, if_better=if_better)
+    if upload:
+        for v in dict.fromkeys([res["candidate"], res["champion"]]):
+            reg_mod.upload_version(cfg, v)
     typer.echo(json.dumps(res, indent=2))
 
 
@@ -1197,6 +1204,14 @@ def ops_parity_cmd(
     typer.echo(f"Report: {res.report_path}")
     if not res.passed:
         raise typer.Exit(1)
+
+
+@ops_app.command("bootstrap-weekly")
+def ops_bootstrap_weekly_cmd(ctx: typer.Context) -> None:
+    """Pull training rows, labels, live features and the registry onto a clean runner."""
+    from breakout.daily import bootstrap
+
+    typer.echo(json.dumps(bootstrap.bootstrap_weekly(get_config(ctx.obj["config"])), indent=2))
 
 
 @ops_app.command("drift")

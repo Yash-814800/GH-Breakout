@@ -111,7 +111,7 @@ def find_recent_live_features(
     if live_dir_new.exists():
         for p in live_dir_new.glob("date=*.parquet"):
             try:
-                d_str = p.parent.name.split("=")[-1]
+                d_str = p.stem.split("=")[-1]
                 d = date.fromisoformat(d_str)
                 if start_d <= d <= as_of:
                     files.append(p)
