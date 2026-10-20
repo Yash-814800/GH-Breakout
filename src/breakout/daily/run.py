@@ -754,8 +754,14 @@ def daily_run(
     try:
         log.info("[Step 14/15] Writing status/heartbeat.json...")
         HEARTBEAT_JSON_PATH.parent.mkdir(parents=True, exist_ok=True)
+        previous: dict[str, Any] = {}
+        if HEARTBEAT_JSON_PATH.exists():
+            previous = json.loads(HEARTBEAT_JSON_PATH.read_text())
+        # a failed run must not refresh last_success_at (health.yml reads it)
         heartbeat = {
-            "last_success_at": datetime.now(UTC).isoformat(),
+            "last_success_at": (
+                previous.get("last_success_at") if has_error else datetime.now(UTC).isoformat()
+            ),
             "snapshot_date": target_date.isoformat(),
             "model_version": model_version,
             "n_candidates": n_candidates,
@@ -763,7 +769,9 @@ def daily_run(
             "freeze_conflict": freeze_conflict,
             "missing_hours_older_than_3d": 0,
             "dbt_freshness_passed": freshness_passed,
-            "status": "healthy" if not freeze_conflict and freshness_passed else "unhealthy",
+            "status": "healthy"
+            if not has_error and not freeze_conflict and freshness_passed
+            else "unhealthy",
         }
         HEARTBEAT_JSON_PATH.write_text(json.dumps(heartbeat, indent=2) + "\n")
         record_step("14_heartbeat", "ok", time.perf_counter() - t0)
