@@ -23,4 +23,5 @@ jobs:
       - run: uv run ruff check .
       - run: uv run ruff format --check .
       - run: uv run mypy src
+      - run: uv run dbt deps --project-dir dbt --profiles-dir dbt
       - run: uv run pytest -q
