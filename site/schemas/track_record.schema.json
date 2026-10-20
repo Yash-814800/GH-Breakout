@@ -1,0 +1,96 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "TrackRecordSchema",
+  "type": "object",
+  "required": [
+    "matured_snapshots",
+    "summary",
+    "calibration",
+    "ledger"
+  ],
+  "properties": {
+    "matured_snapshots": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "snapshot_date",
+          "top25",
+          "precision_at_10",
+          "precision_at_25",
+          "precision_at_50"
+        ],
+        "properties": {
+          "snapshot_date": { "type": "string" },
+          "top25": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["rank", "repo_id", "repo_name", "prob", "gain_30d", "hit", "label"],
+              "properties": {
+                "rank": { "type": "integer" },
+                "repo_id": { "type": "integer" },
+                "repo_name": { "type": "string" },
+                "prob": { "type": "number" },
+                "gain_30d": { "type": ["number", "null"] },
+                "hit": { "type": "boolean" },
+                "label": { "type": "boolean" }
+              }
+            }
+          },
+          "precision_at_10": { "type": "number" },
+          "precision_at_25": { "type": "number" },
+          "precision_at_50": { "type": "number" },
+          "b1_precision_at_10": { "type": ["number", "null"] },
+          "b1_precision_at_25": { "type": ["number", "null"] },
+          "b1_precision_at_50": { "type": ["number", "null"] }
+        }
+      }
+    },
+    "summary": {
+      "type": "object",
+      "required": [
+        "n_live_days",
+        "n_matured_days",
+        "top25_hit_rate",
+        "base_rate",
+        "b1_hit_rate"
+      ],
+      "properties": {
+        "n_live_days": { "type": "integer" },
+        "n_matured_days": { "type": "integer" },
+        "top25_hit_rate": { "type": "number" },
+        "base_rate": { "type": "number" },
+        "b1_hit_rate": { "type": "number" },
+        "median_lead_time_days": { "type": ["number", "null"] }
+      }
+    },
+    "calibration": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["bin_start", "bin_end", "predicted_avg", "realized_avg", "count"],
+        "properties": {
+          "bin_start": { "type": "number" },
+          "bin_end": { "type": "number" },
+          "predicted_avg": { "type": "number" },
+          "realized_avg": { "type": "number" },
+          "count": { "type": "integer" }
+        }
+      }
+    },
+    "ledger": {
+      "type": "object",
+      "required": ["total_rows", "last_hash", "verified"],
+      "properties": {
+        "first_date": { "type": ["string", "null"] },
+        "last_date": { "type": ["string", "null"] },
+        "total_rows": { "type": "integer" },
+        "last_hash": { "type": "string" },
+        "genesis_hash": { "type": "string" },
+        "verified": { "type": "boolean" }
+      }
+    }
+  },
+  "additionalProperties": true
+}

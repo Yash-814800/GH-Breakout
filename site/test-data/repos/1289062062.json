@@ -1,0 +1,42 @@
+{
+  "repo_id": 1289062062,
+  "repo_name": "AhmadHassan-BTed/FractalWorkspace",
+  "html_url": "https://github.com/AhmadHassan-BTed/FractalWorkspace",
+  "description": null,
+  "metadata": {},
+  "daily_stars": [
+    {
+      "date": "2026-09-30",
+      "stars": 1
+    },
+    {
+      "date": "2026-10-05",
+      "stars": 1
+    },
+    {
+      "date": "2026-10-09",
+      "stars": 1
+    },
+    {
+      "date": "2026-10-13",
+      "stars": 1
+    }
+  ],
+  "prediction_history": [
+    {
+      "date": "2026-10-20",
+      "rank": 23,
+      "prob": 0.0293,
+      "raw_score": 0.2555,
+      "b1_rank": 52
+    }
+  ],
+  "latest_shap": [],
+  "explanation": "Flagged because 36 stars in the last 3 days, 7 stars yesterday and stars are spread over many hours. Held back by: few recent pushes and no stargazer with a good record.",
+  "realized_outcome": null,
+  "trending_appearances": [],
+  "hn_stories": [],
+  "cohort_retention": null,
+  "similar_repos": null,
+  "suspicion_breakdown": null
+}

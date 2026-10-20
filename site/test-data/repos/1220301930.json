@@ -1,0 +1,61 @@
+{
+  "repo_id": 1220301930,
+  "repo_name": "repo_id=1220301930",
+  "html_url": "https://github.com/repo_id=1220301930",
+  "description": null,
+  "metadata": {},
+  "daily_stars": [],
+  "prediction_history": [
+    {
+      "date": "2026-10-20",
+      "rank": 856,
+      "prob": 0.0002,
+      "raw_score": 0.0049,
+      "b1_rank": 452
+    }
+  ],
+  "latest_shap": [],
+  "explanation": null,
+  "realized_outcome": null,
+  "trending_appearances": [
+    {
+      "date": "2026-10-08",
+      "rank": 4,
+      "language": "rust",
+      "source": "antonkomarev"
+    },
+    {
+      "date": "2026-10-07",
+      "rank": 4,
+      "language": "rust",
+      "source": "larsbijl"
+    },
+    {
+      "date": "2026-10-07",
+      "rank": 5,
+      "language": "javascript",
+      "source": "antonkomarev"
+    }
+  ],
+  "hn_stories": [
+    {
+      "title": "Photopea creator weighs in on Photosuite project",
+      "url": "https://github.com/eolix/photosuite/issues/77",
+      "hn_url": "https://news.ycombinator.com/item?id=49972730",
+      "created_at": "2026-10-06T00:41:44",
+      "points": 193,
+      "num_comments": 124
+    },
+    {
+      "title": "Replicating Classic Adobe Photoshop with PSD/PSB Compatibility",
+      "url": "https://github.com/eolix/photosuite",
+      "hn_url": "https://news.ycombinator.com/item?id=49847025",
+      "created_at": "2026-09-25T16:55:59",
+      "points": 1,
+      "num_comments": 0
+    }
+  ],
+  "cohort_retention": null,
+  "similar_repos": null,
+  "suspicion_breakdown": null
+}

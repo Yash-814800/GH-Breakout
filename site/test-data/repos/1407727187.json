@@ -1,0 +1,62 @@
+{
+  "repo_id": 1407727187,
+  "repo_name": "Supermedo/bloodborne_pc",
+  "html_url": "https://github.com/Supermedo/bloodborne_pc",
+  "description": null,
+  "metadata": {},
+  "daily_stars": [
+    {
+      "date": "2026-10-06",
+      "stars": 1
+    },
+    {
+      "date": "2026-10-07",
+      "stars": 7
+    },
+    {
+      "date": "2026-10-08",
+      "stars": 11
+    },
+    {
+      "date": "2026-10-09",
+      "stars": 5
+    },
+    {
+      "date": "2026-10-10",
+      "stars": 2
+    },
+    {
+      "date": "2026-10-11",
+      "stars": 4
+    },
+    {
+      "date": "2026-10-12",
+      "stars": 4
+    },
+    {
+      "date": "2026-10-13",
+      "stars": 2
+    },
+    {
+      "date": "2026-10-14",
+      "stars": 7
+    }
+  ],
+  "prediction_history": [
+    {
+      "date": "2026-10-20",
+      "rank": 7,
+      "prob": 0.0455,
+      "raw_score": 0.4208,
+      "b1_rank": 15
+    }
+  ],
+  "latest_shap": [],
+  "explanation": "Flagged because 17 stars in the last 3 days, 5 stars yesterday and stargazers star selectively. Held back by: few recent pushes and owner type unknown.",
+  "realized_outcome": null,
+  "trending_appearances": [],
+  "hn_stories": [],
+  "cohort_retention": null,
+  "similar_repos": null,
+  "suspicion_breakdown": null
+}

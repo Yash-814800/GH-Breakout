@@ -1,0 +1,32 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "BacktestSchema",
+  "type": "object",
+  "required": [
+    "historical_dates",
+    "date_summaries",
+    "is_simulated_disclaimer"
+  ],
+  "properties": {
+    "historical_dates": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "date_summaries": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["snapshot_date", "n_candidates", "precision_at_25"],
+        "properties": {
+          "snapshot_date": { "type": "string" },
+          "n_candidates": { "type": "integer" },
+          "precision_at_25": { "type": "number" },
+          "precision_at_10": { "type": ["number", "null"] },
+          "precision_at_50": { "type": ["number", "null"] }
+        }
+      }
+    },
+    "is_simulated_disclaimer": { "type": "string" }
+  },
+  "additionalProperties": true
+}

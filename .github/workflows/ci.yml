@@ -25,3 +25,23 @@ jobs:
       - run: uv run mypy src
       - run: uv run dbt deps --project-dir dbt --profiles-dir dbt
       - run: uv run pytest -q
+
+  site-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: site/package-lock.json
+      - name: Prepare fixture data and figures
+        run: |
+          mkdir -p site/public/data site/public/figures
+          cp -r site/test-data/* site/public/data/
+          cp reports/figures/*.png site/public/figures/ || true
+      - name: Build site and check base paths
+        run: |
+          cd site
+          npm ci
+          npm run build

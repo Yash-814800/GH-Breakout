@@ -1262,15 +1262,22 @@ def publish_site_data_cmd(
     date_: Annotated[
         str | None, typer.Option("--date", help="snapshot date (default: latest prediction)")
     ] = None,
+    upload: Annotated[
+        bool,
+        typer.Option(
+            "--upload",
+            help="Upload site data to derived repo under site_data/latest/",
+        ),
+    ] = False,
 ) -> None:
-    """Export site data (leaderboard.json and status.json)."""
+    """Export site data (leaderboard, details, track record, backtest, status, explorer)."""
     from datetime import date
 
     from breakout.publish import site_data
 
     cfg = get_config(ctx.obj["config"])
     d = date.fromisoformat(date_) if date_ else None
-    p1, p2 = site_data.publish_site_data(cfg, d)
+    p1, p2 = site_data.publish_site_data(cfg, d, upload=upload)
     typer.echo(f"Wrote site data:\n  {p1}\n  {p2}")
 
 

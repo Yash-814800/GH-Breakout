@@ -1,0 +1,32 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "MetaSchema",
+  "type": "object",
+  "required": [
+    "build_time",
+    "model_version",
+    "data_through",
+    "counts"
+  ],
+  "properties": {
+    "build_time": { "type": "string" },
+    "model_version": { "type": "string" },
+    "data_through": { "type": "string" },
+    "counts": {
+      "type": "object",
+      "required": [
+        "leaderboard",
+        "detail_pages",
+        "matured_snapshots",
+        "backtest_snapshots"
+      ],
+      "properties": {
+        "leaderboard": { "type": "integer" },
+        "detail_pages": { "type": "integer" },
+        "matured_snapshots": { "type": "integer" },
+        "backtest_snapshots": { "type": "integer" }
+      }
+    }
+  },
+  "additionalProperties": true
+}

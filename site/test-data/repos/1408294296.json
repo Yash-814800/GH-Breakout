@@ -1,0 +1,58 @@
+{
+  "repo_id": 1408294296,
+  "repo_name": "storytold/deckcraft",
+  "html_url": "https://github.com/storytold/deckcraft",
+  "description": null,
+  "metadata": {},
+  "daily_stars": [
+    {
+      "date": "2026-10-07",
+      "stars": 2
+    },
+    {
+      "date": "2026-10-08",
+      "stars": 5
+    },
+    {
+      "date": "2026-10-09",
+      "stars": 8
+    },
+    {
+      "date": "2026-10-10",
+      "stars": 10
+    },
+    {
+      "date": "2026-10-11",
+      "stars": 7
+    },
+    {
+      "date": "2026-10-12",
+      "stars": 8
+    },
+    {
+      "date": "2026-10-13",
+      "stars": 4
+    },
+    {
+      "date": "2026-10-14",
+      "stars": 5
+    }
+  ],
+  "prediction_history": [
+    {
+      "date": "2026-10-20",
+      "rank": 50,
+      "prob": 0.0151,
+      "raw_score": 0.1631,
+      "b1_rank": 20
+    }
+  ],
+  "latest_shap": [],
+  "explanation": "Flagged because 6 stars in the last 3 days, stars are spread over many hours and stargazers star selectively. Held back by: the owner has 33 other repos.",
+  "realized_outcome": null,
+  "trending_appearances": [],
+  "hn_stories": [],
+  "cohort_retention": null,
+  "similar_repos": null,
+  "suspicion_breakdown": null
+}

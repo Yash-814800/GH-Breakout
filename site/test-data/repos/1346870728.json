@@ -1,0 +1,87 @@
+{
+  "repo_id": 1346870728,
+  "repo_name": "monid-ai/monid",
+  "html_url": "https://github.com/monid-ai/monid",
+  "description": null,
+  "metadata": {},
+  "daily_stars": [
+    {
+      "date": "2026-09-30",
+      "stars": 19
+    },
+    {
+      "date": "2026-10-01",
+      "stars": 7
+    },
+    {
+      "date": "2026-10-02",
+      "stars": 14
+    },
+    {
+      "date": "2026-10-03",
+      "stars": 7
+    },
+    {
+      "date": "2026-10-04",
+      "stars": 3
+    },
+    {
+      "date": "2026-10-05",
+      "stars": 4
+    },
+    {
+      "date": "2026-10-06",
+      "stars": 4
+    },
+    {
+      "date": "2026-10-07",
+      "stars": 7
+    },
+    {
+      "date": "2026-10-08",
+      "stars": 8
+    },
+    {
+      "date": "2026-10-09",
+      "stars": 7
+    },
+    {
+      "date": "2026-10-10",
+      "stars": 3
+    },
+    {
+      "date": "2026-10-11",
+      "stars": 4
+    },
+    {
+      "date": "2026-10-12",
+      "stars": 1
+    }
+  ],
+  "prediction_history": [
+    {
+      "date": "2026-10-20",
+      "rank": 8,
+      "prob": 0.04,
+      "raw_score": 0.3968,
+      "b1_rank": 18
+    }
+  ],
+  "latest_shap": [],
+  "explanation": "Flagged because 19 stars in the last 3 days, already has 155 stars and stars are spread over many hours. Held back by: few recent pushes and 1 stars yesterday.",
+  "realized_outcome": null,
+  "trending_appearances": [],
+  "hn_stories": [
+    {
+      "title": "Show HN: I built a router for agent tools",
+      "url": "https://github.com/monid-ai/monid",
+      "hn_url": "https://news.ycombinator.com/item?id=49730644",
+      "created_at": "2026-09-16T17:58:40",
+      "points": 11,
+      "num_comments": 3
+    }
+  ],
+  "cohort_retention": null,
+  "similar_repos": null,
+  "suspicion_breakdown": null
+}

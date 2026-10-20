@@ -1,0 +1,98 @@
+{
+  "repo_id": 1389011744,
+  "repo_name": "lemomo-ai/lemo-opuscar",
+  "html_url": "https://github.com/lemomo-ai/lemo-opuscar",
+  "description": null,
+  "metadata": {},
+  "daily_stars": [
+    {
+      "date": "2026-09-27",
+      "stars": 1
+    },
+    {
+      "date": "2026-09-28",
+      "stars": 3
+    },
+    {
+      "date": "2026-09-29",
+      "stars": 3
+    },
+    {
+      "date": "2026-09-30",
+      "stars": 6
+    },
+    {
+      "date": "2026-10-01",
+      "stars": 2
+    },
+    {
+      "date": "2026-10-02",
+      "stars": 2
+    },
+    {
+      "date": "2026-10-03",
+      "stars": 3
+    },
+    {
+      "date": "2026-10-04",
+      "stars": 1
+    },
+    {
+      "date": "2026-10-05",
+      "stars": 2
+    },
+    {
+      "date": "2026-10-06",
+      "stars": 1
+    },
+    {
+      "date": "2026-10-07",
+      "stars": 3
+    },
+    {
+      "date": "2026-10-08",
+      "stars": 2
+    },
+    {
+      "date": "2026-10-09",
+      "stars": 1
+    },
+    {
+      "date": "2026-10-10",
+      "stars": 3
+    },
+    {
+      "date": "2026-10-11",
+      "stars": 1
+    },
+    {
+      "date": "2026-10-12",
+      "stars": 3
+    },
+    {
+      "date": "2026-10-13",
+      "stars": 1
+    },
+    {
+      "date": "2026-10-14",
+      "stars": 2
+    }
+  ],
+  "prediction_history": [
+    {
+      "date": "2026-10-20",
+      "rank": 13,
+      "prob": 0.0293,
+      "raw_score": 0.3278,
+      "b1_rank": 57
+    }
+  ],
+  "latest_shap": [],
+  "explanation": "Flagged because 15 stars in the last 3 days, 8 stars yesterday and stargazers star selectively. Held back by: few recent pushes and owner type unknown.",
+  "realized_outcome": null,
+  "trending_appearances": [],
+  "hn_stories": [],
+  "cohort_retention": null,
+  "similar_repos": null,
+  "suspicion_breakdown": null
+}

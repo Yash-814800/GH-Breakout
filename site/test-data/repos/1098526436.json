@@ -1,0 +1,25 @@
+{
+  "repo_id": 1098526436,
+  "repo_name": "repo_id=1098526436",
+  "html_url": "https://github.com/repo_id=1098526436",
+  "description": null,
+  "metadata": {},
+  "daily_stars": [],
+  "prediction_history": [
+    {
+      "date": "2026-10-20",
+      "rank": 369,
+      "prob": 0.0014,
+      "raw_score": 0.0196,
+      "b1_rank": 795
+    }
+  ],
+  "latest_shap": [],
+  "explanation": null,
+  "realized_outcome": null,
+  "trending_appearances": [],
+  "hn_stories": [],
+  "cohort_retention": null,
+  "similar_repos": null,
+  "suspicion_breakdown": null
+}

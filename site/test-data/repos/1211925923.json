@@ -1,0 +1,98 @@
+{
+  "repo_id": 1211925923,
+  "repo_name": "repo_id=1211925923",
+  "html_url": "https://github.com/repo_id=1211925923",
+  "description": null,
+  "metadata": {},
+  "daily_stars": [],
+  "prediction_history": [
+    {
+      "date": "2026-10-20",
+      "rank": 153,
+      "prob": 0.0034,
+      "raw_score": 0.0495,
+      "b1_rank": 534
+    }
+  ],
+  "latest_shap": [],
+  "explanation": null,
+  "realized_outcome": null,
+  "trending_appearances": [
+    {
+      "date": "2026-10-06",
+      "rank": 4,
+      "language": "typescript",
+      "source": "antonkomarev"
+    },
+    {
+      "date": "2026-10-06",
+      "rank": 10,
+      "language": null,
+      "source": "antonkomarev"
+    },
+    {
+      "date": "2026-10-05",
+      "rank": 4,
+      "language": "typescript",
+      "source": "larsbijl"
+    },
+    {
+      "date": "2026-10-05",
+      "rank": 12,
+      "language": "typescript",
+      "source": "antonkomarev"
+    },
+    {
+      "date": "2026-10-04",
+      "rank": 11,
+      "language": "typescript",
+      "source": "larsbijl"
+    },
+    {
+      "date": "2026-10-04",
+      "rank": 4,
+      "language": "typescript",
+      "source": "antonkomarev"
+    },
+    {
+      "date": "2026-10-04",
+      "rank": 9,
+      "language": null,
+      "source": "antonkomarev"
+    },
+    {
+      "date": "2026-10-03",
+      "rank": 4,
+      "language": "typescript",
+      "source": "larsbijl"
+    },
+    {
+      "date": "2026-09-25",
+      "rank": 8,
+      "language": "typescript",
+      "source": "antonkomarev"
+    },
+    {
+      "date": "2026-09-24",
+      "rank": 8,
+      "language": "typescript",
+      "source": "larsbijl"
+    },
+    {
+      "date": "2026-08-26",
+      "rank": 2,
+      "language": "typescript",
+      "source": "antonkomarev"
+    },
+    {
+      "date": "2026-08-25",
+      "rank": 2,
+      "language": "typescript",
+      "source": "larsbijl"
+    }
+  ],
+  "hn_stories": [],
+  "cohort_retention": null,
+  "similar_repos": null,
+  "suspicion_breakdown": null
+}

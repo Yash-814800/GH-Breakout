@@ -71,3 +71,57 @@ jobs:
             data/run/status.json
             status/heartbeat.json
           retention-days: 14
+
+      - name: Upload site data artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: site-data
+          path: site/public/data/
+          retention-days: 7
+
+  deploy:
+    needs: pipeline
+    if: inputs.skip_deploy != true
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Download site data artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: site-data
+          path: site/public/data
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: site/package-lock.json
+
+      - name: Copy figures to site
+        run: |
+          mkdir -p site/public/figures
+          cp reports/figures/*.png site/public/figures/ || true
+
+      - name: Build site
+        run: |
+          cd site
+          npm ci
+          npm run build
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site/dist
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

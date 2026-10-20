@@ -1,0 +1,25 @@
+{
+  "repo_id": 1414718338,
+  "repo_name": "repo_id=1414718338",
+  "html_url": "https://github.com/repo_id=1414718338",
+  "description": null,
+  "metadata": {},
+  "daily_stars": [],
+  "prediction_history": [
+    {
+      "date": "2026-10-20",
+      "rank": 35,
+      "prob": 0.0151,
+      "raw_score": 0.2125,
+      "b1_rank": 284
+    }
+  ],
+  "latest_shap": [],
+  "explanation": "Flagged because 11 stars in the last 3 days, 3 stars yesterday and stars are spread over many hours. Held back by: owner type unknown and 20 active user-days in two weeks.",
+  "realized_outcome": null,
+  "trending_appearances": [],
+  "hn_stories": [],
+  "cohort_retention": null,
+  "similar_repos": null,
+  "suspicion_breakdown": null
+}

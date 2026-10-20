@@ -1,75 +1,118 @@
-from __future__ import annotations
+"""Unit tests for site-data publishing (Phase 10)."""
 
-import json
-from datetime import date
 from pathlib import Path
 
-import pyarrow as pa
-import pyarrow.parquet as pq
+import jsonschema
+import pytest
 
 from breakout.config import get_config
 from breakout.publish import site_data
 
 
-def test_publish_site_data(tmp_path: Path, monkeypatch) -> None:
-    # Point site public data directory to tmp_path
-    monkeypatch.setattr(site_data, "SITE_DATA_DIR", tmp_path / "public" / "data")
-    monkeypatch.setattr(
-        site_data, "LEADERBOARD_JSON", tmp_path / "public" / "data" / "leaderboard.json"
-    )
-    monkeypatch.setattr(site_data, "STATUS_JSON", tmp_path / "public" / "data" / "status.json")
+def test_prob_label_formatting():
+    assert site_data.format_prob_label(0.5) == "~1 in 2"
+    assert site_data.format_prob_label(0.25) == "~1 in 4"
+    assert site_data.format_prob_label(0.1) == "~1 in 10"
+    assert site_data.format_prob_label(0.005) == "< 1 in 100"
+    assert site_data.format_prob_label(0.0) == "< 1 in 1000"
 
-    # Create dummy predictions
-    pred_path = tmp_path / "predictions_2024-06-03.parquet"
-    rows = [
+
+def test_hidden_repos_filtering(tmp_path: Path):
+    cfg_file = tmp_path / "hidden.yaml"
+    cfg_content = "hidden_repo_ids: [123, 456]\nhidden_repo_names: ['bad/actor', 'toxic/repo']\n"
+    cfg_file.write_text(cfg_content)
+    ids, names = site_data.load_hidden_repos(cfg_file)
+
+    assert 123 in ids
+    assert 456 in ids
+    assert "bad/actor" in names
+
+    assert site_data.is_repo_hidden(123, "normal/repo", ids, names) is True
+    assert site_data.is_repo_hidden(999, "bad/actor", ids, names) is True
+    assert site_data.is_repo_hidden(999, "Bad/Actor", ids, names) is True
+    assert site_data.is_repo_hidden(999, "good/repo", ids, names) is False
+
+
+def test_json_schemas_validation():
+    # Test valid leaderboard item
+    lb_data = [
         {
-            "snapshot_date": "2024-06-03",
-            "repo_id": 101,
-            "repo_name": "owner/top_repo",
             "rank": 1,
-            "prob": 0.85,
-            "raw_score": 0.92,
+            "repo_id": 1001,
+            "repo_name": "owner/fast-lib",
+            "html_url": "https://github.com/owner/fast-lib",
+            "description": "A very fast library",
+            "language": "Python",
+            "age_days": 15,
+            "stars_total_observed": 120,
+            "stars_7d": 80,
+            "spark_stars_28d": [0] * 28,
+            "prob": 0.28,
+            "prob_label": "~1 in 4",
+            "explanation": "Flagged because 80 stars in 7 days.",
+            "first_flagged_date": "2026-10-15",
+            "days_on_board": 5,
+            "rank_change": "up",
+            "suspicion_score": None,
             "b1_rank": 2,
-            "explanation": "Flagged because high velocity",
-            "top_contribs": json.dumps({"stars_7d": 0.45, "growth": 0.2}),
-            "model_version": "v20261019-test",
-            "features_hash": "sha123",
-            "schema_version": 1,
-            "suspicion_score": None,
-        },
-        {
-            "snapshot_date": "2024-06-03",
-            "repo_id": 102,
-            "repo_name": "owner/second_repo",
-            "rank": 2,
-            "prob": 0.72,
-            "raw_score": 0.78,
-            "b1_rank": 1,
-            "explanation": "Flagged because stars",
-            "top_contribs": json.dumps({"stars_3d": 0.3}),
-            "model_version": "v20261019-test",
-            "features_hash": "sha123",
-            "schema_version": 1,
-            "suspicion_score": None,
-        },
+        }
     ]
-    pq.write_table(pa.Table.from_pylist(rows), pred_path)
+    site_data.validate_json(lb_data, "leaderboard.schema.json")
 
-    cfg = get_config(None)
-    f_lead, f_stat = site_data.publish_site_data(cfg, d=date(2024, 6, 3), pred_path=pred_path)
+    # Invalid leaderboard item (missing rank, bad sparkline length)
+    bad_lb = [{"repo_id": 1001, "spark_stars_28d": [1, 2]}]
+    with pytest.raises(jsonschema.ValidationError):
+        site_data.validate_json(bad_lb, "leaderboard.schema.json")
 
-    assert f_lead.exists()
-    assert f_stat.exists()
+    # Test valid track record
+    tr_data = {
+        "matured_snapshots": [],
+        "summary": {
+            "n_live_days": 10,
+            "n_matured_days": 0,
+            "top25_hit_rate": 0.0,
+            "base_rate": 0.0051,
+            "b1_hit_rate": 0.0286,
+            "median_lead_time_days": 1.0,
+        },
+        "calibration": [
+            {
+                "bin_start": 0.0,
+                "bin_end": 0.1,
+                "predicted_avg": 0.05,
+                "realized_avg": 0.05,
+                "count": 10,
+            }
+        ],
+        "ledger": {
+            "first_date": "2026-10-10",
+            "last_date": "2026-10-20",
+            "total_rows": 10,
+            "last_hash": "abc",
+            "genesis_hash": "000",
+            "verified": True,
+        },
+    }
+    site_data.validate_json(tr_data, "track_record.schema.json")
 
-    lead_data = json.loads(f_lead.read_text())
-    assert len(lead_data) == 2
-    assert lead_data[0]["repo_name"] == "owner/top_repo"
-    assert lead_data[0]["rank"] == 1
-    assert lead_data[0]["prob"] == 0.85
-    assert isinstance(lead_data[0]["top_contribs"], dict)
-    assert lead_data[0]["top_contribs"]["stars_7d"] == 0.45
+    # Test valid meta
+    meta_data = {
+        "build_time": "2026-10-20T12:00:00+00:00",
+        "model_version": "v1",
+        "data_through": "2026-10-20",
+        "counts": {
+            "leaderboard": 50,
+            "detail_pages": 50,
+            "matured_snapshots": 0,
+            "backtest_snapshots": 10,
+        },
+    }
+    site_data.validate_json(meta_data, "meta.schema.json")
 
-    stat_data = json.loads(f_stat.read_text())
-    assert stat_data["snapshot_date"] == "2024-06-03"
-    assert stat_data["n_leaderboard"] == 2
-    assert "published_at" in stat_data
+
+def test_explorer_parquet_size_limit():
+    cfg = get_config()
+    max_mb = cfg.site.explorer_max_mb
+    assert site_data.OOF_TOP100_PARQUET.exists()
+    size_mb = site_data.OOF_TOP100_PARQUET.stat().st_size / (1024 * 1024)
+    assert size_mb <= max_mb, f"oof_top100.parquet ({size_mb:.2f} MB) exceeds budget ({max_mb} MB)"

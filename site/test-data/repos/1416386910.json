@@ -1,0 +1,34 @@
+{
+  "repo_id": 1416386910,
+  "repo_name": "Arekejoker/qwen21-nsfw-pose-skill",
+  "html_url": "https://github.com/Arekejoker/qwen21-nsfw-pose-skill",
+  "description": null,
+  "metadata": {},
+  "daily_stars": [
+    {
+      "date": "2026-10-13",
+      "stars": 5
+    },
+    {
+      "date": "2026-10-14",
+      "stars": 10
+    }
+  ],
+  "prediction_history": [
+    {
+      "date": "2026-10-20",
+      "rank": 6,
+      "prob": 0.0455,
+      "raw_score": 0.4412,
+      "b1_rank": 41
+    }
+  ],
+  "latest_shap": [],
+  "explanation": "Flagged because 11 stars yesterday, 16 stars in the last 3 days and stargazers star selectively. Held back by: owner type unknown.",
+  "realized_outcome": null,
+  "trending_appearances": [],
+  "hn_stories": [],
+  "cohort_retention": null,
+  "similar_repos": null,
+  "suspicion_breakdown": null
+}

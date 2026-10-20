@@ -1,0 +1,78 @@
+{
+  "repo_id": 1373084533,
+  "repo_name": "Jakeschincariol/youtube-agent-skill",
+  "html_url": "https://github.com/Jakeschincariol/youtube-agent-skill",
+  "description": null,
+  "metadata": {},
+  "daily_stars": [
+    {
+      "date": "2026-09-30",
+      "stars": 1
+    },
+    {
+      "date": "2026-10-01",
+      "stars": 2
+    },
+    {
+      "date": "2026-10-02",
+      "stars": 1
+    },
+    {
+      "date": "2026-10-03",
+      "stars": 2
+    },
+    {
+      "date": "2026-10-04",
+      "stars": 3
+    },
+    {
+      "date": "2026-10-06",
+      "stars": 1
+    },
+    {
+      "date": "2026-10-07",
+      "stars": 1
+    },
+    {
+      "date": "2026-10-08",
+      "stars": 4
+    },
+    {
+      "date": "2026-10-10",
+      "stars": 3
+    },
+    {
+      "date": "2026-10-11",
+      "stars": 1
+    },
+    {
+      "date": "2026-10-12",
+      "stars": 2
+    },
+    {
+      "date": "2026-10-13",
+      "stars": 2
+    },
+    {
+      "date": "2026-10-14",
+      "stars": 3
+    }
+  ],
+  "prediction_history": [
+    {
+      "date": "2026-10-20",
+      "rank": 38,
+      "prob": 0.0151,
+      "raw_score": 0.1914,
+      "b1_rank": 67
+    }
+  ],
+  "latest_shap": [],
+  "explanation": "Flagged because 11 stars in the last 3 days, 5 stars yesterday and stargazers star selectively. Held back by: no stargazer with a good record and few recent pushes.",
+  "realized_outcome": null,
+  "trending_appearances": [],
+  "hn_stories": [],
+  "cohort_retention": null,
+  "similar_repos": null,
+  "suspicion_breakdown": null
+}

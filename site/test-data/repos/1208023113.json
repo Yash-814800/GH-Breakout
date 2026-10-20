@@ -1,0 +1,44 @@
+{
+  "repo_id": 1208023113,
+  "repo_name": "repo_id=1208023113",
+  "html_url": "https://github.com/repo_id=1208023113",
+  "description": null,
+  "metadata": {},
+  "daily_stars": [],
+  "prediction_history": [
+    {
+      "date": "2026-10-20",
+      "rank": 534,
+      "prob": 0.0008,
+      "raw_score": 0.0119,
+      "b1_rank": 380
+    }
+  ],
+  "latest_shap": [],
+  "explanation": null,
+  "realized_outcome": null,
+  "trending_appearances": [
+    {
+      "date": "2026-10-15",
+      "rank": 3,
+      "language": "swift",
+      "source": "antonkomarev"
+    },
+    {
+      "date": "2026-10-14",
+      "rank": 6,
+      "language": "swift",
+      "source": "antonkomarev"
+    },
+    {
+      "date": "2026-10-13",
+      "rank": 8,
+      "language": "swift",
+      "source": "antonkomarev"
+    }
+  ],
+  "hn_stories": [],
+  "cohort_retention": null,
+  "similar_repos": null,
+  "suspicion_breakdown": null
+}

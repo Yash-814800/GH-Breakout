@@ -1,0 +1,59 @@
+{
+  "repo_id": 1409246014,
+  "repo_name": "bherbruck/solidcraft",
+  "html_url": "https://github.com/bherbruck/solidcraft",
+  "description": null,
+  "metadata": {},
+  "daily_stars": [
+    {
+      "date": "2026-10-09",
+      "stars": 3
+    },
+    {
+      "date": "2026-10-10",
+      "stars": 2
+    },
+    {
+      "date": "2026-10-11",
+      "stars": 5
+    },
+    {
+      "date": "2026-10-12",
+      "stars": 3
+    },
+    {
+      "date": "2026-10-13",
+      "stars": 4
+    },
+    {
+      "date": "2026-10-14",
+      "stars": 11
+    }
+  ],
+  "prediction_history": [
+    {
+      "date": "2026-10-20",
+      "rank": 4,
+      "prob": 0.1336,
+      "raw_score": 0.598,
+      "b1_rank": 4
+    }
+  ],
+  "latest_shap": [],
+  "explanation": "Flagged because 18 stars yesterday, 72 stars in the last 3 days and 103 stars in the last week. Held back by: a Hacker News post reached 141 points and 60 different contributors in four weeks.",
+  "realized_outcome": null,
+  "trending_appearances": [],
+  "hn_stories": [
+    {
+      "title": "Show HN: SolidCraft \u2013 Open-Source Parametric CAD in Rust (With MCP Support)",
+      "url": "https://github.com/bherbruck/solidcraft",
+      "hn_url": "https://news.ycombinator.com/item?id=50064840",
+      "created_at": "2026-10-13T00:11:04",
+      "points": 141,
+      "num_comments": 51
+    }
+  ],
+  "cohort_retention": null,
+  "similar_repos": null,
+  "suspicion_breakdown": null
+}

@@ -1,0 +1,40 @@
+{
+  "repo_id": 932573266,
+  "repo_name": "repo_id=932573266",
+  "html_url": "https://github.com/repo_id=932573266",
+  "description": null,
+  "metadata": {
+    "name_with_owner": null,
+    "description": null,
+    "primary_language": null,
+    "created_at": null,
+    "owner_type": null,
+    "is_fork": null,
+    "parent_repo_id": null,
+    "is_archived": null,
+    "is_mirror": null,
+    "is_template": null,
+    "license_spdx": null,
+    "topics": [],
+    "homepage_url": null,
+    "fetched_at": "2026-10-16T00:08:41.535507"
+  },
+  "daily_stars": [],
+  "prediction_history": [
+    {
+      "date": "2026-10-20",
+      "rank": 979,
+      "prob": 0.0001,
+      "raw_score": 0.0036,
+      "b1_rank": 215
+    }
+  ],
+  "latest_shap": [],
+  "explanation": null,
+  "realized_outcome": null,
+  "trending_appearances": [],
+  "hn_stories": [],
+  "cohort_retention": null,
+  "similar_repos": null,
+  "suspicion_breakdown": null
+}

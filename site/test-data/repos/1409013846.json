@@ -1,0 +1,50 @@
+{
+  "repo_id": 1409013846,
+  "repo_name": "Fei2411/DeepSeek-Bot",
+  "html_url": "https://github.com/Fei2411/DeepSeek-Bot",
+  "description": null,
+  "metadata": {},
+  "daily_stars": [
+    {
+      "date": "2026-10-08",
+      "stars": 1
+    },
+    {
+      "date": "2026-10-10",
+      "stars": 2
+    },
+    {
+      "date": "2026-10-11",
+      "stars": 12
+    },
+    {
+      "date": "2026-10-12",
+      "stars": 7
+    },
+    {
+      "date": "2026-10-13",
+      "stars": 3
+    },
+    {
+      "date": "2026-10-14",
+      "stars": 6
+    }
+  ],
+  "prediction_history": [
+    {
+      "date": "2026-10-20",
+      "rank": 12,
+      "prob": 0.0293,
+      "raw_score": 0.3313,
+      "b1_rank": 31
+    }
+  ],
+  "latest_shap": [],
+  "explanation": "Flagged because 14 stars in the last 3 days, 3 stars yesterday and 28 stars in the last week. Held back by: owner type unknown.",
+  "realized_outcome": null,
+  "trending_appearances": [],
+  "hn_stories": [],
+  "cohort_retention": null,
+  "similar_repos": null,
+  "suspicion_breakdown": null
+}

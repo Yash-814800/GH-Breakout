@@ -1,0 +1,54 @@
+{
+  "repo_id": 1407504032,
+  "repo_name": "zhongerxin/iPhone-use",
+  "html_url": "https://github.com/zhongerxin/iPhone-use",
+  "description": null,
+  "metadata": {},
+  "daily_stars": [
+    {
+      "date": "2026-10-08",
+      "stars": 6
+    },
+    {
+      "date": "2026-10-09",
+      "stars": 24
+    },
+    {
+      "date": "2026-10-10",
+      "stars": 21
+    },
+    {
+      "date": "2026-10-11",
+      "stars": 4
+    },
+    {
+      "date": "2026-10-12",
+      "stars": 2
+    },
+    {
+      "date": "2026-10-13",
+      "stars": 3
+    },
+    {
+      "date": "2026-10-14",
+      "stars": 2
+    }
+  ],
+  "prediction_history": [
+    {
+      "date": "2026-10-20",
+      "rank": 39,
+      "prob": 0.0151,
+      "raw_score": 0.1888,
+      "b1_rank": 10
+    }
+  ],
+  "latest_shap": [],
+  "explanation": "Flagged because 10 stars in the last 3 days, 5 stars yesterday and stargazers star selectively. Held back by: few recent pushes.",
+  "realized_outcome": null,
+  "trending_appearances": [],
+  "hn_stories": [],
+  "cohort_retention": null,
+  "similar_repos": null,
+  "suspicion_breakdown": null
+}

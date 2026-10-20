@@ -1,0 +1,43 @@
+{
+  "repo_id": 1412112308,
+  "repo_name": "storytold/figcraft",
+  "html_url": "https://github.com/storytold/figcraft",
+  "description": null,
+  "metadata": {},
+  "daily_stars": [
+    {
+      "date": "2026-10-13",
+      "stars": 4
+    },
+    {
+      "date": "2026-10-14",
+      "stars": 6
+    }
+  ],
+  "prediction_history": [
+    {
+      "date": "2026-10-20",
+      "rank": 26,
+      "prob": 0.0212,
+      "raw_score": 0.2348,
+      "b1_rank": 44
+    }
+  ],
+  "latest_shap": [],
+  "explanation": "Flagged because 16 stars in the last 3 days, stars are spread over many hours and stargazers star selectively. Held back by: recent stargazers have no track record of finding breakouts and the owner has 33 other repos.",
+  "realized_outcome": null,
+  "trending_appearances": [],
+  "hn_stories": [
+    {
+      "title": "Figcraft: An open-source, clean-room reimplementation of Figma",
+      "url": "https://github.com/storytold/figcraft",
+      "hn_url": "https://news.ycombinator.com/item?id=50069000",
+      "created_at": "2026-10-13T09:32:45",
+      "points": 3,
+      "num_comments": 0
+    }
+  ],
+  "cohort_retention": null,
+  "similar_repos": null,
+  "suspicion_breakdown": null
+}

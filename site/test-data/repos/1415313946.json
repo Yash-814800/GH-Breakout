@@ -1,0 +1,38 @@
+{
+  "repo_id": 1415313946,
+  "repo_name": "jhaizhou-ops/d2r-mobile",
+  "html_url": "https://github.com/jhaizhou-ops/d2r-mobile",
+  "description": null,
+  "metadata": {},
+  "daily_stars": [
+    {
+      "date": "2026-10-12",
+      "stars": 8
+    },
+    {
+      "date": "2026-10-13",
+      "stars": 5
+    },
+    {
+      "date": "2026-10-14",
+      "stars": 16
+    }
+  ],
+  "prediction_history": [
+    {
+      "date": "2026-10-20",
+      "rank": 33,
+      "prob": 0.0151,
+      "raw_score": 0.2185,
+      "b1_rank": 17
+    }
+  ],
+  "latest_shap": [],
+  "explanation": "Flagged because 9 stars in the last 3 days, stars are spread over many hours and 61 stars in the last week. Held back by: stargazers have accounts that are 3,312 days old and pushed on 2 of the last 14 days.",
+  "realized_outcome": null,
+  "trending_appearances": [],
+  "hn_stories": [],
+  "cohort_retention": null,
+  "similar_repos": null,
+  "suspicion_breakdown": null
+}

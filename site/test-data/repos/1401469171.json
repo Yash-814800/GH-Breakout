@@ -1,0 +1,50 @@
+{
+  "repo_id": 1401469171,
+  "repo_name": "Folkbench/folkbench",
+  "html_url": "https://github.com/Folkbench/folkbench",
+  "description": null,
+  "metadata": {},
+  "daily_stars": [
+    {
+      "date": "2026-10-09",
+      "stars": 4
+    },
+    {
+      "date": "2026-10-10",
+      "stars": 2
+    },
+    {
+      "date": "2026-10-11",
+      "stars": 3
+    },
+    {
+      "date": "2026-10-12",
+      "stars": 2
+    },
+    {
+      "date": "2026-10-13",
+      "stars": 5
+    },
+    {
+      "date": "2026-10-14",
+      "stars": 2
+    }
+  ],
+  "prediction_history": [
+    {
+      "date": "2026-10-20",
+      "rank": 40,
+      "prob": 0.0151,
+      "raw_score": 0.1814,
+      "b1_rank": 53
+    }
+  ],
+  "latest_shap": [],
+  "explanation": "Flagged because 15 stars in the last 3 days, 4 stars yesterday and 28 stars in the last week. Held back by: no stargazer with a good record and most stargazers have no track record yet.",
+  "realized_outcome": null,
+  "trending_appearances": [],
+  "hn_stories": [],
+  "cohort_retention": null,
+  "similar_repos": null,
+  "suspicion_breakdown": null
+}

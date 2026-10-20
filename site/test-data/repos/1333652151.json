@@ -1,0 +1,74 @@
+{
+  "repo_id": 1333652151,
+  "repo_name": "PC2005-cloud/dsh-pet",
+  "html_url": "https://github.com/PC2005-cloud/dsh-pet",
+  "description": null,
+  "metadata": {},
+  "daily_stars": [
+    {
+      "date": "2026-09-23",
+      "stars": 1
+    },
+    {
+      "date": "2026-09-25",
+      "stars": 1
+    },
+    {
+      "date": "2026-09-26",
+      "stars": 1
+    },
+    {
+      "date": "2026-09-30",
+      "stars": 4
+    },
+    {
+      "date": "2026-10-01",
+      "stars": 1
+    },
+    {
+      "date": "2026-10-02",
+      "stars": 1
+    },
+    {
+      "date": "2026-10-03",
+      "stars": 3
+    },
+    {
+      "date": "2026-10-08",
+      "stars": 2
+    },
+    {
+      "date": "2026-10-10",
+      "stars": 1
+    },
+    {
+      "date": "2026-10-11",
+      "stars": 1
+    },
+    {
+      "date": "2026-10-12",
+      "stars": 1
+    },
+    {
+      "date": "2026-10-14",
+      "stars": 1
+    }
+  ],
+  "prediction_history": [
+    {
+      "date": "2026-10-20",
+      "rank": 9,
+      "prob": 0.0371,
+      "raw_score": 0.3552,
+      "b1_rank": 92
+    }
+  ],
+  "latest_shap": [],
+  "explanation": "Flagged because 12 stars yesterday, 16 stars in the last 3 days and stargazers star selectively. Held back by: owner type unknown.",
+  "realized_outcome": null,
+  "trending_appearances": [],
+  "hn_stories": [],
+  "cohort_retention": null,
+  "similar_repos": null,
+  "suspicion_breakdown": null
+}

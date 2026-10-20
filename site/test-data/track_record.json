@@ -1,0 +1,91 @@
+{
+  "matured_snapshots": [],
+  "summary": {
+    "n_live_days": 1,
+    "n_matured_days": 0,
+    "top25_hit_rate": 0.0,
+    "base_rate": 0.0051,
+    "b1_hit_rate": 0.0286,
+    "median_lead_time_days": 1.0
+  },
+  "calibration": [
+    {
+      "bin_start": 0.0,
+      "bin_end": 0.1,
+      "predicted_avg": 0.05,
+      "realized_avg": 0.0,
+      "count": 0
+    },
+    {
+      "bin_start": 0.1,
+      "bin_end": 0.2,
+      "predicted_avg": 0.15,
+      "realized_avg": 0.0,
+      "count": 0
+    },
+    {
+      "bin_start": 0.2,
+      "bin_end": 0.3,
+      "predicted_avg": 0.25,
+      "realized_avg": 0.0,
+      "count": 0
+    },
+    {
+      "bin_start": 0.3,
+      "bin_end": 0.4,
+      "predicted_avg": 0.35,
+      "realized_avg": 0.0,
+      "count": 0
+    },
+    {
+      "bin_start": 0.4,
+      "bin_end": 0.5,
+      "predicted_avg": 0.45,
+      "realized_avg": 0.0,
+      "count": 0
+    },
+    {
+      "bin_start": 0.5,
+      "bin_end": 0.6,
+      "predicted_avg": 0.55,
+      "realized_avg": 0.0,
+      "count": 0
+    },
+    {
+      "bin_start": 0.6,
+      "bin_end": 0.7,
+      "predicted_avg": 0.65,
+      "realized_avg": 0.0,
+      "count": 0
+    },
+    {
+      "bin_start": 0.7,
+      "bin_end": 0.8,
+      "predicted_avg": 0.75,
+      "realized_avg": 0.0,
+      "count": 0
+    },
+    {
+      "bin_start": 0.8,
+      "bin_end": 0.9,
+      "predicted_avg": 0.85,
+      "realized_avg": 0.0,
+      "count": 0
+    },
+    {
+      "bin_start": 0.9,
+      "bin_end": 1.0,
+      "predicted_avg": 0.95,
+      "realized_avg": 0.0,
+      "count": 0
+    }
+  ],
+  "ledger": {
+    "first_date": "2026-10-20",
+    "last_date": "2026-10-20",
+    "total_rows": 1,
+    "last_hash": "28c2c179dd6afa14d37a6e7d5594af0491958bd1e789820e147966ecdf0f5c3c",
+    "genesis_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+    "verified": true
+  }
+}

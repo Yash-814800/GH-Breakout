@@ -1,0 +1,31 @@
+{
+  "snapshot_date": "2026-10-20",
+  "published_at": "2026-10-20T14:11:12+00:00",
+  "n_leaderboard": 50,
+  "data_through_date": "2026-10-20",
+  "step_durations": null,
+  "rows_ingested_last_14d": [],
+  "missing_hours": [],
+  "dbt_summary": {
+    "tests_passing": 162,
+    "status": "clean"
+  },
+  "model": {
+    "version": "20261019-b5ff585",
+    "promoted_at": null,
+    "cv_pooled_pr_auc": 0.10808873142638718,
+    "holdout_pr_auc": null
+  },
+  "drift": null,
+  "heartbeat": {
+    "last_success_at": "2026-10-20T13:35:08.785411+00:00",
+    "snapshot_date": "2026-10-20",
+    "model_version": "20261019-b5ff585",
+    "n_candidates": 1033,
+    "runtime_seconds": 249.0,
+    "freeze_conflict": false,
+    "missing_hours_older_than_3d": 0,
+    "dbt_freshness_passed": true,
+    "status": "healthy"
+  }
+}

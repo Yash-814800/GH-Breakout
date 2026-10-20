@@ -742,7 +742,9 @@ def daily_run(
                 {"reason": "skip_deploy_data_flag"},
             )
         else:
-            p1, p2 = site_data_mod.publish_site_data(cfg, target_date, pred_path)
+            p1, p2 = site_data_mod.publish_site_data(
+                cfg, target_date, pred_path, upload=not no_upload
+            )
             record_step(
                 "13_site_data",
                 "ok",

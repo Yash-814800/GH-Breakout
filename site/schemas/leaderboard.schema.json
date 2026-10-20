@@ -1,0 +1,54 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "LeaderboardSchema",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "required": [
+      "rank",
+      "repo_id",
+      "repo_name",
+      "html_url",
+      "description",
+      "language",
+      "age_days",
+      "stars_total_observed",
+      "stars_7d",
+      "spark_stars_28d",
+      "prob",
+      "prob_label",
+      "explanation",
+      "first_flagged_date",
+      "days_on_board",
+      "rank_change",
+      "suspicion_score",
+      "b1_rank"
+    ],
+    "properties": {
+      "rank": { "type": "integer", "minimum": 1 },
+      "repo_id": { "type": "integer" },
+      "repo_name": { "type": "string" },
+      "html_url": { "type": "string" },
+      "description": { "type": ["string", "null"] },
+      "language": { "type": ["string", "null"] },
+      "age_days": { "type": ["integer", "null"] },
+      "stars_total_observed": { "type": ["integer", "null"] },
+      "stars_7d": { "type": ["integer", "null"] },
+      "spark_stars_28d": {
+        "type": "array",
+        "items": { "type": "integer" },
+        "minItems": 28,
+        "maxItems": 28
+      },
+      "prob": { "type": "number", "minimum": 0, "maximum": 1 },
+      "prob_label": { "type": "string" },
+      "explanation": { "type": ["string", "null"] },
+      "first_flagged_date": { "type": ["string", "null"] },
+      "days_on_board": { "type": "integer", "minimum": 1 },
+      "rank_change": { "type": "string", "enum": ["new", "up", "down", "same"] },
+      "suspicion_score": { "type": ["number", "null"] },
+      "b1_rank": { "type": ["integer", "null"] }
+    },
+    "additionalProperties": true
+  }
+}

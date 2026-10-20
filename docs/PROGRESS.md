@@ -15,7 +15,7 @@ measured (row counts, sizes, runtimes, metrics). Future sessions rely on it.
 | 07 | Point-in-time feature marts | ☑ | 2026-10-19 | 7 feature groups + mart, 71 features (68 live-available), 63 dbt tests pass; 3,098,574 training rows 2016-2025; leak test PASS on 2018-05-14, 2021-03-01, 2024-06-03 and 2026-10-12 (300 repos x 71 columns each); live build for 2026-10-15 has identical columns/types; 17 tests in tests/features. See "Phase 7 status" and ADR-022..024.
 | 08 | LightGBM, calibration, SHAP, model registry | ☑ (HF upload pending approval) | 2026-10-19 | Model beats B1 in all 29 folds: pooled PR-AUC **0.108** [0.101, 0.113] vs 0.029, P@25 **0.241** [0.229, 0.255] vs 0.109; holdout (26 weeks to 2025-04-21) 0.158 / 0.338 vs B1 0.032 / 0.106. Sanity checks pass; calibrated ECE 0.0002. Champion `20261019-b5ff585` (local registry). Daily check: calibration over-predicts on non-Mondays (ADR-025). 310 tests pass. See "Phase 8 status". |
 | 09 | Daily pipeline, weekly retrain, health checks | ☑ (live enrichment not wired) | 2026-10-20 | Validated on GitHub Actions: `daily.yml` succeeds (203 s, 1,033 candidates, ledger row, snapshot on HF); a same-day re-run ingests nothing and adds no ledger row; `weekly.yml` retrains and keeps the champion; `monthly.yml` passes (`lake verify-remote`); `health.yml` opens and closes the alert issue. Parity PASS (2024-06-03). CI green again. See ADR-027 and "Phase 9 status". |
-| 10 | Website (Astro) + deploy | ☐ | | |
+| 10 | Website (Astro) + deploy | ☑ | 2026-10-20 | Astro static site (105 pages, 8 routes) deployed to GitHub Pages via GitHub Actions ($0 cost). Leaderboard: 50 candidates, sparklines, language & probability filters, raw 185 KB (< 200 KB cap), Lighthouse Performance 100, Accessibility 96. Detail pages: 98 repos. DuckDB-WASM SQL explorer with HTTP 206 range requests. 332 pytest pass. Screenshots in reports/site_screenshots/. See "Phase 10 status" and ADR-028. |
 | 11 | Fake-star detector, similar repos, cohort retention | ☐ | | |
 | 12 | Distribution (RSS, badges, digest, Bluesky) | ☐ | | |
 | 13 | Portfolio polish, dbt docs, ClickHouse benchmark, final audit | ☐ | | |
@@ -37,6 +37,19 @@ measured (row counts, sizes, runtimes, metrics). Future sessions rely on it.
 | Source test from a GitHub Actions runner | ☑ NO-GO | OpenDigger ~0.01 MB/s from the runner (needs >= 1), manifests 404; gharchive 54 MB/s. `reports/source_validation.md`, run 38194688025 |
 | Stargazers API for per-repo ground truth | ✖ not available | GitHub restricted it to admins/collaborators in July 2026 (ADR-010) |
 | Live-source gate / item 5 | ☐ not started | waits for your review of the source test |
+
+## Phase 10 status (2026-10-20)
+
+- **Deliverables & Verification:**
+  - **Site Architecture (`site/`):** Astro static build (`output: 'static'`) producing 105 pages across 8 routes: `/` (Leaderboard), `/repo/[id]/` (98 detail pages), `/track-record/` (Live track record), `/backtest/` (Historical time machine), `/explore/` (DuckDB-WASM SQL explorer), `/methodology/` (Model card and evaluation figures), `/status/` (Pipeline observability & drift), and `/about/` (Sources, credits, and opt-out policy).
+  - **Base-path safety:** `site: 'https://yash-814800.github.io'` and `base: '/GH-Breakout'` configured in `astro.config.mjs` (overridable via `SITE_URL` and `BASE_PATH`). Built-in validator `site/scripts/check-base-paths.mjs` verified 0 un-prefixed URLs in all 105 generated HTML files.
+  - **Site Data Exporter:** `src/breakout/publish/site_data.py` (`breakout publish site-data`) exports `leaderboard.json` (50 candidates), `repos/<id>.json` (98 pages), `track_record.json`, `backtest.json` (377 snapshot dates), `status.json`, `meta.json`, `explorer/live_predictions.parquet` (200 rows), and `explorer/oof_top100.parquet` (37,700 rows, 1.03 MB, well within 40 MB budget).
+  - **Schema Validation & Opt-Out:** Draft-07 JSON Schemas in `site/schemas/*.json` enforce structure on all exported JSON files. Repositories in `config/hidden_repos.yaml` are excluded from all public site outputs.
+  - **DuckDB-WASM In-Browser Explorer:** Lazy-loaded DuckDB-WASM client island with pre-registered views over `live_predictions.parquet` and `oof_top100.parquet`. HTTP 206 Partial Content range requests verified working over same-origin Parquet.
+  - **Deployment Workflows:** `daily.yml` updated with artifact upload and `deploy` job using `actions/deploy-pages@v4`. `site.yml` deploys on pushes touching `site/**` or `docs/model_card.md` by pulling latest published data from Hugging Face. `ci.yml` validates `npm run build` using committed fixture data in `site/test-data/`.
+  - **Performance & Quality:** Leaderboard page raw weight is 185 KB (< 200 KB cap, ~35 KB gzipped). Google Lighthouse scores: **Performance 100**, **Accessibility 96**, **Best Practices 100**, **SEO 100**.
+  - **Visual Artifacts:** Full-page screenshots saved to `reports/site_screenshots/{leaderboard,repo_detail,track_record,backtest,explore,methodology,status,about}.png`.
+  - **Tests & Linters:** 332 pytest passing (4 new tests in `tests/publish/test_site_data.py`), `ruff check .` clean, `ruff format --check .` clean, `mypy src` clean across 74 source files. ADR-028 recorded in `docs/DECISIONS.md`.
 
 ## Phase 9 status (2026-10-20)
 

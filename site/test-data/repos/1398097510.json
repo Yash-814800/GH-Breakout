@@ -1,0 +1,70 @@
+{
+  "repo_id": 1398097510,
+  "repo_name": "storytold/vectorcraft",
+  "html_url": "https://github.com/storytold/vectorcraft",
+  "description": null,
+  "metadata": {},
+  "daily_stars": [
+    {
+      "date": "2026-10-03",
+      "stars": 3
+    },
+    {
+      "date": "2026-10-05",
+      "stars": 3
+    },
+    {
+      "date": "2026-10-06",
+      "stars": 15
+    },
+    {
+      "date": "2026-10-07",
+      "stars": 34
+    },
+    {
+      "date": "2026-10-08",
+      "stars": 24
+    },
+    {
+      "date": "2026-10-09",
+      "stars": 26
+    },
+    {
+      "date": "2026-10-10",
+      "stars": 25
+    },
+    {
+      "date": "2026-10-11",
+      "stars": 12
+    },
+    {
+      "date": "2026-10-12",
+      "stars": 7
+    },
+    {
+      "date": "2026-10-13",
+      "stars": 3
+    },
+    {
+      "date": "2026-10-14",
+      "stars": 4
+    }
+  ],
+  "prediction_history": [
+    {
+      "date": "2026-10-20",
+      "rank": 20,
+      "prob": 0.0293,
+      "raw_score": 0.2698,
+      "b1_rank": 2
+    }
+  ],
+  "latest_shap": [],
+  "explanation": "Flagged because 10 stars in the last 3 days, pushed on 10 of the last 14 days and already has 176 stars. Held back by: the owner has 33 other repos and 49 different contributors in four weeks.",
+  "realized_outcome": null,
+  "trending_appearances": [],
+  "hn_stories": [],
+  "cohort_retention": null,
+  "similar_repos": null,
+  "suspicion_breakdown": null
+}

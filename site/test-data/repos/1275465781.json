@@ -1,0 +1,80 @@
+{
+  "repo_id": 1275465781,
+  "repo_name": "repo_id=1275465781",
+  "html_url": "https://github.com/repo_id=1275465781",
+  "description": null,
+  "metadata": {},
+  "daily_stars": [],
+  "prediction_history": [
+    {
+      "date": "2026-10-20",
+      "rank": 191,
+      "prob": 0.0029,
+      "raw_score": 0.0412,
+      "b1_rank": 190
+    }
+  ],
+  "latest_shap": [],
+  "explanation": null,
+  "realized_outcome": null,
+  "trending_appearances": [
+    {
+      "date": "2026-10-11",
+      "rank": 8,
+      "language": "python",
+      "source": "antonkomarev"
+    },
+    {
+      "date": "2026-10-10",
+      "rank": 8,
+      "language": "python",
+      "source": "larsbijl"
+    },
+    {
+      "date": "2026-09-28",
+      "rank": 7,
+      "language": "python",
+      "source": "antonkomarev"
+    },
+    {
+      "date": "2026-09-27",
+      "rank": 13,
+      "language": "python",
+      "source": "antonkomarev"
+    },
+    {
+      "date": "2026-09-27",
+      "rank": 7,
+      "language": "python",
+      "source": "larsbijl"
+    },
+    {
+      "date": "2026-09-26",
+      "rank": 13,
+      "language": "python",
+      "source": "larsbijl"
+    },
+    {
+      "date": "2026-09-26",
+      "rank": 4,
+      "language": "python",
+      "source": "antonkomarev"
+    },
+    {
+      "date": "2026-09-26",
+      "rank": 9,
+      "language": null,
+      "source": "antonkomarev"
+    },
+    {
+      "date": "2026-09-25",
+      "rank": 4,
+      "language": "python",
+      "source": "larsbijl"
+    }
+  ],
+  "hn_stories": [],
+  "cohort_retention": null,
+  "similar_repos": null,
+  "suspicion_breakdown": null
+}

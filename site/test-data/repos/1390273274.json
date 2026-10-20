@@ -1,0 +1,94 @@
+{
+  "repo_id": 1390273274,
+  "repo_name": "yihui-dev/awesome-opus5-5-videos",
+  "html_url": "https://github.com/yihui-dev/awesome-opus5-5-videos",
+  "description": null,
+  "metadata": {},
+  "daily_stars": [
+    {
+      "date": "2026-09-27",
+      "stars": 8
+    },
+    {
+      "date": "2026-09-28",
+      "stars": 4
+    },
+    {
+      "date": "2026-09-29",
+      "stars": 6
+    },
+    {
+      "date": "2026-09-30",
+      "stars": 7
+    },
+    {
+      "date": "2026-10-02",
+      "stars": 6
+    },
+    {
+      "date": "2026-10-03",
+      "stars": 10
+    },
+    {
+      "date": "2026-10-04",
+      "stars": 13
+    },
+    {
+      "date": "2026-10-05",
+      "stars": 5
+    },
+    {
+      "date": "2026-10-06",
+      "stars": 4
+    },
+    {
+      "date": "2026-10-07",
+      "stars": 8
+    },
+    {
+      "date": "2026-10-08",
+      "stars": 9
+    },
+    {
+      "date": "2026-10-09",
+      "stars": 4
+    },
+    {
+      "date": "2026-10-10",
+      "stars": 11
+    },
+    {
+      "date": "2026-10-11",
+      "stars": 4
+    },
+    {
+      "date": "2026-10-12",
+      "stars": 5
+    },
+    {
+      "date": "2026-10-13",
+      "stars": 4
+    },
+    {
+      "date": "2026-10-14",
+      "stars": 4
+    }
+  ],
+  "prediction_history": [
+    {
+      "date": "2026-10-20",
+      "rank": 5,
+      "prob": 0.0705,
+      "raw_score": 0.496,
+      "b1_rank": 9
+    }
+  ],
+  "latest_shap": [],
+  "explanation": "Flagged because 28 stars in the last 3 days, 6 stars yesterday and already has 149 stars. Held back by: few recent pushes and owner type unknown.",
+  "realized_outcome": null,
+  "trending_appearances": [],
+  "hn_stories": [],
+  "cohort_retention": null,
+  "similar_repos": null,
+  "suspicion_breakdown": null
+}

@@ -1,0 +1,25 @@
+{
+  "repo_id": 1421389432,
+  "repo_name": "repo_id=1421389432",
+  "html_url": "https://github.com/repo_id=1421389432",
+  "description": null,
+  "metadata": {},
+  "daily_stars": [],
+  "prediction_history": [
+    {
+      "date": "2026-10-20",
+      "rank": 43,
+      "prob": 0.0151,
+      "raw_score": 0.1787,
+      "b1_rank": 113
+    }
+  ],
+  "latest_shap": [],
+  "explanation": "Flagged because 23 stars in the last 3 days, stars are spread over many hours and 4 stars yesterday. Held back by: no stargazer with a good record and few recent pushes.",
+  "realized_outcome": null,
+  "trending_appearances": [],
+  "hn_stories": [],
+  "cohort_retention": null,
+  "similar_repos": null,
+  "suspicion_breakdown": null
+}

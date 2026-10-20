@@ -1,0 +1,147 @@
+{
+  "repo_id": 972647939,
+  "repo_name": "repo_id=972647939",
+  "html_url": "https://github.com/repo_id=972647939",
+  "description": null,
+  "metadata": {},
+  "daily_stars": [],
+  "prediction_history": [
+    {
+      "date": "2026-10-20",
+      "rank": 199,
+      "prob": 0.0029,
+      "raw_score": 0.0399,
+      "b1_rank": 119
+    }
+  ],
+  "latest_shap": [],
+  "explanation": null,
+  "realized_outcome": null,
+  "trending_appearances": [
+    {
+      "date": "2026-10-12",
+      "rank": 6,
+      "language": "rust",
+      "source": "antonkomarev"
+    },
+    {
+      "date": "2026-10-11",
+      "rank": 6,
+      "language": "rust",
+      "source": "larsbijl"
+    },
+    {
+      "date": "2026-09-18",
+      "rank": 14,
+      "language": "rust",
+      "source": "antonkomarev"
+    },
+    {
+      "date": "2026-09-17",
+      "rank": 14,
+      "language": "rust",
+      "source": "larsbijl"
+    },
+    {
+      "date": "2026-08-31",
+      "rank": 6,
+      "language": "rust",
+      "source": "antonkomarev"
+    },
+    {
+      "date": "2026-08-30",
+      "rank": 6,
+      "language": "rust",
+      "source": "larsbijl"
+    },
+    {
+      "date": "2026-08-11",
+      "rank": 10,
+      "language": "rust",
+      "source": "antonkomarev"
+    },
+    {
+      "date": "2026-08-10",
+      "rank": 10,
+      "language": "rust",
+      "source": "larsbijl"
+    },
+    {
+      "date": "2026-08-10",
+      "rank": 4,
+      "language": "rust",
+      "source": "antonkomarev"
+    },
+    {
+      "date": "2026-08-09",
+      "rank": 10,
+      "language": null,
+      "source": "antonkomarev"
+    },
+    {
+      "date": "2026-08-09",
+      "rank": 4,
+      "language": "rust",
+      "source": "larsbijl"
+    },
+    {
+      "date": "2026-08-09",
+      "rank": 1,
+      "language": "rust",
+      "source": "antonkomarev"
+    },
+    {
+      "date": "2026-08-08",
+      "rank": 2,
+      "language": "rust",
+      "source": "antonkomarev"
+    },
+    {
+      "date": "2026-08-08",
+      "rank": 1,
+      "language": "rust",
+      "source": "larsbijl"
+    },
+    {
+      "date": "2026-08-08",
+      "rank": 14,
+      "language": null,
+      "source": "antonkomarev"
+    },
+    {
+      "date": "2026-08-07",
+      "rank": 2,
+      "language": "rust",
+      "source": "larsbijl"
+    }
+  ],
+  "hn_stories": [
+    {
+      "title": "celld v0.4.0",
+      "url": "https://github.com/denoland/celld/releases/tag/v0.4.0",
+      "hn_url": "https://news.ycombinator.com/item?id=49508312",
+      "created_at": "2026-08-31T11:16:52",
+      "points": 3,
+      "num_comments": 0
+    },
+    {
+      "title": "Celld v0.2.0",
+      "url": "https://github.com/denoland/celld/releases/tag/v0.2.0",
+      "hn_url": "https://news.ycombinator.com/item?id=49283096",
+      "created_at": "2026-08-13T08:21:02",
+      "points": 1,
+      "num_comments": 0
+    },
+    {
+      "title": "Celld: Self-hosted, distributed Durable Objects",
+      "url": "https://github.com/denoland/celld",
+      "hn_url": "https://news.ycombinator.com/item?id=49185430",
+      "created_at": "2026-08-05T16:50:06",
+      "points": 286,
+      "num_comments": 54
+    }
+  ],
+  "cohort_retention": null,
+  "similar_repos": null,
+  "suspicion_breakdown": null
+}

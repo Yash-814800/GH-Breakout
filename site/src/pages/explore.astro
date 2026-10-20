@@ -1,0 +1,344 @@
+---
+import Layout from '../layouts/Layout.astro';
+
+const base = import.meta.env.BASE_URL.replace(/\/+$/, '');
+
+const exampleQueries = [
+  {
+    name: "1. Today's Top Breakout Candidates",
+    sql: "SELECT rank, repo_name, round(prob * 100, 1) as prob_pct, prob_label, explanation\nFROM live_predictions\nORDER BY rank ASC\nLIMIT 10;",
+  },
+  {
+    name: "2. Historical Precision by Probability Bucket",
+    sql: "SELECT\n  floor(prob * 10) / 10 as bucket_start,\n  count(*) as n_predictions,\n  sum(case when label then 1 else 0 end) as n_breakouts,\n  round(avg(case when label then 1.0 else 0.0 end) * 100, 2) as empirical_hit_pct\nFROM backtest_top100\nGROUP BY 1\nORDER BY 1 DESC;",
+  },
+  {
+    name: "3. Top 15 Highest 30-Day Star Gainers (Backtest)",
+    sql: "SELECT snapshot_date, rank, repo_name, round(prob * 100, 1) as prob_pct, round(gain_30d) as gain_30d\nFROM backtest_top100\nWHERE gain_30d IS NOT NULL\nORDER BY gain_30d DESC\nLIMIT 15;",
+  },
+  {
+    name: "4. Out-of-Fold Hits: Model vs Baseline Rank",
+    sql: "SELECT\n  count(*) as total_evaluated,\n  sum(case when label then 1 else 0 end) as total_hits,\n  round(avg(case when label then 1.0 else 0.0 end) * 100, 2) as top100_hit_rate_pct\nFROM backtest_top100;",
+  },
+  {
+    name: "5. Repositories Flagged Most Frequently in Backtest",
+    sql: "SELECT repo_id, repo_name, count(distinct snapshot_date) as times_flagged, max(gain_30d) as max_30d_gain\nFROM backtest_top100\nGROUP BY repo_id, repo_name\nHAVING count(distinct snapshot_date) >= 3\nORDER BY times_flagged DESC\nLIMIT 15;",
+  },
+];
+---
+
+<Layout title="SQL Explorer (DuckDB-WASM) · gh-breakout">
+  <div class="container">
+    <div class="page-header">
+      <div>
+        <h1>In-Browser DuckDB SQL Explorer</h1>
+        <p class="subtitle">
+          Run SQL queries directly against our public Parquet datasets in your browser with zero server roundtrips.
+        </p>
+      </div>
+      <div>
+        <span id="wasm-status" class="badge badge-neutral">DuckDB-WASM: Initializing...</span>
+      </div>
+    </div>
+
+    <!-- Preloaded Tables & Examples -->
+    <div class="card" style="margin-bottom: 1.5rem;">
+      <h2>Pre-registered Views</h2>
+      <div class="meta-pills" style="margin-bottom: 1rem;">
+        <span class="badge badge-accent">view: live_predictions</span>
+        <span class="badge badge-accent">view: backtest_top100</span>
+      </div>
+
+      <h3>Example Queries</h3>
+      <div class="example-buttons">
+        {exampleQueries.map((ex, idx) => (
+          <button type="button" class="btn btn-example" data-sql={ex.sql}>
+            {ex.name}
+          </button>
+        ))}
+      </div>
+    </div>
+
+    <!-- SQL Editor -->
+    <div class="card" style="margin-bottom: 1.5rem;">
+      <div class="editor-header">
+        <label for="sql-input" style="font-weight: 600;">SQL Query Editor:</label>
+        <button id="run-btn" type="button" class="btn btn-primary">
+          ▶ Run Query (Ctrl+Enter)
+        </button>
+      </div>
+
+      <textarea
+        id="sql-input"
+        class="sql-textarea mono"
+        rows="6"
+        spellcheck="false"
+      >{exampleQueries[0].sql}</textarea>
+    </div>
+
+    <!-- Query Results -->
+    <div class="card">
+      <div class="results-header">
+        <h2>Query Results <span id="row-count" class="badge badge-neutral">0 rows</span></h2>
+        <span id="exec-time" class="num text-muted" style="font-size: 0.8125rem;">—</span>
+      </div>
+
+      <div id="error-box" class="error-box" style="display: none;"></div>
+
+      <div class="table-wrapper" style="margin-bottom: 0;">
+        <table id="results-table">
+          <thead id="results-thead">
+            <tr><th>Status</th></tr>
+          </thead>
+          <tbody id="results-tbody">
+            <tr><td style="text-align: center; padding: 2rem;">Click "Run Query" or pick an example above to execute.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</Layout>
+
+<script define:vars={{ base }}>
+  let db = null;
+  let conn = null;
+
+  const wasmStatus = document.getElementById('wasm-status');
+  const runBtn = document.getElementById('run-btn');
+  const sqlInput = document.getElementById('sql-input');
+  const thead = document.getElementById('results-thead');
+  const tbody = document.getElementById('results-tbody');
+  const errorBox = document.getElementById('error-box');
+  const rowCount = document.getElementById('row-count');
+  const execTime = document.getElementById('exec-time');
+
+  async function initDuckDB() {
+    try {
+      if (wasmStatus) wasmStatus.textContent = 'Loading DuckDB-WASM...';
+      const duckdb = await import('https://cdn.jsdelivr.net/npm/@duckdb/duckdb-wasm@1.29.0/+esm');
+      const JSDELIVR_BUNDLES = duckdb.getJsDelivrBundles();
+      const bundle = await duckdb.selectBundle(JSDELIVR_BUNDLES);
+
+      const worker_url = URL.createObjectURL(
+        new Blob([`importScripts("${bundle.mainWorker}");`], { type: 'text/javascript' })
+      );
+      const worker = new Worker(worker_url);
+      const logger = new duckdb.VoidLogger();
+      db = new duckdb.AsyncDuckDB(logger, worker);
+      await db.instantiate(bundle.mainModule, bundle.pthreadWorker);
+      URL.revokeObjectURL(worker_url);
+
+      conn = await db.connect();
+
+      // Register live_predictions
+      const liveUrl = `${base}/data/explorer/live_predictions.parquet`;
+      const oofUrl = `${base}/data/explorer/oof_top100.parquet`;
+
+      // Test range requests, fallback to buffer registration if not supported
+      try {
+        await conn.query(`CREATE VIEW live_predictions AS SELECT * FROM read_parquet('${liveUrl}');`);
+      } catch (e) {
+        console.log('Falling back to buffer register for live_predictions');
+        const res = await fetch(liveUrl);
+        const buf = await res.arrayBuffer();
+        await db.registerFileBuffer('live.parquet', new Uint8Array(buf));
+        await conn.query(`CREATE VIEW live_predictions AS SELECT * FROM read_parquet('live.parquet');`);
+      }
+
+      // Register backtest_top100
+      try {
+        await conn.query(`CREATE VIEW backtest_top100 AS SELECT * FROM read_parquet('${oofUrl}');`);
+      } catch (e) {
+        console.log('Falling back to buffer register for backtest_top100');
+        const res = await fetch(oofUrl);
+        const buf = await res.arrayBuffer();
+        await db.registerFileBuffer('oof.parquet', new Uint8Array(buf));
+        await conn.query(`CREATE VIEW backtest_top100 AS SELECT * FROM read_parquet('oof.parquet');`);
+      }
+
+      if (wasmStatus) {
+        wasmStatus.textContent = 'DuckDB-WASM: Ready';
+        wasmStatus.className = 'badge badge-success';
+      }
+    } catch (err) {
+      console.error('Failed initializing DuckDB-WASM', err);
+      if (wasmStatus) {
+        wasmStatus.textContent = 'DuckDB-WASM: Load Error';
+        wasmStatus.className = 'badge badge-warning';
+      }
+      showError(String(err));
+    }
+  }
+
+  function showError(msg) {
+    if (errorBox) {
+      errorBox.textContent = msg;
+      errorBox.style.display = 'block';
+    }
+  }
+
+  function hideError() {
+    if (errorBox) {
+      errorBox.textContent = '';
+      errorBox.style.display = 'none';
+    }
+  }
+
+  async function executeQuery() {
+    if (!conn) {
+      showError('DuckDB is still loading, please wait a moment...');
+      return;
+    }
+    const sql = sqlInput?.value.trim();
+    if (!sql) return;
+
+    hideError();
+    const t0 = performance.now();
+
+    try {
+      const result = await conn.query(sql);
+      const t1 = performance.now();
+      const elapsed = (t1 - t0).toFixed(1);
+      if (execTime) execTime.textContent = `${elapsed} ms`;
+
+      const rows = result.toArray();
+      if (rowCount) rowCount.textContent = `${rows.length} rows`;
+
+      if (rows.length === 0) {
+        if (thead) thead.innerHTML = '<tr><th>Result</th></tr>';
+        if (tbody) tbody.innerHTML = '<tr><td style="text-align: center; padding: 1.5rem;">Query executed successfully. 0 rows returned.</td></tr>';
+        return;
+      }
+
+      const columns = Object.keys(rows[0]);
+      let thHtml = '<tr>';
+      columns.forEach((c) => {
+        thHtml += `<th>${c}</th>`;
+      });
+      thHtml += '</tr>';
+      if (thead) thead.innerHTML = thHtml;
+
+      let tbHtml = '';
+      const cap = Math.min(rows.length, 100);
+      for (let i = 0; i < cap; i++) {
+        const row = rows[i];
+        tbHtml += '<tr>';
+        columns.forEach((c) => {
+          const val = row[c];
+          const display = val === null || val === undefined ? '—' : String(val);
+          const isNum = typeof val === 'number';
+          tbHtml += `<td class="${isNum ? 'num' : ''}">${display}</td>`;
+        });
+        tbHtml += '</tr>';
+      }
+      if (tbody) tbody.innerHTML = tbHtml;
+    } catch (err) {
+      showError(String(err));
+    }
+  }
+
+  runBtn?.addEventListener('click', executeQuery);
+  sqlInput?.addEventListener('keydown', (e) => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+      executeQuery();
+    }
+  });
+
+  document.querySelectorAll('.btn-example').forEach((btn) => {
+    btn.addEventListener('click', (e) => {
+      const sql = (e.currentTarget as HTMLElement).getAttribute('data-sql');
+      if (sql && sqlInput) {
+        sqlInput.value = sql;
+        executeQuery();
+      }
+    });
+  });
+
+  // Lazy init on page load
+  window.addEventListener('DOMContentLoaded', () => {
+    initDuckDB();
+  });
+</script>
+
+<style>
+  .editor-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+  }
+
+  .sql-textarea {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    font-size: 0.875rem;
+    line-height: 1.5;
+    background: var(--bg-subtle);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    color: var(--text-primary);
+    resize: vertical;
+  }
+
+  .sql-textarea:focus {
+    outline: 2px solid var(--accent);
+    border-color: transparent;
+  }
+
+  .btn-primary {
+    background: var(--accent);
+    color: #ffffff;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: var(--radius-sm);
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .btn-primary:hover {
+    background: var(--accent-hover);
+  }
+
+  .example-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .btn-example {
+    background: var(--bg-subtle);
+    color: var(--text-secondary);
+    border: 1px solid var(--border-color);
+    padding: 0.4rem 0.75rem;
+    border-radius: var(--radius-sm);
+    font-size: 0.8125rem;
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.15s ease;
+  }
+
+  .btn-example:hover {
+    background: var(--accent-light);
+    color: var(--accent);
+    border-color: var(--accent);
+  }
+
+  .results-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+  }
+
+  .error-box {
+    padding: 0.75rem 1rem;
+    background: var(--danger-bg);
+    color: var(--danger);
+    border: 1px solid var(--danger);
+    border-radius: var(--radius-sm);
+    margin-bottom: 1rem;
+    font-family: var(--font-mono);
+    font-size: 0.8125rem;
+    white-space: pre-wrap;
+  }
+</style>

@@ -1,0 +1,5 @@
+# config/hidden_repos.yaml
+# Repository IDs or repo names to hide from public leaderboard and detail pages.
+# Repositories can opt out by opening an issue on GitHub.
+hidden_repo_ids: []
+hidden_repo_names: []

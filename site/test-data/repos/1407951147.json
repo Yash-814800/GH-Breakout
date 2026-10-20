@@ -1,0 +1,25 @@
+{
+  "repo_id": 1407951147,
+  "repo_name": "repo_id=1407951147",
+  "html_url": "https://github.com/repo_id=1407951147",
+  "description": null,
+  "metadata": {},
+  "daily_stars": [],
+  "prediction_history": [
+    {
+      "date": "2026-10-20",
+      "rank": 1,
+      "prob": 0.3042,
+      "raw_score": 0.8363,
+      "b1_rank": 1
+    }
+  ],
+  "latest_shap": [],
+  "explanation": "Flagged because 60 stars yesterday, 182 stars in the last 3 days and already has 192 stars. Held back by: few recent pushes and stargazers have accounts that are 2,974 days old.",
+  "realized_outcome": null,
+  "trending_appearances": [],
+  "hn_stories": [],
+  "cohort_retention": null,
+  "similar_repos": null,
+  "suspicion_breakdown": null
+}

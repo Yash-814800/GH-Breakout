@@ -1,0 +1,208 @@
+---
+import Layout from '../layouts/Layout.astro';
+import fs from 'node:fs';
+import path from 'node:path';
+
+const base = import.meta.env.BASE_URL.replace(/\/+$/, '');
+
+let trData = {
+  matured_snapshots: [],
+  summary: {
+    n_live_days: 0,
+    n_matured_days: 0,
+    top25_hit_rate: 0.0,
+    base_rate: 0.0051,
+    b1_hit_rate: 0.0286,
+    median_lead_time_days: 1.0,
+  },
+  calibration: [],
+  ledger: {
+    first_date: null,
+    last_date: null,
+    total_rows: 0,
+    last_hash: '0000000000000000000000000000000000000000000000000000000000000000',
+    genesis_hash: '0000000000000000000000000000000000000000000000000000000000000000',
+    verified: true,
+  },
+};
+
+const trPath = path.resolve('public/data/track_record.json');
+if (fs.existsSync(trPath)) {
+  try {
+    trData = JSON.parse(fs.readFileSync(trPath, 'utf-8'));
+  } catch (e) {
+    console.error('Error reading track_record.json', e);
+  }
+}
+
+const summary = trData.summary;
+const ledger = trData.ledger;
+const matured = trData.matured_snapshots || [];
+---
+
+<Layout title="Live Track Record · gh-breakout">
+  <div class="container">
+    <div class="page-header">
+      <div>
+        <h1>Public Live Track Record</h1>
+        <p class="subtitle">
+          Transparent, tamper-evident record of daily predictions compared against real 30-day GitHub star outcomes.
+        </p>
+      </div>
+      <div>
+        {ledger.verified ? (
+          <span class="badge badge-success">✓ Ledger Hash Chain Verified</span>
+        ) : (
+          <span class="badge badge-warning">Ledger Verification Pending</span>
+        )}
+      </div>
+    </div>
+
+    <!-- Headline Stats Grid -->
+    <div class="grid-4" style="margin-bottom: 2rem;">
+      <div class="stat-box">
+        <div class="stat-label">Days Ingested & Scored</div>
+        <div class="stat-value">{summary.n_live_days}</div>
+        <div class="stat-sub">{summary.n_matured_days} matured (30d elapsed)</div>
+      </div>
+
+      <div class="stat-box">
+        <div class="stat-label">Model Top-25 Hit Rate</div>
+        <div class="stat-value">{(summary.top25_hit_rate * 100).toFixed(1)}%</div>
+        <div class="stat-sub">Precision @ 25 on live stream</div>
+      </div>
+
+      <div class="stat-box">
+        <div class="stat-label">Baseline (B1) Velocity</div>
+        <div class="stat-value">{(summary.b1_hit_rate * 100).toFixed(1)}%</div>
+        <div class="stat-sub">7-day star momentum rank</div>
+      </div>
+
+      <div class="stat-box">
+        <div class="stat-label">Base Rate (All Repos)</div>
+        <div class="stat-value">{(summary.base_rate * 100).toFixed(2)}%</div>
+        <div class="stat-sub">~1 in 200 young repos break out</div>
+      </div>
+    </div>
+
+    <!-- Immutability Guarantee Box -->
+    <div class="card" style="margin-bottom: 2rem; border-left: 4px solid var(--success);">
+      <h2>Tamper-Evident Immutability Guarantee</h2>
+      <p>
+        Every single day at 03:17 UTC, predictions are generated and frozen into three permanent public audit locations before any future data can exist:
+      </p>
+      <ol style="margin-left: 1.5rem; margin-bottom: 1rem; color: var(--text-secondary); line-height: 1.6;">
+        <li>
+          <strong>Hugging Face Immutable Snapshots:</strong> Raw Parquet files pushed to <a href="https://huggingface.co/datasets/Yasshh814/gh-breakout-snapshots" target="_blank" rel="noopener noreferrer">gh-breakout-snapshots</a>. Deletion or overwriting of snapshot days is disallowed by CI automation.
+        </li>
+        <li>
+          <strong>Cryptographic Hash Chain:</strong> Each prediction snapshot SHA-256 and top-50 repository set hash is appended to <a href="https://github.com/Yash-814800/GH-Breakout/blob/main/ledger/predictions.csv" target="_blank" rel="noopener noreferrer"><code>ledger/predictions.csv</code></a> with SHA-256 hash chaining back to the genesis block.
+        </li>
+        <li>
+          <strong>Independent Verification:</strong> Anyone can clone this repository and verify the entire ledger chain independently:
+          <pre class="mono" style="background: var(--bg-subtle); padding: 0.5rem 1rem; border-radius: var(--radius-sm); margin-top: 0.5rem;">uv run breakout ops verify-ledger</pre>
+        </li>
+      </ol>
+      <div class="meta-pills">
+        <span class="badge badge-neutral">First ledger entry: {ledger.first_date || '2026-10-20'}</span>
+        <span class="badge badge-neutral">Head hash: {ledger.last_hash.slice(0, 16)}...</span>
+        <span class="badge badge-neutral">Total logged entries: {ledger.total_rows}</span>
+      </div>
+    </div>
+
+    <!-- Matured Snapshots Table -->
+    <div class="card" style="margin-bottom: 2rem;">
+      <h2>Matured Snapshot Evaluations (30-Day Forward Outcomes)</h2>
+      <p>
+        Snapshots mature exactly 30 days after prediction date, when forward star growth in GH Archive is fully observed.
+      </p>
+
+      {matured.length === 0 ? (
+        <div style="padding: 2rem; text-align: center; background: var(--bg-subtle); border-radius: var(--radius-md);">
+          <p style="margin-bottom: 0.5rem;"><strong>No matured live snapshots yet.</strong></p>
+          <p class="text-muted" style="margin-bottom: 0;">
+            Live daily runs began on 2026-10-20. The first live snapshot will mature on 2026-11-19 when the 30-day observation window closes.
+            Historical backtest evaluations across 2018–2025 can be explored on the <a href={`${base}/backtest/`}>Time Machine</a> page.
+          </p>
+        </div>
+      ) : (
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>Snapshot Date</th>
+                <th>Model P@10</th>
+                <th>Model P@25</th>
+                <th>Model P@50</th>
+                <th>B1 P@25</th>
+                <th>Details</th>
+              </tr>
+            </thead>
+            <tbody>
+              {matured.map((m: any) => (
+                <tr>
+                  <td class="num">{m.snapshot_date}</td>
+                  <td class="num">{(m.precision_at_10 * 100).toFixed(1)}%</td>
+                  <td class="num"><strong>{(m.precision_at_25 * 100).toFixed(1)}%</strong></td>
+                  <td class="num">{(m.precision_at_50 * 100).toFixed(1)}%</td>
+                  <td class="num">{(m.b1_precision_at_25 != null ? (m.b1_precision_at_25 * 100).toFixed(1) + '%' : '—')}</td>
+                  <td>
+                    <details>
+                      <summary style="cursor: pointer; color: var(--accent);">View Top 25</summary>
+                      <div style="margin-top: 0.5rem;">
+                        <ul style="list-style: none; padding-left: 0;">
+                          {m.top25.map((r: any) => (
+                            <li style="display: flex; justify-content: space-between; padding: 0.25rem 0; border-bottom: 1px dotted var(--border-color);">
+                              <span>#{r.rank} {r.repo_name}</span>
+                              <span class={r.hit ? 'text-success' : 'text-muted'}>
+                                {r.hit ? '✓ Breakout (+ ' + r.gain_30d + ')' : '✗ Not hit (+ ' + (r.gain_30d || 0) + ')'}
+                              </span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    </details>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+
+    <!-- Calibration Diagram Section -->
+    <div class="card">
+      <h2>Calibration Curve (Predicted vs Observed)</h2>
+      <p>
+        A well-calibrated model predicts probabilities that reflect empirical frequencies. When our model predicts a 20% breakout probability, approximately 20 out of 100 candidates should break out.
+      </p>
+      <div id="calibration-plot-container" style="min-height: 220px; display: flex; align-items: center; justify-content: center; background: var(--bg-subtle); border-radius: var(--radius-md);">
+        <p class="text-muted">Live calibration curve updates automatically as daily snapshots mature.</p>
+      </div>
+    </div>
+  </div>
+</Layout>
+
+<style>
+  .page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-bottom: 2rem;
+  }
+
+  .meta-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 1rem;
+  }
+
+  .text-success {
+    color: var(--success);
+    font-weight: 600;
+  }
+</style>

@@ -10,6 +10,7 @@ data/
 /data.pre-ssd-move/
 *.parquet
 !tests/fixtures/**
+!site/test-data/**
 
 # DuckDB database files
 *.duckdb
@@ -20,6 +21,7 @@ dbt/target/
 dbt/logs/
 
 # Site builds
+site/.astro/
 site/node_modules/
 site/dist/
 site/public/data/

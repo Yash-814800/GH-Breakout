@@ -1,0 +1,20 @@
+{
+  "name": "gh-breakout-site",
+  "type": "module",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "astro dev",
+    "start": "astro dev",
+    "build": "astro build && node scripts/check-base-paths.mjs",
+    "preview": "astro preview",
+    "astro": "astro",
+    "check-base-paths": "node scripts/check-base-paths.mjs"
+  },
+  "dependencies": {
+    "@duckdb/duckdb-wasm": "^1.29.0",
+    "@observablehq/plot": "^0.6.16",
+    "apache-arrow": "^18.1.0",
+    "astro": "^5.4.2"
+  }
+}

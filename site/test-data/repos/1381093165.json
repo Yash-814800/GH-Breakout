@@ -1,0 +1,30 @@
+{
+  "repo_id": 1381093165,
+  "repo_name": "Saffsanity/sill",
+  "html_url": "https://github.com/Saffsanity/sill",
+  "description": null,
+  "metadata": {},
+  "daily_stars": [
+    {
+      "date": "2026-10-14",
+      "stars": 10
+    }
+  ],
+  "prediction_history": [
+    {
+      "date": "2026-10-20",
+      "rank": 10,
+      "prob": 0.0371,
+      "raw_score": 0.3541,
+      "b1_rank": 24
+    }
+  ],
+  "latest_shap": [],
+  "explanation": "Flagged because 22 stars in the last 3 days, stars are spread over many hours and 58 stars in the last week. Held back by: stargazers have accounts that are 3,714 days old and owner type unknown.",
+  "realized_outcome": null,
+  "trending_appearances": [],
+  "hn_stories": [],
+  "cohort_retention": null,
+  "similar_repos": null,
+  "suspicion_breakdown": null
+}

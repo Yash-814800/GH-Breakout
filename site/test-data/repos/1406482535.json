@@ -1,0 +1,25 @@
+{
+  "repo_id": 1406482535,
+  "repo_name": "repo_id=1406482535",
+  "html_url": "https://github.com/repo_id=1406482535",
+  "description": null,
+  "metadata": {},
+  "daily_stars": [],
+  "prediction_history": [
+    {
+      "date": "2026-10-20",
+      "rank": 11,
+      "prob": 0.0297,
+      "raw_score": 0.3371,
+      "b1_rank": 34
+    }
+  ],
+  "latest_shap": [],
+  "explanation": "Flagged because 47 stars in the last 3 days, 6 stars yesterday and recent stargazers have a good track record of finding breakouts early. Held back by: stargazers have accounts that are 3,923 days old and owner type unknown.",
+  "realized_outcome": null,
+  "trending_appearances": [],
+  "hn_stories": [],
+  "cohort_retention": null,
+  "similar_repos": null,
+  "suspicion_breakdown": null
+}

@@ -1,0 +1,42 @@
+{
+  "repo_id": 1146073545,
+  "repo_name": "repo_id=1146073545",
+  "html_url": "https://github.com/repo_id=1146073545",
+  "description": null,
+  "metadata": {},
+  "daily_stars": [],
+  "prediction_history": [
+    {
+      "date": "2026-10-20",
+      "rank": 361,
+      "prob": 0.0014,
+      "raw_score": 0.0199,
+      "b1_rank": 532
+    }
+  ],
+  "latest_shap": [],
+  "explanation": null,
+  "realized_outcome": null,
+  "trending_appearances": [],
+  "hn_stories": [
+    {
+      "title": "Pg_vectorsearch: An index that is faster than pgvector's IVFFlat and HNSW",
+      "url": "https://github.com/timescale/pg_vectorsearch",
+      "hn_url": "https://news.ycombinator.com/item?id=50086165",
+      "created_at": "2026-10-14T11:47:53",
+      "points": 206,
+      "num_comments": 52
+    },
+    {
+      "title": "Show HN: pg_vectorsearch: Scalable Open-Source Vector Search in PostgreSQL",
+      "url": "https://github.com/timescale/pg_vectorsearch",
+      "hn_url": "https://news.ycombinator.com/item?id=50073212",
+      "created_at": "2026-10-13T15:25:36",
+      "points": 3,
+      "num_comments": 0
+    }
+  ],
+  "cohort_retention": null,
+  "similar_repos": null,
+  "suspicion_breakdown": null
+}

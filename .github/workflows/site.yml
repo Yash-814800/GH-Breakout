@@ -1,0 +1,95 @@
+name: Deploy Website
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "site/**"
+      - "docs/model_card.md"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v10.3.0
+        with:
+          enable-cache: true
+
+      - name: Install dependencies
+        run: uv sync --frozen
+
+      - name: Pull site data from Hugging Face
+        env:
+          HF_USER: ${{ vars.HF_USER }}
+        run: |
+          mkdir -p site/public/data
+          # Copy test-data first as baseline fixture
+          if [ -d "site/test-data" ]; then
+            cp -r site/test-data/* site/public/data/ || true
+          fi
+          # Attempt pulling latest published data from Hugging Face derived repo
+          uv run python -c "
+          from huggingface_hub import HfApi, snapshot_download
+          import os, shutil
+          from pathlib import Path
+
+          user = os.environ.get('HF_USER', 'Yasshh814')
+          repo = f'{user}/gh-breakout-derived'
+          try:
+              snapshot_download(repo_id=repo, repo_type='dataset', allow_patterns='site_data/latest/*', local_dir='hf_site')
+              src = Path('hf_site/site_data/latest')
+              dst = Path('site/public/data')
+              if src.exists():
+                  for item in src.glob('*'):
+                      if item.is_dir():
+                          shutil.copytree(item, dst / item.name, dirs_exist_ok=True)
+                      else:
+                          shutil.copy2(item, dst / item.name)
+                  print('Successfully pulled latest site data from HF')
+          except Exception as exc:
+              print(f'Using local fallback site data: {exc}')
+          "
+
+      - name: Copy figures to site
+        run: |
+          mkdir -p site/public/figures
+          cp reports/figures/*.png site/public/figures/ || true
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: site/package-lock.json
+
+      - name: Build Astro site
+        run: |
+          cd site
+          npm ci
+          npm run build
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site/dist
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

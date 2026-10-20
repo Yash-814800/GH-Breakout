@@ -1,0 +1,78 @@
+{
+  "repo_id": 1400136506,
+  "repo_name": "storytold/effectcraft",
+  "html_url": "https://github.com/storytold/effectcraft",
+  "description": null,
+  "metadata": {},
+  "daily_stars": [
+    {
+      "date": "2026-10-02",
+      "stars": 2
+    },
+    {
+      "date": "2026-10-03",
+      "stars": 2
+    },
+    {
+      "date": "2026-10-04",
+      "stars": 5
+    },
+    {
+      "date": "2026-10-05",
+      "stars": 3
+    },
+    {
+      "date": "2026-10-06",
+      "stars": 15
+    },
+    {
+      "date": "2026-10-07",
+      "stars": 24
+    },
+    {
+      "date": "2026-10-08",
+      "stars": 20
+    },
+    {
+      "date": "2026-10-09",
+      "stars": 19
+    },
+    {
+      "date": "2026-10-10",
+      "stars": 5
+    },
+    {
+      "date": "2026-10-11",
+      "stars": 12
+    },
+    {
+      "date": "2026-10-12",
+      "stars": 6
+    },
+    {
+      "date": "2026-10-13",
+      "stars": 7
+    },
+    {
+      "date": "2026-10-14",
+      "stars": 5
+    }
+  ],
+  "prediction_history": [
+    {
+      "date": "2026-10-20",
+      "rank": 18,
+      "prob": 0.0293,
+      "raw_score": 0.2705,
+      "b1_rank": 3
+    }
+  ],
+  "latest_shap": [],
+  "explanation": "Flagged because 12 stars in the last 3 days, stars are spread over many hours and already has 147 stars. Held back by: 1 stars yesterday and recent stargazers have a good track record of finding breakouts early.",
+  "realized_outcome": null,
+  "trending_appearances": [],
+  "hn_stories": [],
+  "cohort_retention": null,
+  "similar_repos": null,
+  "suspicion_breakdown": null
+}

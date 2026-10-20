@@ -1,0 +1,38 @@
+{
+  "repo_id": 1323332140,
+  "repo_name": "AhmadHassan-BTed/MotionShot",
+  "html_url": "https://github.com/AhmadHassan-BTed/MotionShot",
+  "description": null,
+  "metadata": {},
+  "daily_stars": [
+    {
+      "date": "2026-09-30",
+      "stars": 1
+    },
+    {
+      "date": "2026-10-10",
+      "stars": 2
+    },
+    {
+      "date": "2026-10-13",
+      "stars": 1
+    }
+  ],
+  "prediction_history": [
+    {
+      "date": "2026-10-20",
+      "rank": 25,
+      "prob": 0.0293,
+      "raw_score": 0.248,
+      "b1_rank": 49
+    }
+  ],
+  "latest_shap": [],
+  "explanation": "Flagged because 13 stars yesterday, 37 stars in the last 3 days and stargazers star selectively. Held back by: no stargazer with a good record and few recent pushes.",
+  "realized_outcome": null,
+  "trending_appearances": [],
+  "hn_stories": [],
+  "cohort_retention": null,
+  "similar_repos": null,
+  "suspicion_breakdown": null
+}

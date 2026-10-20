@@ -1,0 +1,46 @@
+{
+  "repo_id": 1409893258,
+  "repo_name": "T-Auto/dsh-ops",
+  "html_url": "https://github.com/T-Auto/dsh-ops",
+  "description": null,
+  "metadata": {},
+  "daily_stars": [
+    {
+      "date": "2026-10-10",
+      "stars": 4
+    },
+    {
+      "date": "2026-10-11",
+      "stars": 5
+    },
+    {
+      "date": "2026-10-12",
+      "stars": 4
+    },
+    {
+      "date": "2026-10-13",
+      "stars": 2
+    },
+    {
+      "date": "2026-10-14",
+      "stars": 12
+    }
+  ],
+  "prediction_history": [
+    {
+      "date": "2026-10-20",
+      "rank": 46,
+      "prob": 0.0151,
+      "raw_score": 0.1748,
+      "b1_rank": 21
+    }
+  ],
+  "latest_shap": [],
+  "explanation": "Flagged because 11 stars in the last 3 days, stargazers star selectively and pushed on 6 of the last 14 days. Held back by: 1 stars yesterday and recent stargazers have a good track record of finding breakouts early.",
+  "realized_outcome": null,
+  "trending_appearances": [],
+  "hn_stories": [],
+  "cohort_retention": null,
+  "similar_repos": null,
+  "suspicion_breakdown": null
+}

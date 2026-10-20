@@ -1,0 +1,50 @@
+{
+  "repo_id": 1236313235,
+  "repo_name": "Fractal-Compute-Orchestrations/FractalCore",
+  "html_url": "https://github.com/Fractal-Compute-Orchestrations/FractalCore",
+  "description": null,
+  "metadata": {},
+  "daily_stars": [
+    {
+      "date": "2026-09-29",
+      "stars": 1
+    },
+    {
+      "date": "2026-09-30",
+      "stars": 1
+    },
+    {
+      "date": "2026-10-05",
+      "stars": 1
+    },
+    {
+      "date": "2026-10-09",
+      "stars": 1
+    },
+    {
+      "date": "2026-10-10",
+      "stars": 2
+    },
+    {
+      "date": "2026-10-11",
+      "stars": 1
+    }
+  ],
+  "prediction_history": [
+    {
+      "date": "2026-10-20",
+      "rank": 45,
+      "prob": 0.0151,
+      "raw_score": 0.1751,
+      "b1_rank": 66
+    }
+  ],
+  "latest_shap": [],
+  "explanation": "Flagged because 12 stars yesterday, 28 stars in the last 3 days and stargazers star selectively. Held back by: no stargazer with a good record and few recent pushes.",
+  "realized_outcome": null,
+  "trending_appearances": [],
+  "hn_stories": [],
+  "cohort_retention": null,
+  "similar_repos": null,
+  "suspicion_breakdown": null
+}

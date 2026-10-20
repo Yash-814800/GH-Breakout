@@ -144,3 +144,32 @@ The `Pipeline Health & Keepalive` workflow runs every 6 hours and monitors `stat
 - **Missing hours older than 3 days**: GH Archive hours failed to download or parse repeatedly across multiple retry days. Run `backfill-day.yml` or check upstream GH Archive availability.
 - **dbt source freshness failed**: Upstream lake tables have not been updated within the expected freshness threshold. Check lake sync logs.
 
+## Website & deployment (Phase 10)
+
+The public static website lives in `site/` (built with Astro) and deploys automatically to GitHub Pages.
+
+### GitHub Pages (default, primary)
+- **Deployment**: Automatic via `.github/workflows/daily.yml` after each daily pipeline run, and on code push via `.github/workflows/site.yml`.
+- **URL**: `https://<user>.github.io/<repo>/` (configured with `site: 'https://yash-814800.github.io'` and `base: '/GH-Breakout'`).
+- **Data flow**: The daily pipeline exports site JSON and Parquet to `site/public/data/` and uploads a copy to Hugging Face derived repo under `site_data/latest/`. Site-only rebuilds pull `site_data/latest/` to stay fresh without rerunning the heavy ML pipeline.
+- **Manual local build**:
+  ```bash
+  uv run breakout publish site-data
+  mkdir -p site/public/figures && cp reports/figures/*.png site/public/figures/
+  cd site && npm ci && npm run build
+  ```
+
+### Alternative static host: Vercel (Hobby tier, $0)
+If deploying to Vercel:
+1. Set root directory to `site`.
+2. Environment variables: `BASE_PATH=/`, `SITE_URL=https://<your-project>.vercel.app`.
+3. Build command: `npm run build`, Output directory: `dist`.
+4. Deploy with CLI: `vercel deploy --prebuilt --prod` (with `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`).
+
+### Alternative static host: Cloudflare Pages (Free tier, $0)
+If deploying to Cloudflare Pages:
+1. Build command: `npm run build`, Output directory: `dist`.
+2. Environment variables: `BASE_PATH=/`, `SITE_URL=https://<your-project>.pages.dev`.
+3. Deploy with Wrangler CLI: `wrangler pages deploy site/dist --project-name gh-breakout` (requires free Cloudflare API token).
+
+

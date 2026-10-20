@@ -1,0 +1,127 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "RepoDetailSchema",
+  "type": "object",
+  "required": [
+    "repo_id",
+    "repo_name",
+    "html_url",
+    "description",
+    "metadata",
+    "daily_stars",
+    "prediction_history",
+    "latest_shap",
+    "explanation",
+    "realized_outcome",
+    "trending_appearances",
+    "hn_stories"
+  ],
+  "properties": {
+    "repo_id": { "type": "integer" },
+    "repo_name": { "type": "string" },
+    "html_url": { "type": "string" },
+    "description": { "type": ["string", "null"] },
+    "metadata": {
+      "type": "object",
+      "properties": {
+        "created_at": { "type": ["string", "null"] },
+        "primary_language": { "type": ["string", "null"] },
+        "owner_type": { "type": ["string", "null"] },
+        "is_fork": { "type": ["boolean", "null"] },
+        "parent_repo_id": { "type": ["integer", "null"] },
+        "is_archived": { "type": ["boolean", "null"] },
+        "is_mirror": { "type": ["boolean", "null"] },
+        "is_template": { "type": ["boolean", "null"] },
+        "license_spdx": { "type": ["string", "null"] },
+        "topics": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "homepage_url": { "type": ["string", "null"] },
+        "fetched_at": { "type": ["string", "null"] }
+      },
+      "additionalProperties": true
+    },
+    "daily_stars": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["date", "stars"],
+        "properties": {
+          "date": { "type": "string" },
+          "stars": { "type": "integer" }
+        }
+      }
+    },
+    "prediction_history": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["date", "rank", "prob"],
+        "properties": {
+          "date": { "type": "string" },
+          "rank": { "type": "integer" },
+          "prob": { "type": "number" },
+          "raw_score": { "type": ["number", "null"] },
+          "b1_rank": { "type": ["integer", "null"] }
+        }
+      }
+    },
+    "latest_shap": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["feature", "contribution"],
+        "properties": {
+          "feature": { "type": "string" },
+          "value": {},
+          "contribution": { "type": "number" },
+          "sentence": { "type": ["string", "null"] }
+        }
+      }
+    },
+    "explanation": { "type": ["string", "null"] },
+    "realized_outcome": {
+      "type": ["object", "null"],
+      "properties": {
+        "matured": { "type": "boolean" },
+        "horizon_date": { "type": ["string", "null"] },
+        "gain_30d": { "type": ["number", "null"] },
+        "hit": { "type": ["boolean", "null"] },
+        "label": { "type": ["boolean", "null"] }
+      }
+    },
+    "trending_appearances": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["date", "rank"],
+        "properties": {
+          "date": { "type": "string" },
+          "rank": { "type": "integer" },
+          "language": { "type": ["string", "null"] },
+          "source": { "type": "string" }
+        }
+      }
+    },
+    "hn_stories": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["title", "url"],
+        "properties": {
+          "title": { "type": "string" },
+          "url": { "type": "string" },
+          "hn_url": { "type": "string" },
+          "created_at": { "type": "string" },
+          "points": { "type": "integer" },
+          "num_comments": { "type": "integer" }
+        }
+      }
+    },
+    "cohort_retention": {},
+    "similar_repos": {},
+    "suspicion_breakdown": {}
+  },
+  "additionalProperties": true
+}

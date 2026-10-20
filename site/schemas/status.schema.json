@@ -1,0 +1,30 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "StatusSchema",
+  "type": "object",
+  "required": [
+    "snapshot_date",
+    "published_at",
+    "n_leaderboard"
+  ],
+  "properties": {
+    "snapshot_date": { "type": "string" },
+    "published_at": { "type": "string" },
+    "n_leaderboard": { "type": "integer" },
+    "data_through_date": { "type": ["string", "null"] },
+    "step_durations": { "type": ["object", "null"] },
+    "rows_ingested_last_14d": {
+      "type": "array",
+      "items": { "type": "object" }
+    },
+    "missing_hours": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "dbt_summary": { "type": ["object", "null"] },
+    "model": { "type": ["object", "null"] },
+    "drift": { "type": ["object", "null"] },
+    "heartbeat": { "type": ["object", "null"] }
+  },
+  "additionalProperties": true
+}

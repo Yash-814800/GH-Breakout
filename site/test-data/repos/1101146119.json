@@ -1,0 +1,38 @@
+{
+  "repo_id": 1101146119,
+  "repo_name": "Fractal-Compute-Orchestrations/FractalAndroid",
+  "html_url": "https://github.com/Fractal-Compute-Orchestrations/FractalAndroid",
+  "description": null,
+  "metadata": {},
+  "daily_stars": [
+    {
+      "date": "2026-09-29",
+      "stars": 1
+    },
+    {
+      "date": "2026-09-30",
+      "stars": 1
+    },
+    {
+      "date": "2026-10-12",
+      "stars": 1
+    }
+  ],
+  "prediction_history": [
+    {
+      "date": "2026-10-20",
+      "rank": 19,
+      "prob": 0.0293,
+      "raw_score": 0.2704,
+      "b1_rank": 55
+    }
+  ],
+  "latest_shap": [],
+  "explanation": "Flagged because 14 stars yesterday, 33 stars in the last 3 days and stargazers star selectively. Held back by: no stargazer with a good record and few recent pushes.",
+  "realized_outcome": null,
+  "trending_appearances": [],
+  "hn_stories": [],
+  "cohort_retention": null,
+  "similar_repos": null,
+  "suspicion_breakdown": null
+}
