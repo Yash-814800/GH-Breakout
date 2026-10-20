@@ -33,7 +33,10 @@
       "language": { "type": ["string", "null"] },
       "age_days": { "type": ["integer", "null"] },
       "stars_total_observed": { "type": ["integer", "null"] },
+      "stars_total_source": { "type": "string", "enum": ["github_api", "gh_archive"] },
       "stars_7d": { "type": ["integer", "null"] },
+      "stars_gain_api": { "type": ["integer", "null"] },
+      "stars_gain_days": { "type": ["integer", "null"] },
       "spark_stars_28d": {
         "type": "array",
         "items": { "type": "integer" },

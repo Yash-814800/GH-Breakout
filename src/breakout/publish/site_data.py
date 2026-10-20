@@ -31,6 +31,7 @@ import yaml
 from breakout import paths as P
 from breakout.config import Config, get_config
 from breakout.logging import get_logger
+from breakout.publish import live_stats
 
 log = get_logger(__name__)
 
@@ -48,6 +49,8 @@ REPOS_DIR = SITE_DATA_DIR / "repos"
 EXPLORER_DIR = SITE_DATA_DIR / "explorer"
 LIVE_PREDICTIONS_PARQUET = EXPLORER_DIR / "live_predictions.parquet"
 OOF_TOP100_PARQUET = EXPLORER_DIR / "oof_top100.parquet"
+STAR_SNAPSHOTS_JSON = SITE_DATA_DIR / "star_snapshots.json"
+LIVE_SPARE = 25  # extra candidates fetched so repos GitHub no longer serves can be dropped
 
 
 # -----------------------------------------------------------------------------
@@ -263,8 +266,13 @@ def export_leaderboard(
     con: duckdb.DuckDBPyConnection,
     hidden_ids: set[int],
     hidden_names: set[str],
+    live: dict[int, dict[str, Any]] | None = None,
 ) -> tuple[Path, list[dict[str, Any]]]:
-    """Export site/public/data/leaderboard.json."""
+    """Export site/public/data/leaderboard.json.
+
+    ``live`` holds current GitHub facts per repo id (``live_stats.fetch_live_info``); it is
+    filled here for the shown candidates when empty. Repos GitHub reports as gone are dropped.
+    """
     limit = cfg.site.leaderboard_size
     all_snaps = list_all_prediction_snapshots()
 
@@ -284,7 +292,15 @@ def export_leaderboard(
         )
         for _, r in df_pred.iterrows()
     ]
-    df_pred = df_pred[keep_mask].head(limit).copy()
+    df_pred = df_pred[keep_mask].head(limit + LIVE_SPARE).copy()
+    if live is None:
+        live = {}
+    missing = [int(x) for x in df_pred["repo_id"] if int(x) not in live]
+    live.update(live_stats.fetch_live_info(cfg, missing))
+    gone = {rid for rid, row in live.items() if row.get("status") in ("not_found", "blocked")}
+    if gone:
+        log.info("Dropping %d repos GitHub no longer serves: %s", len(gone), sorted(gone))
+    df_pred = df_pred[~df_pred["repo_id"].isin(gone)].head(limit).copy()
     df_pred["rank"] = np.arange(1, len(df_pred) + 1)
     repo_ids = [int(x) for x in df_pred["repo_id"]]
 
@@ -320,6 +336,16 @@ def export_leaderboard(
 
     spark_map = _get_spark_stars(repo_ids, target_date, con)
     meta_map = _get_repo_metadata_map(repo_ids, con)
+
+    history = live_stats.load_snapshots(STAR_SNAPSHOTS_JSON)
+    api_stars = {
+        rid: int(row["stargazer_count_at_fetch"])
+        for rid, row in live.items()
+        if row.get("status") == "ok" and row.get("stargazer_count_at_fetch") is not None
+    }
+    if api_stars:
+        history = live_stats.record_snapshot(history, target_date, api_stars)
+        live_stats.save_snapshots(STAR_SNAPSHOTS_JSON, history)
 
     feat_map: dict[int, dict[str, Any]] = {}
     feat_file = P.DATA_DIR / "derived" / "live" / f"features_{target_date}.parquet"
@@ -362,8 +388,17 @@ def export_leaderboard(
     for _, row in df_pred.iterrows():
         rid = int(row["repo_id"])
         rname = str(row.get("repo_name", f"repo_id={rid}"))
-        meta = meta_map.get(rid, {})
+        meta = dict(meta_map.get(rid, {}))
         feat = feat_map.get(rid, {})
+        lrow = live.get(rid, {})
+        if lrow.get("status") == "ok":
+            meta.update(
+                {
+                    k: lrow[k]
+                    for k in ("name_with_owner", "description", "primary_language")
+                    if lrow.get(k)
+                }
+            )
 
         if meta.get("name_with_owner"):
             rname = meta["name_with_owner"]
@@ -395,11 +430,17 @@ def export_leaderboard(
         if s7 is None:
             s7 = sum(spark_arr[-7:])
 
+        stars_source = "gh_archive"
         stot = feat.get("stars_total_observed")
         if stot is None:
             stot = s7
+        if rid in api_stars:
+            stot, stars_source = api_stars[rid], "github_api"
+        gain, gain_days = live_stats.star_gain(history, rid, target_date)
 
         age = feat.get("age_days")
+        if lrow.get("status") == "ok":
+            age = live_stats.age_days(lrow.get("created_at"), target_date)
         exp_raw = row.get("explanation")
         explanation = str(exp_raw) if (exp_raw and pd.notna(exp_raw)) else None
         b1_raw = int(row["b1_rank"]) if ("b1_rank" in row and pd.notna(row["b1_rank"])) else None
@@ -417,7 +458,10 @@ def export_leaderboard(
             "language": lang,
             "age_days": age,
             "stars_total_observed": stot,
+            "stars_total_source": stars_source,
             "stars_7d": s7,
+            "stars_gain_api": gain,
+            "stars_gain_days": gain_days,
             "spark_stars_28d": spark_arr,
             "prob": round(prob, 4),
             "prob_label": format_prob_label(prob),
@@ -442,6 +486,7 @@ def export_repo_details(
     target_date: date,
     leaderboard_items: list[dict[str, Any]],
     con: duckdb.DuckDBPyConnection,
+    live: dict[int, dict[str, Any]] | None = None,
 ) -> list[Path]:
     """Export site/public/data/repos/<repo_id>.json for flagged repositories."""
     REPOS_DIR.mkdir(parents=True, exist_ok=True)
@@ -462,6 +507,23 @@ def export_repo_details(
 
     log.info("Generating detail pages for %d flagged repos...", len(flagged_ids))
     meta_map = _get_repo_metadata_map(list(flagged_ids), con)
+    live = live if live is not None else {}
+    live.update(live_stats.fetch_live_info(cfg, [i for i in flagged_ids if i not in live]))
+    for rid, lrow in live.items():
+        if rid in meta_map and lrow.get("status") == "ok":
+            meta_map[rid].update(
+                {
+                    k: lrow[k]
+                    for k in ("name_with_owner", "description", "primary_language")
+                    if lrow.get(k)
+                }
+            )
+        elif lrow.get("status") == "ok":
+            meta_map[rid] = {
+                k: lrow.get(k) for k in ("name_with_owner", "description", "primary_language")
+            }
+    flagged_ids -= {rid for rid, r in live.items() if r.get("status") in ("not_found", "blocked")}
+    history = live_stats.load_snapshots(STAR_SNAPSHOTS_JSON)
 
     trending_path = P.DATA_DIR / "derived" / "enrich" / "trending.parquet"
     trending_map: dict[int, list[dict[str, Any]]] = {rid: [] for rid in flagged_ids}
@@ -623,6 +685,8 @@ def export_repo_details(
                         }
                     )
 
+        lrow = live.get(rid, {})
+        api_total = lrow.get("stargazer_count_at_fetch") if lrow.get("status") == "ok" else None
         d_stars = stars_history_map.get(rid, [])
         if not d_stars and lb_item and lb_item.get("spark_stars_28d"):
             sp = lb_item["spark_stars_28d"]
@@ -647,6 +711,13 @@ def export_repo_details(
             "description": desc,
             "metadata": meta,
             "daily_stars": d_stars,
+            "stars_total": api_total if api_total is not None else None,
+            "stars_total_source": "github_api" if api_total is not None else "gh_archive",
+            "star_count_history": [
+                {"date": d, "stars": m[str(rid)]}
+                for d, m in sorted(history.items())
+                if str(rid) in m
+            ],
             "prediction_history": p_hist,
             "latest_shap": latest_shap,
             "explanation": explanation,
@@ -663,6 +734,8 @@ def export_repo_details(
         out_p.write_text(json.dumps(doc, indent=2, default=str) + "\n")
         written.append(out_p)
 
+    for stale in set(REPOS_DIR.glob("*.json")) - set(written):
+        stale.unlink()
     log.info("Wrote %d detail pages to %s", len(written), REPOS_DIR)
     return written
 
@@ -1110,6 +1183,28 @@ def upload_site_data_to_hf(cfg: Config) -> list[str]:
     return commits
 
 
+def _restore_star_snapshots(cfg: Config) -> None:
+    """Fetch the star-count history of the last published bundle when this machine has none
+    (a clean Actions runner). Best effort: without it the gain column starts over."""
+    if STAR_SNAPSHOTS_JSON.exists():
+        return
+    try:
+        from huggingface_hub import hf_hub_download
+
+        from breakout.lake import hf as hf_mod
+
+        got = hf_hub_download(
+            hf_mod.repo_id(cfg, "derived"),
+            "site_data/latest/star_snapshots.json",
+            repo_type="dataset",
+        )
+        STAR_SNAPSHOTS_JSON.parent.mkdir(parents=True, exist_ok=True)
+        STAR_SNAPSHOTS_JSON.write_bytes(Path(got).read_bytes())
+        log.info("Restored star-count history from the Hub")
+    except Exception as exc:
+        log.info("No star-count history restored (%s)", exc)
+
+
 def publish_site_data(
     cfg: Config | None = None,
     d: date | None = None,
@@ -1129,13 +1224,15 @@ def publish_site_data(
     log.info("Publishing complete site data from %s (snapshot %s)", target_path, snap_date)
     hidden_ids, hidden_names = load_hidden_repos()
 
+    _restore_star_snapshots(cfg)
+    live: dict[int, dict[str, Any]] = {}
     con = duckdb.connect()
     try:
         p_lb, lb_items = export_leaderboard(
-            cfg, snap_date, target_path, con, hidden_ids, hidden_names
+            cfg, snap_date, target_path, con, hidden_ids, hidden_names, live
         )
 
-        detail_paths = export_repo_details(cfg, snap_date, lb_items, con)
+        detail_paths = export_repo_details(cfg, snap_date, lb_items, con, live)
 
         p_tr = export_track_record(cfg, con)
 

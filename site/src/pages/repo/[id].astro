@@ -52,6 +52,7 @@ const outcome = repo.realized_outcome;
       <!-- Quick Metadata Grid -->
       <div class="meta-pills">
         <span class="badge badge-accent">ID: {repo.repo_id}</span>
+        {repo.stars_total != null && <span class="badge badge-neutral" title="Current star count from the GitHub API">★ {repo.stars_total.toLocaleString('en-US')}</span>}
         <span class="badge badge-neutral">Language: {meta.primary_language || 'Unknown'}</span>
         <span class="badge badge-neutral">Owner: {meta.owner_type || 'User'}</span>
         {meta.license_spdx && <span class="badge badge-neutral">License: {meta.license_spdx}</span>}
@@ -153,6 +154,7 @@ const outcome = repo.realized_outcome;
     <!-- Star History Chart -->
     <div class="card" style="margin-top: 1.5rem;">
       <h2>Star Velocity History</h2>
+      <p class="text-muted" style="font-size: 0.8125rem;">Stars captured by GH Archive per day. Capture is partial since mid-2025, so this understates real growth{repo.stars_total != null ? ` (GitHub reports ${repo.stars_total.toLocaleString('en-US')} stars in total)` : ''}.</p>
       <div id="star-chart-container" style="min-height: 200px;">
         {repo.daily_stars && repo.daily_stars.length > 0 ? (
           <div id="star-chart"></div>

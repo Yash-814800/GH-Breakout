@@ -774,3 +774,18 @@ are as of 2023-06-01 plus the daily increments; they must not be deleted.
 - Leaderboard page size is ~185 KB raw (~35 KB gzipped), with Lighthouse Performance 100 and Accessibility 96.
 - The SQL explorer operates entirely client-side without a backend database server.
 
+
+## ADR-029: Leaderboard shows GitHub-API star totals; event counts are labelled as partial (2026-10-20)
+**Context:** The first deployed leaderboard showed ranks 1-2 as `repo_id=...` (no stored metadata, non-existent links), and ranks 3-4
+with 6 and 15 "observed" stars although GitHub reports 7,696 and 8,018. Cause: GH Archive star capture is degraded since 2025-05-24
+(ADR-009), so `stars_total_observed`, `stars_7d` and the sparkline (all event-based) understate real growth, and the metadata file
+lacked brand-new repos. The model's own features and the "Flagged because" explanation remain event-based (unchanged).
+**Decision:** `breakout publish site-data` asks the GitHub API (GraphQL batch, `GH_ENRICH_TOKEN`) for the shown repos: current
+`nameWithOwner`, language, description, creation date and `stargazerCount`. These are display-only and never features (CLAUDE.md section 6).
+`stars_total_observed` now holds the API count (`stars_total_source = github_api`; falls back to `gh_archive` without a token).
+Repos GitHub reports gone or blocked are dropped and the board is refilled from the next candidates. Daily counts are stored in
+`star_snapshots.json` (45 days, restored from the Hub bundle on a clean runner) and give `stars_gain_api` / `stars_gain_days`, the
+real gain over up to 7 days (null on a repo's first day). The captured-stars sparkline is drawn only when it covers at least half
+of the real total.
+**Consequences:** the gain column is empty on the first day and fills in from the second daily run. The explanation text still quotes
+event-based numbers, which are what the model saw; the page says so. Ledger rows and model scores are untouched.

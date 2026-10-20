@@ -6,6 +6,12 @@ import path from 'node:path';
 
 const base = import.meta.env.BASE_URL.replace(/\/+$/, '');
 
+// GH Archive misses most stars after mid-2025; a sparkline of the captured ones next to a real
+// total would mislead, so it is drawn only when it covers at least half of the real total.
+const sparkTrusted = (item) =>
+  item.stars_total_source !== 'github_api' ||
+  (item.spark_stars_28d || []).reduce((a, b) => a + b, 0) >= 0.5 * (item.stars_total_observed || 0);
+
 // Load leaderboard data
 let leaderboard = [];
 let meta = { data_through: 'Today', model_version: 'champion', counts: { leaderboard: 0 } };
@@ -51,7 +57,7 @@ const languages = Array.from(new Set(leaderboard.map((r) => r.language).filter(B
     <div class="caption-banner">
       <div class="caption-icon">ℹ️</div>
       <div class="caption-text">
-        <strong>Honest probability:</strong> Each probability is calibrated against historical outcomes. A ~1 in 4 probability means about 25% of candidates with this profile broke out within 30 days. Read our <a href={`${base}/methodology/`}>methodology</a> and inspect verified outcomes on our <a href={`${base}/track-record/`}>live track record</a>.
+        <strong>Honest probability:</strong> Each probability is calibrated against historical outcomes. A ~1 in 4 probability means about 25% of candidates with this profile broke out within 30 days. Star totals are current counts from the GitHub API; the sparkline shows only the stars GH Archive captured, which understates real growth since mid-2025. Read our <a href={`${base}/methodology/`}>methodology</a> and inspect verified outcomes on our <a href={`${base}/track-record/`}>live track record</a>.
       </div>
     </div>
 
@@ -97,7 +103,7 @@ const languages = Array.from(new Set(leaderboard.map((r) => r.language).filter(B
             <th>Repository</th>
             <th>Language</th>
             <th>Age</th>
-            <th>Stars (7d / 28d)</th>
+            <th>Stars (total · gain · 28d captured)</th>
             <th>Breakout Prob</th>
             <th>Why Flagged</th>
             <th>On Board</th>
@@ -144,8 +150,15 @@ const languages = Array.from(new Set(leaderboard.map((r) => r.language).filter(B
                 </td>
                 <td class="num">
                   <div class="stars-cell">
-                    <span class="stars-7d">+{item.stars_7d ?? 0}</span>
-                    <Sparkline values={item.spark_stars_28d || []} width={80} height={20} />
+                    <span class="stars-total" title={item.stars_total_source === 'github_api' ? 'Current star count from the GitHub API' : 'Stars seen in GH Archive (an undercount)'}>
+                      ★ {item.stars_total_observed != null ? item.stars_total_observed.toLocaleString('en-US') : '—'}
+                    </span>
+                    <span class="stars-7d" title="Gain in GitHub stars between daily snapshots; the first day on the board has no gain yet">
+                      {item.stars_gain_api != null ? `+${item.stars_gain_api.toLocaleString('en-US')} in ${item.stars_gain_days}d` : 'gain: n/a yet'}
+                    </span>
+                    {sparkTrusted(item)
+                      ? <Sparkline values={item.spark_stars_28d || []} width={80} height={20} />
+                      : <span class="text-muted" title="GH Archive captured only a fraction of this repo's stars, so no daily chart is drawn">daily n/a</span>}
                   </div>
                 </td>
                 <td class="num">
@@ -190,7 +203,8 @@ const languages = Array.from(new Set(leaderboard.map((r) => r.language).filter(B
           <div class="mobile-meta">
             <span class="badge badge-neutral">{item.language || 'Unknown'}</span>
             <span class="num">Age: {item.age_days ?? '—'} d</span>
-            <span class="num">7d stars: +{item.stars_7d ?? 0}</span>
+            <span class="num">★ {item.stars_total_observed != null ? item.stars_total_observed.toLocaleString('en-US') : '—'}</span>
+            <span class="num">{item.stars_gain_api != null ? `+${item.stars_gain_api.toLocaleString('en-US')} in ${item.stars_gain_days}d` : 'gain: n/a yet'}</span>
           </div>
           {item.explanation && <p class="explanation-text" style="margin-top: 0.5rem;">{item.explanation}</p>}
         </div>
