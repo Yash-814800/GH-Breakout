@@ -729,3 +729,30 @@ operational runbook.
 - Training/serving feature parity guarantees zero silent feature skew between offline model training and online serving.
 - State tables must be preserved on Hugging Face; any corruption or schema change requires regenerating the state base
   using `breakout build state`.
+
+## ADR-027: Phase 9 clean-runner correction (2026-10-20)
+
+**Context:** ADR-026 and `PROGRESS.md` marked Phase 9 done after local checks only. The first `workflow_dispatch` of
+`daily.yml` failed (run 39423153746) because a GitHub Actions runner starts empty and the orchestrator assumed the
+dev machine's local state. The persistent state tables and the champion model were also never on Hugging Face (only on
+the SSD), and CI had been red since Phase 5 because the tests need `dbt deps`.
+
+**Decision:**
+1. `breakout.daily.bootstrap` runs as step 0: `dbt deps`, merged hourly manifest fragments, the window's event files
+   (including `push_daily`), the `enrich/` tables, live features, state tables and the champion. The daily run now pushes
+   per-month manifest fragments (`manifests/hourly/hourly-YYYYMM.parquet`) and the day's live features
+   (`derived/live/features/date=D.parquet`).
+2. Seeds and staging/intermediate models are built before the state increment (step 5), not in step 8.
+3. A failed run no longer refreshes `last_success_at` in the heartbeat.
+4. `weekly.yml` pulls training rows, labels, live features and the registry first, and `ml promote --upload` pushes the
+   candidate, champion and `registry.json` to the models repo (the registry is not committed to git).
+5. `monthly.yml` is reduced to `lake verify-remote`. The actor-age top-up and repo metadata refresh sample the local lake
+   or need live candidate ids and could overwrite full HF tables with partial ones, so they stay manual.
+6. `health.yml` creates its `pipeline-health` label; `drift.find_recent_live_features` parsed the date from the wrong path
+   component and never matched a file.
+
+**Known gap:** daily step 7 (live enrichment: repo metadata, trending, HN) is not wired. Metadata features are
+Unknown/NULL for new repos; wiring it needs a two-phase build (candidates, fetch metadata, features).
+
+**Consequences:** the daily run takes ~3.5 minutes on a runner; the weekly retrain ~10 minutes. The state tables on HF
+are as of 2023-06-01 plus the daily increments; they must not be deleted.

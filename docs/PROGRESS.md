@@ -14,7 +14,7 @@ measured (row counts, sizes, runtimes, metrics). Future sessions rely on it.
 | 06 | Candidates, labels, baseline, evaluation harness | ☑ | 2026-10-19 | **Corrected 2026-10-19 (ADR-024)**: repos with unknown metadata were silently dropped by a NULL in the bot-owner filter. 3 marts, 33 dbt tests pass; 486 matured snapshots, **3,098,574** candidate rows (was 2,485,109), 0.509% positive; B1 pooled PR-AUC **0.0286** [0.0246, 0.0345] (was 0.0520), P@25 0.109; 29 folds. See "Phase 6 status".
 | 07 | Point-in-time feature marts | ☑ | 2026-10-19 | 7 feature groups + mart, 71 features (68 live-available), 63 dbt tests pass; 3,098,574 training rows 2016-2025; leak test PASS on 2018-05-14, 2021-03-01, 2024-06-03 and 2026-10-12 (300 repos x 71 columns each); live build for 2026-10-15 has identical columns/types; 17 tests in tests/features. See "Phase 7 status" and ADR-022..024.
 | 08 | LightGBM, calibration, SHAP, model registry | ☑ (HF upload pending approval) | 2026-10-19 | Model beats B1 in all 29 folds: pooled PR-AUC **0.108** [0.101, 0.113] vs 0.029, P@25 **0.241** [0.229, 0.255] vs 0.109; holdout (26 weeks to 2025-04-21) 0.158 / 0.338 vs B1 0.032 / 0.106. Sanity checks pass; calibrated ECE 0.0002. Champion `20261019-b5ff585` (local registry). Daily check: calibration over-predicts on non-Mondays (ADR-025). 310 tests pass. See "Phase 8 status". |
-| 09 | Daily pipeline, weekly retrain, health checks | ☑ | 2026-10-20 | 5 GitHub Actions workflows (`daily.yml`, `weekly.yml`, `monthly.yml`, `health.yml`, `backfill-day.yml`). Persistent state as of 2023-06-01 on HF (`tastemaker_state`, `owner_state`, `tastemaker_thresholds`). Parity test PASS (2024-06-03, Jaccard 1.0000, cell match 99.99%, Spearman 0.9999). SHA-256 tamper-evident ledger, PSI drift monitoring, ops runbook. 328 tests pass. See "Phase 9 status". |
+| 09 | Daily pipeline, weekly retrain, health checks | ☑ (live enrichment not wired) | 2026-10-20 | Validated on GitHub Actions: `daily.yml` succeeds (203 s, 1,033 candidates, ledger row, snapshot on HF); a same-day re-run ingests nothing and adds no ledger row; `weekly.yml` retrains and keeps the champion; `monthly.yml` passes (`lake verify-remote`); `health.yml` opens and closes the alert issue. Parity PASS (2024-06-03). CI green again. See ADR-027 and "Phase 9 status". |
 | 10 | Website (Astro) + deploy | ☐ | | |
 | 11 | Fake-star detector, similar repos, cohort retention | ☐ | | |
 | 12 | Distribution (RSS, badges, digest, Bluesky) | ☐ | | |
@@ -39,6 +39,12 @@ measured (row counts, sizes, runtimes, metrics). Future sessions rely on it.
 | Live-source gate / item 5 | ☐ not started | waits for your review of the source test |
 
 ## Phase 9 status (2026-10-20)
+
+- **Correction (ADR-027):** the first Actions run failed on a clean runner; the items below were fixed and re-run. Acceptance
+  on Actions: daily OK (run 39427845804, 203 s), same-day re-run is a no-op for ingest/freeze/ledger (39428796798), weekly OK
+  (39430618316; candidate not promoted), monthly OK (39433900630), health opens and closes issue #1 (39433975576,
+  39434079884), gap repair covered by `tests/daily/test_gap_repair.py`, `verify-ledger` passes.
+- **Open:** daily step 7 (live enrichment) is a no-op; the monthly actor-age and metadata refreshes are manual.
 
 - **Code:**
   - Workflows: `.github/workflows/{daily,weekly,monthly,health,backfill-day}.yml`

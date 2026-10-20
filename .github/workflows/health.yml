@@ -58,7 +58,7 @@ jobs:
 
           if issues:
               print("status=unhealthy", file=open(os.environ["GITHUB_OUTPUT"], "a"))
-              reason = "\\n- ".join(["Pipeline health check detected issues:"] + issues)
+              reason = "\n- ".join(["Pipeline health check detected issues:"] + issues)
               # GitHub Actions multiline output format
               with open(os.environ["GITHUB_OUTPUT"], "a") as f:
                   f.write(f"reason<<EOF\n{reason}\nEOF\n")
