@@ -74,6 +74,8 @@ jobs:
           STATUS: ${{ steps.health.outputs.status }}
           REASON: ${{ steps.health.outputs.reason }}
         run: |
+          gh label create pipeline-health --color B60205 \
+            --description "Automated pipeline health alert" 2>/dev/null || true
           EXISTING_ISSUE=$(gh issue list --label "pipeline-health" --state open --json number -q '.[0].number')
 
           if [ "$STATUS" = "unhealthy" ]; then
