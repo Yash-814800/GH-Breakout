@@ -7,9 +7,8 @@ from breakout.cli import app
 
 runner = CliRunner()
 GROUPS = ["ingest", "backfill", "lake", "enrich", "build", "ml", "daily", "publish", "ops"]
-STUB_GROUPS = [
-    g for g in GROUPS if g not in ("ingest", "backfill", "lake", "enrich", "build", "ml")
-]  # real groups
+REAL_GROUPS = ("ingest", "backfill", "lake", "enrich", "build", "ml", "daily", "publish", "ops")
+STUB_GROUPS = [g for g in GROUPS if g not in REAL_GROUPS]
 
 
 def test_help_lists_groups():
@@ -19,6 +18,7 @@ def test_help_lists_groups():
         assert group in result.output
 
 
+@pytest.mark.skipif(not STUB_GROUPS, reason="All groups implemented")
 @pytest.mark.parametrize("group", STUB_GROUPS)
 def test_stub_groups(group):
     result = runner.invoke(app, [group])
@@ -106,5 +106,24 @@ def test_build_group_lists_commands():
 
 def test_ml_group_lists_phase8_commands():
     result = runner.invoke(app, ["ml", "--help"])
-    for cmd in ("cv", "train-final", "predict", "daily-check"):
+    for cmd in ("cv", "train-final", "predict", "daily-check", "append-live-training", "promote"):
+        assert cmd in result.output
+
+
+def test_daily_group_lists_commands():
+    result = runner.invoke(app, ["daily", "--help"])
+    assert result.exit_code == 0
+    assert "run" in result.output
+
+
+def test_publish_group_lists_commands():
+    result = runner.invoke(app, ["publish", "--help"])
+    assert result.exit_code == 0
+    assert "site-data" in result.output
+
+
+def test_ops_group_lists_commands():
+    result = runner.invoke(app, ["ops", "--help"])
+    assert result.exit_code == 0
+    for cmd in ("verify-ledger", "parity", "drift"):
         assert cmd in result.output

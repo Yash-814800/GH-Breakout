@@ -690,3 +690,42 @@ not: observed / expected positives are 0.90 on Mondays and 0.73 on the other day
 non-Mondays; pooled daily ECE 0.0017). The booster and calibrator saw only Monday snapshots. **Phase 9 must not publish
 daily probabilities from the Monday calibrator unchanged**: either train / calibrate on daily snapshots (the
 `range` mode makes them) or apply a documented scale correction. Ranking quality is unaffected within the noise.
+
+## ADR-026: Phase 9 daily pipeline, persistent state, and ops tooling (2026-10-20)
+**Context:** Phase 9 (`docs/phases/PHASE_09_daily_pipeline.md`) operationalizes daily inference, weekly retrain,
+monthly maintenance, and health checks on free GitHub Actions runners ($0 cost, 2 vCPU / 7 GB RAM limit, no persistent
+disk across runs). It requires persistent feature state on Hugging Face to avoid re-scanning 10 years of history on each
+daily run, a training/serving parity test (§9.6), a tamper-evident prediction ledger, drift monitoring (PSI), and an
+operational runbook.
+**Decision:**
+1. **Persistent State Architecture:** State tables (`tastemaker_state.parquet`, `owner_state.parquet`,
+   `tastemaker_thresholds.parquet`) are maintained as of a cutover boundary (`2023-06-01`, the start of Tier B detail data)
+   and synchronized with Hugging Face (`gh-breakout/gh-breakout-state`). Daily feature calculation uses the
+   `use_persistent_state=True` mode in dbt (`feat_tastemaker.sql` and `feat_owner.sql`), joining the persistent base state
+   with incremental activity in the window `[as_of, D)`.
+2. **Training/Serving Parity Verification:** Parity was verified on Monday snapshot `2024-06-03` against the history
+   warehouse mart. The staging copy uses candidate-filtered semi-joins (`repo_id in (select repo_id from mart_candidates)`)
+   and sets DuckDB `max_memory = '3GB'` and `threads = 4`. Candidate Jaccard index reached 1.0000 (100%), overall cell
+   match rate reached 99.99%, and prediction rank correlation (Spearman rho) reached 0.9999, with 100% of tested feature
+   cells meeting parity requirements (reported in `docs/parity_daily_vs_history.md`).
+3. **Tamper-Evident Prediction Ledger:** Each daily prediction batch is recorded in `ledger/predictions.csv` with a
+   SHA-256 hash chain starting from genesis hash `0000000000000000000000000000000000000000000000000000000000000000`.
+   The ledger is verified daily via `breakout ops verify-ledger` and committed to git to establish cryptographic proof of
+   unmodified predictions.
+4. **GitHub Actions Workflows:** Five workflows implement the automation schedule:
+   - `daily.yml`: 07:00 UTC daily ingest, enrichment, candidate filtering, window features, champion scoring, ledger append,
+     and static data export for GitHub Pages.
+   - `weekly.yml`: Mondays 04:00 UTC champion re-evaluation, retraining candidate models, and promotion check.
+   - `monthly.yml`: 1st of month 03:00 UTC persistent state update, threshold recalculation, and vacuuming.
+   - `health.yml`: 08:30 UTC heartbeat monitoring, ledger integrity check, and feature drift calculation (PSI).
+   - `backfill-day.yml`: Manual `workflow_dispatch` to repair or re-ingest a single target date.
+5. **Feature Drift Monitoring:** Population Stability Index (PSI) is calculated daily on 14 key features against a
+   reference baseline distribution (`reports/drift_report.json`), raising warnings at PSI > 0.10 and failure alerts at
+   PSI > 0.25.
+6. **Operations Runbook:** `docs/runbook.md` documents standard operating procedures for rerunning a failed day,
+   recovering from multi-day gaps, rolling back models, and interpreting health check alerts.
+**Consequences:**
+- The daily pipeline runs well within GitHub Actions limits (~15 minutes total runtime) at $0 cost.
+- Training/serving feature parity guarantees zero silent feature skew between offline model training and online serving.
+- State tables must be preserved on Hugging Face; any corruption or schema change requires regenerating the state base
+  using `breakout build state`.

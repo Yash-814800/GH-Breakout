@@ -119,7 +119,13 @@ def run_features(
     return rc if test else 0
 
 
-def run_features_single(cfg: Config, d: date, *, window: tuple[date, date] | None = None) -> int:
+def run_features_single(
+    cfg: Config,
+    d: date,
+    *,
+    window: tuple[date, date] | None = None,
+    use_persistent_state: bool = False,
+) -> int:
     """Live build for one snapshot date: candidates, tastemaker tables and all features for ``d``.
 
     Same SQL as the history build with ``snapshot_dates_mode = single``. The warehouse must already hold
@@ -130,13 +136,23 @@ def run_features_single(cfg: Config, d: date, *, window: tuple[date, date] | Non
         "snapshot_date": d.isoformat(),
         "n_buckets": 1,
     }
+    if use_persistent_state:
+        ev["use_persistent_state"] = True
     if window:
         ev["events_start"], ev["events_end"] = window[0].isoformat(), window[1].isoformat()
-    for args in (
+
+    steps = [
         ["seed", "--select", "top_languages"],
         ["run", "--select", "mart_snapshot_dates", "mart_candidates"],
-        ["run", "--select", *TASTEMAKER_BUCKETED, *TASTEMAKER_SMALL, *GROUP_MODELS, MART],
-    ):
+    ]
+    if use_persistent_state:
+        steps.append(["run", "--select", "int_tastemaker_thresholds", *GROUP_MODELS, MART])
+    else:
+        steps.append(
+            ["run", "--select", *TASTEMAKER_BUCKETED, *TASTEMAKER_SMALL, *GROUP_MODELS, MART]
+        )
+
+    for args in steps:
         if (rc := R.run_dbt(cfg, args, extra_vars=ev)) != 0:
             return rc
     return 0

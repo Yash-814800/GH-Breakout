@@ -1,0 +1,108 @@
+name: Pipeline Health & Keepalive
+
+on:
+  schedule:
+    - cron: "7 */6 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+  actions: write
+
+jobs:
+  check-health:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Evaluate pipeline health
+        id: health
+        run: |
+          python3 - <<'PY'
+          import json, os, sys
+          from datetime import datetime, timezone
+
+          path = "status/heartbeat.json"
+          if not os.path.exists(path):
+              print("status=unhealthy", file=open(os.environ["GITHUB_OUTPUT"], "a"))
+              print("reason=Missing status/heartbeat.json", file=open(os.environ["GITHUB_OUTPUT"], "a"))
+              sys.exit(0)
+
+          try:
+              data = json.load(open(path))
+          except Exception as exc:
+              print("status=unhealthy", file=open(os.environ["GITHUB_OUTPUT"], "a"))
+              print(f"reason=Malformed heartbeat.json: {exc}", file=open(os.environ["GITHUB_OUTPUT"], "a"))
+              sys.exit(0)
+
+          now = datetime.now(timezone.utc)
+          last_success_str = data.get("last_success_at", "")
+          try:
+              last_success = datetime.fromisoformat(last_success_str.replace("Z", "+00:00"))
+              age_hours = (now - last_success).total_seconds() / 3600.0
+          except Exception:
+              age_hours = 9999.0
+
+          issues = []
+          if age_hours > 30.0:
+              issues.append(f"Daily pipeline heartbeat is stale: last success was {age_hours:.1f} hours ago (> 30h limit)")
+          if data.get("freeze_conflict"):
+              issues.append("Freeze conflict detected: predictions hash mismatch with immutable snapshot")
+          if data.get("missing_hours_older_than_3d", 0) > 0:
+              issues.append(f"{data['missing_hours_older_than_3d']} missing hourly files are older than 3 days")
+          if not data.get("dbt_freshness_passed", True):
+              issues.append("dbt source freshness check failed")
+
+          if issues:
+              print("status=unhealthy", file=open(os.environ["GITHUB_OUTPUT"], "a"))
+              reason = "\\n- ".join(["Pipeline health check detected issues:"] + issues)
+              # GitHub Actions multiline output format
+              with open(os.environ["GITHUB_OUTPUT"], "a") as f:
+                  f.write(f"reason<<EOF\n{reason}\nEOF\n")
+          else:
+              print("status=healthy", file=open(os.environ["GITHUB_OUTPUT"], "a"))
+              with open(os.environ["GITHUB_OUTPUT"], "a") as f:
+                  f.write("reason=Pipeline heartbeat is healthy.\n")
+          PY
+
+      - name: Manage health issue
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          STATUS: ${{ steps.health.outputs.status }}
+          REASON: ${{ steps.health.outputs.reason }}
+        run: |
+          EXISTING_ISSUE=$(gh issue list --label "pipeline-health" --state open --json number -q '.[0].number')
+
+          if [ "$STATUS" = "unhealthy" ]; then
+            echo "Pipeline is unhealthy!"
+            BODY="## Pipeline Health Alert
+
+          $REASON
+
+          Please inspect the latest workflow run in the Actions tab."
+
+            if [ -n "$EXISTING_ISSUE" ]; then
+              echo "Updating existing issue #$EXISTING_ISSUE"
+              gh issue comment "$EXISTING_ISSUE" --body "$BODY"
+            else
+              echo "Opening new issue titled 'Pipeline health alert'"
+              gh issue create --title "Pipeline health alert" --label "pipeline-health" --body "$BODY"
+            fi
+          else
+            echo "Pipeline is healthy."
+            if [ -n "$EXISTING_ISSUE" ]; then
+              echo "Closing existing issue #$EXISTING_ISSUE as healthy"
+              gh issue close "$EXISTING_ISSUE" --comment "Pipeline is healthy again. Closing automated health alert."
+            fi
+          fi
+
+      - name: Re-enable scheduled workflows (keepalive)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh workflow enable daily.yml || true
+          gh workflow enable weekly.yml || true
+          gh workflow enable monthly.yml || true

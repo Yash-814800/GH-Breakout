@@ -24,11 +24,7 @@ ENV_VARS = (
     "BLUESKY_APP_PASSWORD",
 )
 
-_STUBS = {
-    "daily": 9,
-    "publish": 10,
-    "ops": 9,
-}
+_STUBS: dict[str, int] = {}
 
 
 def _make_stub(name: str, phase: int) -> typer.Typer:
@@ -43,6 +39,15 @@ def _make_stub(name: str, phase: int) -> typer.Typer:
 
 for _name, _phase in _STUBS.items():
     app.add_typer(_make_stub(_name, _phase), name=_name)
+
+daily_app = typer.Typer(help="Daily pipeline commands (Phase 9).", no_args_is_help=True)
+app.add_typer(daily_app, name="daily")
+
+ops_app = typer.Typer(help="Operations and parity commands (Phase 9).", no_args_is_help=True)
+app.add_typer(ops_app, name="ops")
+
+publish_app = typer.Typer(help="Publish and deployment commands (Phase 9+).", no_args_is_help=True)
+app.add_typer(publish_app, name="publish")
 
 ml_app = typer.Typer(help="Modelling and evaluation (Phase 6+).", no_args_is_help=True)
 app.add_typer(ml_app, name="ml")
@@ -95,6 +100,9 @@ def ml_cv_cmd(
 @ml_app.command("train-final")
 def ml_train_final_cmd(
     ctx: typer.Context,
+    candidate: Annotated[
+        bool, typer.Option("--candidate", help="train as candidate rather than directly promoting")
+    ] = False,
     monotone: Annotated[
         bool | None, typer.Option(help="monotone constraints (default: the CV decision)")
     ] = None,
@@ -103,7 +111,41 @@ def ml_train_final_cmd(
     from breakout.ml import final
 
     cfg = get_config(ctx.obj["config"])
-    res = final.train_final(cfg, monotone=monotone)
+    res = final.train_final(cfg, monotone=monotone, candidate=candidate)
+    typer.echo(json.dumps(res, indent=2))
+
+
+@ml_app.command("promote")
+def ml_promote_cmd(
+    ctx: typer.Context,
+    candidate: Annotated[
+        str | None,
+        typer.Option("--candidate", help="candidate version (default: latest unpromoted)"),
+    ] = None,
+    if_better: Annotated[
+        bool, typer.Option("--if-better", help="only promote if candidate beats B1 and champion")
+    ] = True,
+) -> None:
+    """Promote candidate model to champion if holdout rule passes."""
+    from breakout.ml import final
+
+    cfg = get_config(ctx.obj["config"])
+    res = final.promote_candidate(cfg, version=candidate, if_better=if_better)
+    typer.echo(json.dumps(res, indent=2))
+
+
+@ml_app.command("append-live-training")
+def ml_append_live_training_cmd(
+    ctx: typer.Context,
+    upload: Annotated[
+        bool, typer.Option("--upload", help="upload appended live files to derived repo")
+    ] = False,
+) -> None:
+    """Append newly matured live Monday predictions to the training dataset."""
+    from breakout.ml import append_live
+
+    cfg = get_config(ctx.obj["config"])
+    res = append_live.append_live_training(cfg, upload=upload)
     typer.echo(json.dumps(res, indent=2))
 
 
@@ -330,6 +372,22 @@ def build_feature_eda_cmd(ctx: typer.Context) -> None:
 
     cfg = get_config(ctx.obj["config"])
     typer.echo(f"wrote {eda.run(cfg)}")
+
+
+@build_app.command("state")
+def build_state_cmd(
+    ctx: typer.Context,
+    as_of: Annotated[str, typer.Option("--as-of", help="cutoff date YYYY-MM-DD")],
+    upload: Annotated[bool, typer.Option("--upload", help="upload to derived repo")] = False,
+) -> None:
+    """Initialize persistent state tables (tastemaker, owner, thresholds) as of date."""
+    from datetime import date
+
+    from breakout.features import state
+
+    cfg = get_config(ctx.obj["config"])
+    p1, p2, p3 = state.build_state(cfg, date.fromisoformat(as_of), upload=upload)
+    typer.echo(f"Built state tables:\n  {p1}\n  {p2}\n  {p3}")
 
 
 enrich_app = typer.Typer(
@@ -1061,6 +1119,122 @@ def enrich_upload_cmd(ctx: typer.Context) -> None:
 
     cfg = get_config(ctx.obj["config"])
     typer.echo(json.dumps(upload.upload_enrich(cfg)))
+
+
+# ---- Daily (Phase 9) ---------------------------------------------------------
+
+
+@daily_app.command("run")
+def daily_run_cmd(
+    ctx: typer.Context,
+    date_: Annotated[
+        str | None, typer.Option("--date", help="snapshot date (YYYY-MM-DD), default today UTC")
+    ] = None,
+    skip_deploy_data: Annotated[
+        bool, typer.Option("--skip-deploy-data", help="skip publishing site data")
+    ] = False,
+    no_commit: Annotated[
+        bool, typer.Option("--no-commit", help="skip git commit of ledger and status")
+    ] = False,
+    no_upload: Annotated[
+        bool, typer.Option("--no-upload", help="skip Hugging Face uploads")
+    ] = False,
+) -> None:
+    """Run the 15-step daily pipeline."""
+    from datetime import date
+
+    from breakout.daily import run as daily_run
+
+    cfg = get_config(ctx.obj["config"])
+    d = date.fromisoformat(date_) if date_ else None
+    rc = daily_run.daily_run(
+        cfg,
+        d=d,
+        skip_deploy_data=skip_deploy_data,
+        no_commit=no_commit,
+        no_upload=no_upload,
+    )
+    if rc != 0:
+        raise typer.Exit(rc)
+
+
+# ---- Ops (Phase 9) -----------------------------------------------------------
+
+
+@ops_app.command("verify-ledger")
+def ops_verify_ledger_cmd(
+    ctx: typer.Context,
+    remote: Annotated[
+        bool, typer.Option("--remote", help="verify against remote HF snapshots")
+    ] = False,
+) -> None:
+    """Verify hash chain integrity of the immutable predictions ledger."""
+    from breakout.ops import ledger
+
+    cfg = get_config(ctx.obj["config"])
+    ok, msg = ledger.verify_ledger(cfg, remote=remote)
+    typer.echo(msg)
+    if not ok:
+        raise typer.Exit(1)
+
+
+@ops_app.command("parity")
+def ops_parity_cmd(
+    ctx: typer.Context,
+    date_: Annotated[str, typer.Option("--date", help="snapshot date D0 (YYYY-MM-DD)")],
+) -> None:
+    """Run training/serving parity test comparing window mode against history mart."""
+    from datetime import date
+
+    from breakout.ops import parity
+
+    cfg = get_config(ctx.obj["config"])
+    res = parity.run_parity(cfg, date.fromisoformat(date_))
+    typer.echo(f"Parity result for {res.snapshot_date}: {'PASS' if res.passed else 'FAIL'}")
+    typer.echo(f"  Jaccard: {res.jaccard:.4f}")
+    typer.echo(f"  Cell match: {res.overall_cell_match_rate:.4%}")
+    typer.echo(f"  Rank corr: {res.spearman_rank_corr:.4f}")
+    typer.echo(f"Report: {res.report_path}")
+    if not res.passed:
+        raise typer.Exit(1)
+
+
+@ops_app.command("drift")
+def ops_drift_cmd(
+    ctx: typer.Context,
+    upload: Annotated[
+        bool, typer.Option("--upload", help="upload drift.json to derived repo")
+    ] = False,
+) -> None:
+    """Compute PSI drift over recent live features vs champion training."""
+    from breakout.ops import drift
+
+    cfg = get_config(ctx.obj["config"])
+    res = drift.compute_drift(cfg, upload=upload)
+    typer.echo(json.dumps(res, indent=2))
+    if res.get("status") == "drift_detected":
+        typer.echo("WARNING: Significant feature drift detected (PSI > 0.25)")
+
+
+# ---- Publish (Phase 9/10) ----------------------------------------------------
+
+
+@publish_app.command("site-data")
+def publish_site_data_cmd(
+    ctx: typer.Context,
+    date_: Annotated[
+        str | None, typer.Option("--date", help="snapshot date (default: latest prediction)")
+    ] = None,
+) -> None:
+    """Export site data (leaderboard.json and status.json)."""
+    from datetime import date
+
+    from breakout.publish import site_data
+
+    cfg = get_config(ctx.obj["config"])
+    d = date.fromisoformat(date_) if date_ else None
+    p1, p2 = site_data.publish_site_data(cfg, d)
+    typer.echo(f"Wrote site data:\n  {p1}\n  {p2}")
 
 
 @app.callback()

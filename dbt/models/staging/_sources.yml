@@ -44,3 +44,14 @@ sources:
         meta: {external_location: "read_parquet('{{ env_var(\"GHB_DERIVED\") }}/enrich/trending.parquet')"}
       - name: hn_stories
         meta: {external_location: "read_parquet('{{ env_var(\"GHB_DERIVED\") }}/enrich/hn_stories.parquet')"}
+
+  - name: state
+    description: Phase 9 persistent state tables (breakout build state ...), under GHB_DERIVED/state.
+    tables:
+      - name: tastemaker_state
+        meta: {external_location: "read_parquet('{{ env_var(\"GHB_DERIVED\") }}/state/tastemaker_state.parquet')"}
+      - name: owner_state
+        meta: {external_location: "read_parquet('{{ env_var(\"GHB_DERIVED\") }}/state/owner_state.parquet')"}
+      - name: tastemaker_thresholds
+        meta: {external_location: "read_parquet('{{ env_var(\"GHB_DERIVED\") }}/state/tastemaker_thresholds.parquet')"}
+

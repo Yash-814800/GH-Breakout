@@ -94,3 +94,53 @@ project and a half-written model aborts the job). For long jobs run from a froze
 **Adding a feature.** Add the column to a `feat_*` model, register it in `config/feature_dictionary.yaml`
 (`tests/test_features_dict.py` and the dictionary<->mart check fail otherwise), run
 `tests/features` (hand-computed synthetic expectations plus the leak machinery), then rebuild.
+
+## Operations and Daily Pipeline (Phase 9)
+
+Orchestrator and scheduled pipelines running on GitHub Actions (`.github/workflows/`):
+- `daily.yml`: daily ingest, feature build, scoring, freeze, ledger append, outcomes, site data, heartbeat.
+- `weekly.yml`: retrain, append matured live training rows, champion promotion, PSI feature drift report.
+- `monthly.yml`: compaction, actor-age top-up, metadata refresh, lake verification.
+- `health.yml`: keepalive, heartbeat monitoring, automated issue creation.
+- `backfill-day.yml`: manual repair for day ranges.
+
+| Task | Command |
+|---|---|
+| Run daily pipeline locally | `uv run breakout daily run [--date YYYY-MM-DD] [--no-commit] [--no-upload]` |
+| Dry run daily pipeline | `make daily DATE=YYYY-MM-DD` |
+| Verify ledger integrity | `uv run breakout ops verify-ledger [--remote]` |
+| Parity test | `uv run breakout ops parity --date YYYY-MM-DD` |
+| Feature drift report (PSI) | `uv run breakout ops drift [--upload]` |
+| Append matured live training rows | `uv run breakout ml append-live-training [--upload]` |
+| Initialize persistent state | `uv run breakout build state --as-of YYYY-MM-DD [--upload]` |
+| Export site data | `uv run breakout publish site-data [--date YYYY-MM-DD]` |
+
+### How to rerun a day
+- **In GitHub Actions**: Go to Actions -> `Daily Pipeline` -> `Run workflow`. Enter the snapshot date `YYYY-MM-DD`.
+- **Locally**: `uv run breakout daily run --date YYYY-MM-DD`. Rerunning the same day is idempotent: if predictions are already frozen with the same hash, freeze and ledger append are clean no-ops.
+
+### How to repair gaps
+- **In GitHub Actions**: Run the `Backfill Days` (`backfill-day.yml`) workflow with `start` and `end` dates (inclusive).
+- **Locally**:
+  ```bash
+  uv run breakout ingest range <start> <end> --force
+  uv run breakout lake push --table all --include-days
+  ```
+  The hourly manifest tracks missing or pending hours; the next daily run automatically plans up to 10 days needing work.
+
+### How to roll back a model
+1. Inspect available versions in `data/models/registry.json`.
+2. To point champion back to a previous version `<prev_version>`:
+   ```bash
+   uv run breakout ml promote --candidate <prev_version> --no-if-better
+   ```
+   Or edit `registry.json` and set `"champion": "<prev_version>"`.
+3. Commit and push: `git add registry.json && git commit -m "chore(ml): rollback champion to <prev_version>" && git push`.
+
+### Health alerts and failure modes
+The `Pipeline Health & Keepalive` workflow runs every 6 hours and monitors `status/heartbeat.json`:
+- **Heartbeat is stale (> 30 hours)**: The daily scheduled cron was skipped, delayed, or failed before recording a successful heartbeat. Check the latest run under Actions -> `Daily Pipeline`. Inspect step durations in `data/run/status.json`.
+- **Freeze conflict detected**: Predictions for date `D` were already frozen in the Hugging Face snapshots repository with a different content hash. Predictions are strictly immutable and never overwritten. Investigate whether model weights, dependencies, or input features changed.
+- **Missing hours older than 3 days**: GH Archive hours failed to download or parse repeatedly across multiple retry days. Run `backfill-day.yml` or check upstream GH Archive availability.
+- **dbt source freshness failed**: Upstream lake tables have not been updated within the expected freshness threshold. Check lake sync logs.
+

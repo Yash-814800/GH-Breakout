@@ -1,0 +1,73 @@
+name: Daily Pipeline
+
+on:
+  schedule:
+    - cron: "17 3 * * *"
+  workflow_dispatch:
+    inputs:
+      date:
+        description: "Snapshot date (YYYY-MM-DD), default: today UTC"
+        required: false
+        type: string
+      skip_deploy:
+        description: "Skip deploying site data"
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: write
+
+concurrency:
+  group: pipeline
+  cancel-in-progress: false
+
+jobs:
+  pipeline:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Free disk space
+        run: |
+          echo "Disk before:"
+          df -h
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL || true
+          sudo docker image prune --all --force || true
+          echo "Disk after:"
+          df -h
+
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v10.3.0
+        with:
+          enable-cache: true
+
+      - name: Install dependencies
+        run: uv sync --frozen
+
+      - name: Run daily pipeline
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          HF_USER: ${{ vars.HF_USER }}
+          GH_ENRICH_TOKEN: ${{ secrets.GH_ENRICH_TOKEN }}
+        run: |
+          ARGS=""
+          if [ -n "${{ inputs.date }}" ]; then
+            ARGS="$ARGS --date ${{ inputs.date }}"
+          fi
+          if [ "${{ inputs.skip_deploy }}" = "true" ]; then
+            ARGS="$ARGS --skip-deploy-data"
+          fi
+          uv run breakout daily run $ARGS
+
+      - name: Upload run status and logs artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: daily-run-status-${{ inputs.date || 'today' }}
+          path: |
+            data/run/status.json
+            status/heartbeat.json
+          retention-days: 14

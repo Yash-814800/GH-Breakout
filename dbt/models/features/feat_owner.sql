@@ -21,6 +21,7 @@ h as (
     where lower(split_part(repo_name, '/', 1)) in (select owner from c)
     group by 1, 2
 ),
+{% if not var('use_persistent_state', false) %}
 o as (
     select c.repo_id, c.snapshot_date,
            count(distinct h.repo_id)::integer as owner_prior_repos_seen,
@@ -37,3 +38,44 @@ select c.bucket, c.repo_id, c.snapshot_date,
        case when c.owner is null or c.owner = '' then null else coalesce(o.owner_prior_breakouts, 0) end as owner_prior_breakouts,
        greatest(o.max_seen, o.max_hit_day::timestamp) as _max_input_ts
 from c left join o using (repo_id, snapshot_date)
+{% else %}
+o_state as (
+    select owner, prior_repos_seen, prior_breakouts, as_of
+    from read_parquet('{{ env_var("GHB_DERIVED") }}/state/owner_state.parquet')
+    where owner in (select owner from c)
+),
+c_seen as (
+    select c.repo_id,
+           coalesce(bool_or(h.first_seen < s.as_of), false) as seen_before_as_of
+    from c
+    left join o_state s on s.owner = c.owner
+    left join h on h.repo_id = c.repo_id and h.owner = c.owner
+    group by 1
+),
+win_o as (
+    select c.repo_id, c.snapshot_date,
+           count(distinct h.repo_id)::integer as win_repos_seen,
+           count(distinct h.repo_id) filter (where f.first_hit_outcome_day >= coalesce(s.as_of, date '2000-01-01') and f.first_hit_outcome_day < c.snapshot_date)::integer as win_breakouts,
+           max(h.first_seen) as max_seen,
+           max(f.first_hit_outcome_day) filter (where f.first_hit_outcome_day < c.snapshot_date) as max_hit_day
+    from c
+    join h on h.owner = c.owner and h.repo_id <> c.repo_id
+    left join o_state s on s.owner = c.owner
+    left join {{ ref('int_repo_first_hit') }} f on f.repo_id = h.repo_id
+    where h.first_seen >= coalesce(s.as_of, date '2000-01-01') and h.first_seen < c.snapshot_date
+    group by 1, 2
+)
+select c.bucket, c.repo_id, c.snapshot_date,
+       case when c.owner is null or c.owner = '' then null
+            else coalesce(greatest(0, s.prior_repos_seen - (case when cs.seen_before_as_of then 1 else 0 end)), 0)
+                 + coalesce(w.win_repos_seen, 0)
+       end as owner_prior_repos_seen,
+       case when c.owner is null or c.owner = '' then null
+            else coalesce(s.prior_breakouts, 0) + coalesce(w.win_breakouts, 0)
+       end as owner_prior_breakouts,
+       greatest(w.max_seen, w.max_hit_day::timestamp, coalesce(s.as_of::timestamp - interval 1 day, c.snapshot_date::timestamp - interval 1 day)) as _max_input_ts
+from c
+left join c_seen cs using (repo_id)
+left join o_state s on s.owner = c.owner
+left join win_o w using (repo_id, snapshot_date)
+{% endif %}

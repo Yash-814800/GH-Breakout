@@ -15,13 +15,14 @@ from __future__ import annotations
 
 import json
 import subprocess
-from datetime import timedelta
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 import numpy as np
 import pandas as pd
 
 from breakout import features_dict
+from breakout import paths as P
 from breakout.config import Config
 from breakout.logging import get_logger
 from breakout.ml import baseline as B
@@ -72,7 +73,11 @@ def _frame(meta: pd.DataFrame, idx: np.ndarray, y: np.ndarray, score: np.ndarray
     )
 
 
-def train_final(cfg: Config, monotone: bool | None = None) -> dict[str, Any]:
+def train_final(
+    cfg: Config,
+    monotone: bool | None = None,
+    candidate: bool = False,
+) -> dict[str, Any]:
     ks = cfg.training.k_values
     k = 25 if 25 in ks else ks[0]
     monotone = monotone_choice() if monotone is None else monotone
@@ -187,6 +192,12 @@ def train_final(cfg: Config, monotone: bool | None = None) -> dict[str, Any]:
     )
     holdout_path = out / "holdout_predictions.parquet"
     cand.to_parquet(holdout_path, index=False)
+    if candidate:
+        decision_reg = dict(decision)
+        decision_reg["promote"] = False
+        decision_reg["is_candidate"] = True
+    else:
+        decision_reg = decision
     reg = G.register(
         reg,
         version,
@@ -194,15 +205,96 @@ def train_final(cfg: Config, monotone: bool | None = None) -> dict[str, Any]:
             "holdout": holdout,
             "cv_pooled": (cv_summary or {}).get("main", {}).get("model", {}).get("pooled"),
         },
-        decision,
+        decision_reg,
     )
     G.save_registry(B._jsonable(reg))
-    log.info("version %s, promoted=%s, champion=%s", version, decision["promote"], reg["champion"])
+    log.info(
+        "version %s, promoted=%s, champion=%s, candidate=%s",
+        version,
+        decision_reg["promote"],
+        reg["champion"],
+        candidate,
+    )
     return {
         "version": version,
-        "promoted": decision["promote"],
+        "promoted": decision_reg["promote"],
         "champion": reg["champion"],
+        "candidate": candidate,
         "path": str(out),
+    }
+
+
+def promote_candidate(
+    cfg: Config,
+    version: str | None = None,
+    if_better: bool = True,
+) -> dict[str, Any]:
+    """Evaluate candidate model and promote to champion if it beats current champion and B1."""
+    reg = G.load_registry()
+    if not reg.get("versions"):
+        raise LookupError("No versions in registry")
+
+    target_v = version or reg["versions"][-1]["version"]
+    v_entry = next((v for v in reg["versions"] if v["version"] == target_v), None)
+    if not v_entry:
+        raise LookupError(f"Version {target_v} not found in registry")
+
+    current_champ = reg.get("champion")
+    decision = v_entry.get("decision", {})
+    metrics = v_entry.get("metrics", {})
+
+    can_promote = False
+    if if_better:
+        vs_b1 = decision.get("vs_B1", {})
+        beats_b1 = vs_b1.get("beats", False)
+        vs_champ = decision.get("vs_champion", {})
+        beats_champ = vs_champ.get("beats", True) if current_champ else True
+        can_promote = bool(beats_b1 and beats_champ)
+    else:
+        can_promote = True
+
+    retrain_dir = P.ROOT / "reports" / "retrain"
+    retrain_dir.mkdir(parents=True, exist_ok=True)
+    today_str = datetime.now(UTC).date().isoformat()
+    report_path = retrain_dir / f"{today_str}.md"
+
+    if can_promote:
+        reg["champion"] = target_v
+        v_entry["decision"]["promote"] = True
+        G.save_registry(B._jsonable(reg))
+        log.info("Promoted candidate %s to champion", target_v)
+        res_status = f"Promoted {target_v} to champion (beats B1 and champion)"
+    else:
+        log.info("Candidate %s rejected; retaining champion %s", target_v, current_champ)
+        res_status = (
+            f"Retained champion {current_champ}; candidate {target_v} did not beat threshold"
+        )
+
+    report_content = f"""# Retraining and Promotion Report ({today_str})
+
+**Date:** {today_str}
+**Candidate Version:** `{target_v}`
+**Previous Champion:** `{current_champ}`
+**Status:** {res_status}
+
+## Decision
+```json
+{json.dumps(decision, indent=2)}
+```
+
+## Metrics
+```json
+{json.dumps(metrics.get("holdout", {}), indent=2)}
+```
+"""
+    report_path.write_text(report_content)
+    log.info("Wrote retrain report to %s", report_path)
+
+    return {
+        "candidate": target_v,
+        "promoted": can_promote,
+        "champion": reg["champion"],
+        "report_path": str(report_path),
     }
 
 

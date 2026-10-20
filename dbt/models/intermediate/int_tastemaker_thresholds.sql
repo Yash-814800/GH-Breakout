@@ -7,6 +7,10 @@
   per state at M is a running sum of +1 (state starts, day outcome_day + 1) and -1 (next state starts,
   day next_outcome_day + 1), no per-month scan of the actor table. Score = (h + alpha) / (n + alpha + beta).
 #}
+{% if var('use_persistent_state', false) %}
+select month, score_threshold, n_actors
+from read_parquet('{{ env_var("GHB_DERIVED") }}/state/tastemaker_thresholds.parquet')
+{% else %}
 with ev as (
     select early_stars_known as n, hits_known as h, outcome_day + 1 as d, 1 as delta
     from {{ ref('int_actor_early_cum') }} where early_stars_known >= {{ var('tm_min_known') }}
@@ -50,3 +54,4 @@ select month,
        max(total_actors)::bigint as n_actors
 from ranked
 group by 1
+{% endif %}

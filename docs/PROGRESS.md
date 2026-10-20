@@ -14,7 +14,7 @@ measured (row counts, sizes, runtimes, metrics). Future sessions rely on it.
 | 06 | Candidates, labels, baseline, evaluation harness | ☑ | 2026-10-19 | **Corrected 2026-10-19 (ADR-024)**: repos with unknown metadata were silently dropped by a NULL in the bot-owner filter. 3 marts, 33 dbt tests pass; 486 matured snapshots, **3,098,574** candidate rows (was 2,485,109), 0.509% positive; B1 pooled PR-AUC **0.0286** [0.0246, 0.0345] (was 0.0520), P@25 0.109; 29 folds. See "Phase 6 status".
 | 07 | Point-in-time feature marts | ☑ | 2026-10-19 | 7 feature groups + mart, 71 features (68 live-available), 63 dbt tests pass; 3,098,574 training rows 2016-2025; leak test PASS on 2018-05-14, 2021-03-01, 2024-06-03 and 2026-10-12 (300 repos x 71 columns each); live build for 2026-10-15 has identical columns/types; 17 tests in tests/features. See "Phase 7 status" and ADR-022..024.
 | 08 | LightGBM, calibration, SHAP, model registry | ☑ (HF upload pending approval) | 2026-10-19 | Model beats B1 in all 29 folds: pooled PR-AUC **0.108** [0.101, 0.113] vs 0.029, P@25 **0.241** [0.229, 0.255] vs 0.109; holdout (26 weeks to 2025-04-21) 0.158 / 0.338 vs B1 0.032 / 0.106. Sanity checks pass; calibrated ECE 0.0002. Champion `20261019-b5ff585` (local registry). Daily check: calibration over-predicts on non-Mondays (ADR-025). 310 tests pass. See "Phase 8 status". |
-| 09 | Daily pipeline, weekly retrain, health checks | ☐ | | |
+| 09 | Daily pipeline, weekly retrain, health checks | ☑ | 2026-10-20 | 5 GitHub Actions workflows (`daily.yml`, `weekly.yml`, `monthly.yml`, `health.yml`, `backfill-day.yml`). Persistent state as of 2023-06-01 on HF (`tastemaker_state`, `owner_state`, `tastemaker_thresholds`). Parity test PASS (2024-06-03, Jaccard 1.0000, cell match 99.99%, Spearman 0.9999). SHA-256 tamper-evident ledger, PSI drift monitoring, ops runbook. 328 tests pass. See "Phase 9 status". |
 | 10 | Website (Astro) + deploy | ☐ | | |
 | 11 | Fake-star detector, similar repos, cohort retention | ☐ | | |
 | 12 | Distribution (RSS, badges, digest, Bluesky) | ☐ | | |
@@ -37,6 +37,37 @@ measured (row counts, sizes, runtimes, metrics). Future sessions rely on it.
 | Source test from a GitHub Actions runner | ☑ NO-GO | OpenDigger ~0.01 MB/s from the runner (needs >= 1), manifests 404; gharchive 54 MB/s. `reports/source_validation.md`, run 38194688025 |
 | Stargazers API for per-repo ground truth | ✖ not available | GitHub restricted it to admins/collaborators in July 2026 (ADR-010) |
 | Live-source gate / item 5 | ☐ not started | waits for your review of the source test |
+
+## Phase 9 status (2026-10-20)
+
+- **Code:**
+  - Workflows: `.github/workflows/{daily,weekly,monthly,health,backfill-day}.yml`
+  - Persistent state: `src/breakout/features/state.py` (`build_state`, `update_state`, `sync_state_hf`)
+  - dbt persistent state integration: `feat_tastemaker.sql` & `feat_owner.sql` (`use_persistent_state` branch)
+  - Daily orchestrator: `src/breakout/daily/run.py` (15-step sequential runner)
+  - Ops tooling: `src/breakout/ops/{ledger,drift,parity}.py`
+  - Publish exporter: `src/breakout/publish/site_data.py` (`export_leaderboard`, `export_status`)
+  - ML live append & promotion: `src/breakout/ml/append_live.py`, `src/breakout/ml/final.py` (`evaluate_and_promote`)
+  - CLI commands: `breakout daily run`, `breakout ops {verify-ledger,drift,parity}`, `breakout publish site-data`, `breakout ml append-live`, `breakout build state`.
+- **Training/Serving Parity (§9.6):**
+  - Evaluated on snapshot `2024-06-03` against history warehouse mart.
+  - Candidate Jaccard: **1.0000** (12,434 / 12,434, required >= 0.99) -> **PASS**
+  - Overall cell match rate: **99.99%** (required >= 0.99) -> **PASS**
+  - Prediction rank correlation (Spearman rho): **0.9999** (required >= 0.99) -> **PASS**
+  - 100% of feature columns met parity thresholds (0 discrepancies). Report: `docs/parity_daily_vs_history.md`.
+- **Tamper-Evident Ledger:**
+  - SHA-256 hash chaining implemented with genesis hash `0000000000000000000000000000000000000000000000000000000000000000`.
+  - Integrity verified with `breakout ops verify-ledger`.
+- **Feature Drift Monitoring:**
+  - Population Stability Index (PSI) implemented for numerical and categorical features across 14 key features.
+  - Output report written to `reports/drift_report.json`.
+- **Operational Runbook:**
+  - `docs/runbook.md` updated with daily operations, manual day backfills, rollback procedures, and alert runbooks.
+- **Verification:**
+  - 328 passing tests (`pytest -q`).
+  - Linter and formatter: `ruff check .` (0 errors), `ruff format --check .` (clean).
+  - Type checker: `mypy src` (0 errors across 73 source files).
+  - ADR-026 recorded in `docs/DECISIONS.md`.
 
 ## Phase 8 status (2026-10-19)
 
