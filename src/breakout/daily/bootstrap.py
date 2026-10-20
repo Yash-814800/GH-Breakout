@@ -66,6 +66,7 @@ def pull_window(cfg: Config, target_date: date) -> int:
         types=list(cfg.events.raw_types),
         start=start,
         end=target_date - timedelta(days=1),
+        push_daily=True,
     )
     return len(got)
 
