@@ -1,0 +1,11 @@
+{
+  "last_success_at": "2026-10-20T13:14:06.086581+00:00",
+  "snapshot_date": "2026-10-20",
+  "model_version": "20261019-b5ff585",
+  "n_candidates": 1033,
+  "runtime_seconds": 201.1,
+  "freeze_conflict": false,
+  "missing_hours_older_than_3d": 0,
+  "dbt_freshness_passed": true,
+  "status": "healthy"
+}
