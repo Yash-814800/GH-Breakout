@@ -320,6 +320,15 @@ def daily_run(
         log.info("[Step 5/15] Checking working set and disk usage: %s", disk_before)
         # Pull lake files if in remote mode (not no_upload) and files missing
         # In dry mode / local mode, existing lake files are used
+        window_start = target_date - timedelta(days=cfg.daily.recent_window_days)
+        window_vars = {
+            "events_start": window_start.isoformat(),
+            "events_end": target_date.isoformat(),
+        }
+        # state increments and the feature build both read the staging / intermediate tables
+        for dbt_args in (["seed"], ["run", "--select", "staging", "intermediate"]):
+            if (rc := R.run_dbt(cfg, dbt_args, extra_vars=window_vars)) != 0:
+                raise RuntimeError(f"dbt {dbt_args[0]} failed with code {rc}")
         disk_after = _disk_info(P.DATA_DIR)
         record_step(
             "5_working_set",
@@ -375,25 +384,11 @@ def daily_run(
         log.info("[Step 8/15] Running dbt single-snapshot feature build for %s...", target_date)
         # dbt source freshness check
         try:
-            freshness_rc = subprocess.run(
-                ["uv", "run", "dbt", "source", "freshness"],
-                cwd=P.ROOT / "dbt",
-                capture_output=True,
-                text=True,
-                check=False,
-            ).returncode
-            freshness_passed = freshness_rc == 0
+            freshness_passed = R.run_dbt(cfg, ["source", "freshness"]) == 0
         except Exception:
             freshness_passed = False
 
         window_start = target_date - timedelta(days=cfg.daily.recent_window_days)
-        window_vars = {
-            "events_start": window_start.isoformat(),
-            "events_end": target_date.isoformat(),
-        }
-        rc = R.run_dbt(cfg, ["run", "--select", "staging", "intermediate"], extra_vars=window_vars)
-        if rc != 0:
-            raise RuntimeError(f"dbt staging/intermediate failed with code {rc}")
         dbt_rc = fb_mod.run_features_single(
             cfg,
             target_date,
