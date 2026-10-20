@@ -37,30 +37,11 @@ jobs:
       - name: Install dependencies
         run: uv sync --frozen
 
-      - name: Actor-age map top-up
-        env:
-          GH_ENRICH_TOKEN: ${{ secrets.GH_ENRICH_TOKEN }}
-        run: uv run breakout enrich actor-age || true
-
-      - name: Refresh repository metadata for recent leaderboard repos
-        env:
-          GH_ENRICH_TOKEN: ${{ secrets.GH_ENRICH_TOKEN }}
-        run: uv run breakout enrich repos || true
-
-      - name: Upload enriched datasets
+      # The actor-age top-up and the metadata refresh sample the local lake / need live candidate ids,
+      # so they are not run on a clean runner (and must never upload partial tables). They stay manual
+      # until live enrichment is wired into the daily run (docs/runbook.md).
+      - name: Verify Hugging Face lake against its catalog
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
           HF_USER: ${{ vars.HF_USER }}
-        run: uv run breakout enrich upload || true
-
-      - name: Verify Hugging Face lake integrity
-        env:
-          HF_TOKEN: ${{ secrets.HF_TOKEN }}
-          HF_USER: ${{ vars.HF_USER }}
-        run: uv run breakout lake verify
-
-      - name: Report storage and catalog summary
-        env:
-          HF_TOKEN: ${{ secrets.HF_TOKEN }}
-          HF_USER: ${{ vars.HF_USER }}
-        run: uv run breakout lake catalog || true
+        run: uv run breakout lake verify-remote

@@ -820,6 +820,28 @@ def lake_verify_cmd(
         raise typer.Exit(1)
 
 
+@lake_app.command("verify-remote")
+def lake_verify_remote_cmd(ctx: typer.Context) -> None:
+    """Check the Hub against its own catalog (no local lake needed); exit 1 on violations."""
+    from breakout.lake import hf, sync
+    from breakout.lake.verify import verify_remote
+
+    cfg = get_config(ctx.obj["config"])
+    api = hf.get_api()
+    remote, _ = sync.fetch_remote_catalog(api, cfg)
+    rows = remote.to_pylist()
+    typer.echo(
+        f"{len(rows)} files, {sum(r['bytes'] for r in rows) / 1e9:.2f} GB, "
+        f"{sum(r['rows'] for r in rows):,} rows"
+    )
+    problems = verify_remote(cfg, api, remote.slice(0, 0))
+    typer.echo(f"remote: {len(problems)} problem(s)")
+    for line in problems[:50]:
+        typer.echo(f"  - {line}")
+    if problems:
+        raise typer.Exit(1)
+
+
 @lake_app.command("catalog")
 def lake_catalog_cmd(
     ctx: typer.Context,

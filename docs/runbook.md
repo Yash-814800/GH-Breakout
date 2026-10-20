@@ -100,7 +100,7 @@ project and a half-written model aborts the job). For long jobs run from a froze
 Orchestrator and scheduled pipelines running on GitHub Actions (`.github/workflows/`):
 - `daily.yml`: daily ingest, feature build, scoring, freeze, ledger append, outcomes, site data, heartbeat.
 - `weekly.yml`: retrain, append matured live training rows, champion promotion, PSI feature drift report.
-- `monthly.yml`: compaction, actor-age top-up, metadata refresh, lake verification.
+- `monthly.yml`: remote lake verification against the catalog plus a storage summary. The actor-age top-up and the repo metadata refresh are **manual** (they sample the local lake or need live candidate ids; never upload partial enrich tables from a clean runner).
 - `health.yml`: keepalive, heartbeat monitoring, automated issue creation.
 - `backfill-day.yml`: manual repair for day ranges.
 
