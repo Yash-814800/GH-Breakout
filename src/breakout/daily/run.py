@@ -21,7 +21,6 @@ Executes the 15-step daily pipeline:
 from __future__ import annotations
 
 import json
-import os
 import shutil
 import subprocess
 import time
@@ -32,9 +31,11 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
+from breakout import dbt_runner as R
 from breakout import features_dict
 from breakout import paths as P
 from breakout.config import Config, get_config
+from breakout.daily import bootstrap as bootstrap_mod
 from breakout.duck import connect
 from breakout.features import build as fb_mod
 from breakout.features import state as state_mod
@@ -72,6 +73,19 @@ def _disk_info(path: Path) -> dict[str, Any]:
         }
     except Exception as exc:
         return {"error": str(exc)}
+
+
+def _manifest_fragments(cfg: Config, days: list[date]) -> list[hf_mod.UploadItem]:
+    """Per-month manifest fragments for the months of ``days`` (same names as the backfill's)."""
+    from breakout.lake.backfill_month import _manifest_fragment
+
+    months = sorted({(d.year, d.month) for d in days})
+    return [
+        hf_mod.UploadItem(
+            _manifest_fragment(cfg, y, m), f"manifests/hourly/hourly-{y:04d}{m:02d}.parquet"
+        )
+        for y, m in months
+    ]
 
 
 def _save_status(status_data: dict[str, Any]) -> None:
@@ -113,6 +127,22 @@ def daily_run(
             **(details or {}),
         }
         _save_status(status)
+
+    # -------------------------------------------------------------------------
+    # Step 0: Bootstrap (clean runner: manifest, window events, enrichment, state, champion)
+    # -------------------------------------------------------------------------
+    t0 = time.perf_counter()
+    if no_upload:
+        record_step("0_bootstrap", "skipped", 0.0, {"reason": "no_upload_flag"})
+    else:
+        try:
+            log.info("[Step 0/15] Bootstrapping working set from Hugging Face...")
+            details = bootstrap_mod.bootstrap(cfg, target_date)
+            record_step("0_bootstrap", "ok", time.perf_counter() - t0, details)
+        except Exception as exc:
+            log.exception("Step 0 (Bootstrap) failed")
+            record_step("0_bootstrap", "error", time.perf_counter() - t0, {"error": str(exc)})
+            has_error = True
 
     # -------------------------------------------------------------------------
     # Step 1: Plan
@@ -197,7 +227,16 @@ def daily_run(
     t0 = time.perf_counter()
     try:
         log.info("[Step 3/15] Publishing lake changes...")
+        fragments = _manifest_fragments(cfg, planned_days) if not no_upload else []
         if no_upload or not files_to_publish:
+            if fragments and not no_upload:
+                hf_mod.put_small_files(
+                    hf_mod.get_api(),
+                    cfg,
+                    "events",
+                    fragments,
+                    f"chore(lake): manifest for {target_date}",
+                )
             reason = "no_upload_flag" if no_upload else "no_files_written"
             log.info("Skipping lake upload (%s)", reason)
             record_step("3_publish_lake", "skipped", time.perf_counter() - t0, {"reason": reason})
@@ -210,6 +249,7 @@ def daily_run(
                 root,
                 files_to_publish,
                 f"chore(lake): daily ingest for {target_date}",
+                extra=fragments,
             )
             log.info("Lake pushed in %d commit(s)", len(commits))
             record_step(
@@ -316,15 +356,12 @@ def daily_run(
     t0 = time.perf_counter()
     enrich_details: dict[str, Any] = {}
     try:
-        log.info("[Step 7/15] Running enrichment updates...")
-        # Check GitHub token
-        gh_token = os.environ.get("GH_ENRICH_TOKEN")
-        if gh_token:
-            enrich_details["github_meta"] = "token_available"
-        else:
-            enrich_details["github_meta"] = "skipped_no_token"
-
-        record_step("7_enrich", "ok", time.perf_counter() - t0, enrich_details)
+        log.warning(
+            "[Step 7/15] Live enrichment (repo metadata, trending, HN) is not wired yet: "
+            "metadata features stay Unknown/NULL for new repos"
+        )
+        enrich_details["reason"] = "not_implemented"
+        record_step("7_enrich", "skipped", time.perf_counter() - t0, enrich_details)
     except Exception as exc:
         log.exception("Step 7 (Enrich) failed")
         record_step("7_enrich", "warning", time.perf_counter() - t0, {"warning": str(exc)})
@@ -350,6 +387,13 @@ def daily_run(
             freshness_passed = False
 
         window_start = target_date - timedelta(days=cfg.daily.recent_window_days)
+        window_vars = {
+            "events_start": window_start.isoformat(),
+            "events_end": target_date.isoformat(),
+        }
+        rc = R.run_dbt(cfg, ["run", "--select", "staging", "intermediate"], extra_vars=window_vars)
+        if rc != 0:
+            raise RuntimeError(f"dbt staging/intermediate failed with code {rc}")
         dbt_rc = fb_mod.run_features_single(
             cfg,
             target_date,
