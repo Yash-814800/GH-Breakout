@@ -127,6 +127,8 @@ def test_cosine_similarity() -> None:
 
 
 def test_retention_reference_loading() -> None:
+    if not cohorts.RETENTION_REF_PARQUET.exists():
+        pytest.skip("retention reference is a derived file and is not in git")
     ref = cohorts.load_retention_reference()
     assert not ref.empty
     assert "age_bucket" in ref.columns

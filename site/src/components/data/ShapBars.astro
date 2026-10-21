@@ -1,0 +1,114 @@
+---
+import { sentence } from '../../lib/format';
+
+interface Row {
+  feature: string;
+  contribution: number;
+  sentence?: string | null;
+}
+interface Props {
+  rows: Row[];
+  max?: number;
+}
+const { rows, max = 7 } = Astro.props;
+const shown = [...rows].sort((a, b) => Math.abs(b.contribution) - Math.abs(a.contribution)).slice(0, max);
+const peak = Math.max(0.0001, ...shown.map((r) => Math.abs(r.contribution)));
+const label = (r: Row) => sentence(r.sentence)?.replace(/\.$/, '') ?? r.feature.replace(/_/g, ' ');
+---
+
+{
+  shown.length > 0 && (
+    <figure class="shap">
+      <figcaption class="axis"><span>Pushes the chance down</span><span>Pushes the chance up</span></figcaption>
+      <ul>
+        {
+          shown.map((r) => {
+            const w = (Math.abs(r.contribution) / peak) * 50;
+            const up = r.contribution >= 0;
+            return (
+              <li>
+                <span class="lbl">{label(r)}</span>
+                <span class="bar" aria-hidden="true">
+                  <span class="center"></span>
+                  <span class:list={['fill', up ? 'up' : 'down']} style={`--w:${w}%`}></span>
+                </span>
+                <span class="val num">{`${up ? '+' : '\u2212'}${Math.abs(r.contribution).toFixed(2)}`}</span>
+              </li>
+            );
+          })
+        }
+      </ul>
+    </figure>
+  )
+}
+
+<style>
+  .shap {
+    margin: 0;
+  }
+  .axis {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    color: var(--ink-3);
+    margin-bottom: 8px;
+  }
+  ul {
+    display: flex;
+    flex-direction: column;
+  }
+  li {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 6px 16px;
+    padding: 10px 0;
+    border-top: 1px solid var(--line);
+    align-items: center;
+  }
+  .lbl {
+    font-size: 14px;
+    line-height: 1.4;
+    color: var(--ink);
+  }
+  .bar {
+    position: relative;
+    height: 12px;
+  }
+  .center {
+    position: absolute;
+    left: 50%;
+    top: -2px;
+    bottom: -2px;
+    width: 1px;
+    background: var(--line-strong);
+  }
+  .fill {
+    position: absolute;
+    top: 2px;
+    bottom: 2px;
+    width: var(--w);
+    border-radius: var(--r-xs);
+  }
+  .up {
+    left: 50%;
+    background: var(--accent);
+  }
+  .down {
+    right: 50%;
+    background: var(--ink-3);
+  }
+  .val {
+    display: none;
+    font-size: 12px;
+    color: var(--ink-3);
+  }
+  @media (min-width: 768px) {
+    li {
+      grid-template-columns: minmax(0, 1fr) 40% 48px;
+    }
+    .val {
+      display: block;
+      text-align: right;
+    }
+  }
+</style>

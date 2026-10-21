@@ -5,6 +5,7 @@
 
 # Local data lake & raw data (CLAUDE.md §7)
 data/
+!site/src/components/data/
 # on the dev machine data is a symlink to the external SSD; `data/` only matches directories
 /data
 /data.pre-ssd-move/

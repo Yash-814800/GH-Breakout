@@ -19,7 +19,7 @@ function* walk(dir) {
   for (const name of readdirSync(dir)) {
     const p = join(dir, name);
     if (statSync(p).isDirectory()) yield* walk(p);
-    else if (/\.(astro|ts|css)$/.test(name) && !SKIP.has(p)) yield p;
+    else if (/\.(astro|ts|css)$/.test(name) && !/\.test\.ts$/.test(name) && !SKIP.has(p)) yield p;
   }
 }
 

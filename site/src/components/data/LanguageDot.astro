@@ -1,0 +1,27 @@
+---
+import { languageColor } from '../../lib/languages';
+
+interface Props {
+  language: string | null;
+}
+const { language } = Astro.props;
+const color = languageColor(language);
+---
+
+<span class="lang"><span class="lang-dot" style={color ? `--dot:${color}` : undefined} aria-hidden="true"></span>{language}</span>
+
+<style>
+  .lang {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .lang-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: var(--r-pill);
+    background: var(--dot, var(--ink-3));
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ink) 15%, transparent);
+    flex: none;
+  }
+</style>

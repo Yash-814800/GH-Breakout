@@ -1,0 +1,52 @@
+---
+interface Props {
+  owner: string;
+  name: string;
+  /** Wrap in a link that stretches over its row (RepoRow). */
+  href?: string;
+  as?: 'span' | 'h2' | 'h3' | 'h1';
+}
+const { owner, name, href, as = 'span' } = Astro.props;
+const Tag = as;
+---
+
+<Tag class="rt" data-qa="repo-title">
+  {
+    href ? (
+      <a href={href} class="rt-link">{owner && <span class="rt-owner">{owner}/<wbr /></span>}<span class="rt-name">{name}</span></a>
+    ) : (
+      <>
+        {owner && <span class="rt-owner">{owner}/<wbr /></span>}
+        <span class="rt-name">{name}</span>
+      </>
+    )
+  }
+</Tag>
+
+<style>
+  .rt {
+    font-size: 16px;
+    line-height: 1.35;
+    overflow-wrap: anywhere;
+    min-width: 0;
+  }
+  .rt-owner {
+    font-weight: 400;
+    color: var(--ink-2);
+  }
+  .rt-name {
+    font-weight: 600;
+    color: var(--ink);
+  }
+  .rt-link:hover .rt-name {
+    color: var(--accent);
+  }
+  .rt-link::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+  }
+  .rt-link:focus-visible {
+    outline-offset: -2px;
+  }
+</style>

@@ -1,0 +1,57 @@
+---
+import { plural } from '../../lib/format';
+
+interface Props {
+  /** One entry per pick: true = hit, false = miss, null = not matured yet. */
+  results: (boolean | null)[];
+}
+const { results } = Astro.props;
+const hits = results.filter((r) => r === true).length;
+const matured = results.filter((r) => r !== null).length;
+const summary = matured < results.length ? `${hits} of ${matured} matured picks broke out` : `${hits} of ${results.length} broke out`;
+---
+
+<span class="hits">
+  <span class="dots" aria-hidden="true">
+    {results.map((r) => <span class:list={['d', r === true ? 'hit' : r === false ? 'miss' : 'wait']}></span>)}
+  </span>
+  <span class="sr-only">{summary}</span>
+</span>
+
+<style>
+  .hits {
+    display: inline-flex;
+  }
+  .dots {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+  .d {
+    box-sizing: border-box;
+    width: 10px;
+    height: 10px;
+    border-radius: var(--r-pill);
+  }
+  @media (max-width: 639px) {
+    .dots {
+      gap: 3px;
+    }
+    .d {
+      width: 9px;
+      height: 9px;
+    }
+  }
+  .hit {
+    background: var(--rise);
+  }
+  .miss {
+    border: 1.5px solid var(--ink-3);
+  }
+  .wait {
+    height: 2px;
+    margin-top: 4px;
+    border-radius: 0;
+    background: var(--line-strong);
+  }
+</style>

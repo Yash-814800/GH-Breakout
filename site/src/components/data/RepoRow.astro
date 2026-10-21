@@ -1,0 +1,308 @@
+---
+import { age, count, plural, pct } from '../../lib/format';
+import { repoUrl } from '../../lib/url';
+import type { Repo } from '../../lib/types';
+import Avatar from '../ui/Avatar.astro';
+import Icon from '../ui/Icon.astro';
+import Pill from '../ui/Pill.astro';
+import Tooltip from '../ui/Tooltip.astro';
+import LanguageDot from './LanguageDot.astro';
+import MomentumStrip from './MomentumStrip.astro';
+import RepoTitle from './RepoTitle.astro';
+import SignalColumn from './SignalColumn.astro';
+
+interface Props {
+  repo: Repo;
+  /** 'list' = leaderboard; 'backtest' replaces the why line and the New pill by an outcome pill. */
+  mode?: 'list' | 'backtest' | 'compact';
+  eager?: boolean;
+  endDate?: string;
+  outcome?: { hit: boolean; gain: number | null };
+  /** Override the row link (the backtest clones placeholder rows and sets the real link in script). */
+  href?: string;
+}
+const { repo, mode = 'list', eager = false, endDate, outcome, href } = Astro.props;
+const compact = mode === 'compact';
+const showWhy = mode === 'list' && !!repo.why;
+const isNew = mode === 'list' && repo.rankChange === 'new' && repo.daysOnBoard <= 1;
+const starsFull = repo.starsTotal == null ? null : plural(repo.starsTotal, 'star') + (repo.starsSource === 'gh_archive' ? ' observed' : '');
+const UNUSUAL =
+  'An unusual share of recent stars came from new or inactive accounts. This may or may not mean the stars are inauthentic. See details.';
+---
+
+<li
+  class:list={['row', compact && 'row-compact']}
+  data-repo={repo.id}
+  data-rank={repo.rank}
+  data-lang={repo.language ?? ''}
+  data-new={isNew ? '1' : '0'}
+  data-unusual={repo.suspicion.flagged ? '1' : '0'}
+  data-prob={repo.prob}
+  data-gain={repo.weekGain ?? ''}
+  data-stars={repo.starsTotal ?? ''}
+  data-age={repo.ageDays ?? ''}
+>
+  <span class:list={['rank', 'num', repo.rank <= 3 && 'rank-top']}>{repo.rank}</span>
+  <span class="av-cell"><Avatar ownerId={repo.ownerId} login={repo.owner || repo.name} type={repo.ownerType} size={32} eager={eager} /></span>
+
+  <div class="head">
+    <RepoTitle owner={repo.owner} name={repo.name} href={href ?? repoUrl(repo.id)} />
+    <span class="pills">
+      {isNew && <Pill variant="accent">New</Pill>}
+      {mode === 'list' && repo.rankChange === 'up' && <Pill variant="rank-up"><span class="sr-only">Moved up</span></Pill>}
+      {mode === 'list' && repo.rankChange === 'down' && <Pill variant="rank-down"><span class="sr-only">Moved down</span></Pill>}
+      {outcome && (outcome.hit ? <Pill variant="rise" icon="check">Hit</Pill> : <Pill variant="neutral">Miss</Pill>)}
+      {
+        repo.suspicion.flagged && (
+          <span class="pill-over">
+            <Tooltip text={UNUSUAL}><Pill variant="caution">Unusual star pattern</Pill></Tooltip>
+          </span>
+        )
+      }
+    </span>
+  </div>
+
+  <div class="text">
+    <p class:list={['desc', !repo.description && 'desc-none']} data-qa="clamp" dir="auto">{repo.description ?? 'No description'}</p>
+    {showWhy && <p class="why" data-qa="clamp" dir="auto">{repo.why}</p>}
+    {outcome && outcome.gain != null && <p class="why">Gained {count(outcome.gain)} stars in 30 days.</p>}
+  </div>
+
+  {!compact && <div class="strip-m"><MomentumStrip values={repo.spark} width="100%" height={24} endDate={endDate} />{repo.weekGain != null && <span class="gain-m num">{repo.weekGain >= 0 ? '+' : '−'}{count(Math.abs(repo.weekGain))}</span>}</div>}
+
+  <div class="meta">
+    {repo.language && <LanguageDot language={repo.language} />}
+    {repo.ageDays != null && <span class="mi"><Icon name="clock" size={14} />{age(repo.ageDays)}</span>}
+    {
+      repo.starsTotal != null && (
+        <span class="mi">
+          <Icon name="star" size={14} class="star-ic" fill />
+          <span class="full">{starsFull}</span>
+          <span class="short">{count(repo.starsTotal, { compact: true })}</span>
+        </span>
+      )
+    }
+    {mode === 'list' && repo.daysOnBoard > 1 && <span class="mi"><Icon name="calendar" size={14} />On the list {plural(repo.daysOnBoard, 'day')}</span>}
+  </div>
+
+  <div class="sig-cell">
+    <SignalColumn prob={repo.prob} spark={repo.spark} weekGain={repo.weekGain} gainDays={repo.gainDays} endDate={endDate} stripInline={!compact} />
+  </div>
+  <span class="sr-only">Breakout chance {pct(repo.prob)}</span>
+</li>
+
+<style is:global>
+  .row {
+    position: relative;
+    display: grid;
+    grid-template-columns: 24px 28px minmax(0, 1fr) auto;
+    grid-template-areas:
+      'rank av head sig'
+      'text text text text'
+      'strip strip strip strip'
+      'meta meta meta meta';
+    column-gap: 10px;
+    padding: 16px;
+    transition: background-color var(--dur-1) var(--ease);
+  }
+  .row[hidden] {
+    display: none;
+  }
+  .row:hover {
+    background: var(--row-hover);
+  }
+  .row .rank {
+    grid-area: rank;
+    text-align: right;
+    font-size: 15px;
+    font-weight: 600;
+    line-height: 1.4;
+    color: var(--ink-3);
+    padding-top: 1px;
+  }
+  .row .rank-top {
+    color: var(--ink);
+  }
+  .row .av-cell {
+    grid-area: av;
+    margin-top: 0;
+  }
+  .row .av-cell .av {
+    --s: 28px !important;
+  }
+  .row .head {
+    grid-area: head;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px 8px;
+    min-width: 0;
+    align-self: start;
+  }
+  .row .pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    flex-basis: 100%;
+  }
+  .row .pills:empty {
+    display: none;
+  }
+  .row .pill-over {
+    position: relative;
+    z-index: 1;
+  }
+  .row .text {
+    grid-area: text;
+    margin-top: 10px;
+    min-width: 0;
+  }
+  .row .desc {
+    font-size: 14px;
+    line-height: 1.45;
+    color: var(--ink-2);
+    max-width: 72ch;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    overflow-wrap: anywhere;
+  }
+  .row .desc-none {
+    color: var(--ink-3);
+  }
+  .row .why {
+    margin-top: 8px;
+    padding-left: 10px;
+    border-left: 2px solid var(--accent-soft);
+    font-size: 14px;
+    line-height: 1.45;
+    color: var(--ink);
+    max-width: 72ch;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+    line-clamp: 3;
+  }
+  :root[data-theme='dark'] .row .why {
+    border-left-color: color-mix(in srgb, var(--accent) 40%, transparent);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme='light']) .row .why {
+      border-left-color: color-mix(in srgb, var(--accent) 40%, transparent);
+    }
+  }
+  .row .strip-m {
+    grid-area: strip;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 12px;
+  }
+  .row .strip-m .mstrip {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+  .row .gain-m {
+    flex: none;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--ink-2);
+  }
+  .row .meta {
+    grid-area: meta;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 16px;
+    margin-top: 10px;
+    font-size: 13px;
+    color: var(--ink-3);
+    min-width: 0;
+  }
+  .row .mi {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .row .star-ic {
+    color: var(--star);
+  }
+  .row .short {
+    display: inline;
+  }
+  .row .full {
+    display: none;
+  }
+  .row .sig-cell {
+    grid-area: sig;
+    align-self: start;
+  }
+  /* on mobile the strip lives in .strip-m, so the signal column shows only chance and odds */
+  .row .sig-cell .sig-strip,
+  .row .sig-cell .gain {
+    display: none;
+  }
+  .row-compact .strip-m {
+    display: none;
+  }
+  .row-compact {
+    grid-template-areas:
+      'rank av head sig'
+      'text text text text'
+      'meta meta meta meta';
+  }
+  @media (min-width: 768px) {
+    .row {
+      grid-template-columns: 32px 32px minmax(0, 1fr) 160px;
+      grid-template-areas:
+        'rank av head sig'
+        'rank av text sig'
+        'rank av meta sig';
+      column-gap: 12px;
+      padding: 20px;
+    }
+    .row .rank {
+      padding-top: 2px;
+    }
+    .row .av-cell {
+      margin-top: 2px;
+    }
+    .row .av-cell .av {
+      --s: 32px !important;
+    }
+    .row .head {
+      flex-wrap: wrap;
+    }
+    .row .pills {
+      flex-basis: auto;
+    }
+    .row .text {
+      margin-top: 4px;
+    }
+    .row .why {
+      -webkit-line-clamp: 2;
+      line-clamp: 2;
+    }
+    .row .strip-m {
+      display: none;
+    }
+    .row .sig-cell {
+      margin-left: 4px;
+    }
+    .row .sig-cell .sig-strip,
+    .row .sig-cell .gain {
+      display: block;
+    }
+    .row .full {
+      display: inline;
+    }
+    .row .short {
+      display: none;
+    }
+    .row-compact {
+      grid-template-columns: 32px 32px minmax(0, 1fr) 96px;
+    }
+  }
+</style>

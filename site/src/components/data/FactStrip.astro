@@ -1,0 +1,101 @@
+---
+interface Cell {
+  label: string;
+  value: string;
+  /** Use the large condensed numeral (the breakout chance). */
+  xl?: boolean;
+  hint?: string;
+}
+interface Props {
+  cells: Cell[];
+}
+const { cells } = Astro.props;
+---
+
+<dl class="facts">
+  {
+    cells.map((c) => (
+      <div class="cell">
+        <dt>{c.label}</dt>
+        <dd>
+          <span class:list={[c.xl ? 't-num-xl' : 'val', 'num', 'v']}>{c.value}</span>
+          {c.hint && <span class="hint">{c.hint}</span>}
+        </dd>
+      </div>
+    ))
+  }
+</dl>
+
+<style>
+  .facts {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 24px;
+    border-block: 1px solid var(--line);
+  }
+  .cell {
+    padding: 16px 0;
+    border-top: 1px solid var(--line);
+    min-width: 0;
+  }
+  .cell:first-child,
+  .cell:nth-child(2) {
+    border-top: 0;
+  }
+  .cell:first-child {
+    grid-column: 1 / -1;
+    border-bottom: 0;
+  }
+  .cell:nth-child(2),
+  .cell:nth-child(3) {
+    border-top: 1px solid var(--line);
+  }
+  dt {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--ink-3);
+    margin-bottom: 6px;
+  }
+  .v {
+    display: block;
+  }
+  .val {
+    font-size: 24px;
+    line-height: 1.1;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+  }
+  .hint {
+    display: block;
+    margin-top: 6px;
+    font-size: 13px;
+    color: var(--ink-3);
+    line-height: 1.4;
+  }
+  @media (min-width: 768px) {
+    .facts {
+      display: flex;
+      column-gap: 0;
+    }
+    .cell,
+    .cell:first-child,
+    .cell:nth-child(2),
+    .cell:nth-child(3) {
+      flex: 1 1 0;
+      padding: 20px 24px;
+      border-top: 0;
+      border-left: 1px solid var(--line);
+    }
+    .cell:first-child {
+      flex: 1.4 1 0;
+      border-left: 0;
+      padding-left: 0;
+    }
+    .cell:last-child {
+      padding-right: 0;
+    }
+    .val {
+      padding-top: 6px;
+    }
+  }
+</style>

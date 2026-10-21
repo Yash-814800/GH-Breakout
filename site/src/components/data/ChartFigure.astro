@@ -1,0 +1,91 @@
+---
+interface Legend {
+  label: string;
+  kind: 'line' | 'dash' | 'square';
+  /** Token name without --, e.g. "accent". */
+  color: 'accent' | 'ink-3' | 'caution' | 'rise';
+}
+interface Props {
+  title: string;
+  caption?: string;
+  legend?: Legend[];
+  /** Plain-text alternative for screen readers. */
+  summary: string;
+  id: string;
+  level?: 'h2' | 'h3';
+  height?: number;
+  class?: string;
+}
+const { title, caption, legend, summary, id, level = 'h3', height = 240, class: cls } = Astro.props;
+const H = level;
+---
+
+<figure class:list={['cf', cls]} aria-labelledby={`${id}-t`}>
+  <H id={`${id}-t`} class="t-h3 cf-title">{title}</H>
+  {
+    legend && (
+      <ul class="legend">
+        {legend.map((l) => <li><span class:list={['sw', `sw-${l.kind}`]} style={`--c:var(--${l.color})`}></span>{l.label}</li>)}
+      </ul>
+    )
+  }
+  <div class="cf-chart" id={id} style={`--h:${height}px`} data-chart></div>
+  <p class="sr-only">{summary}</p>
+  {caption && <figcaption class="cap">{caption}</figcaption>}
+  <slot />
+</figure>
+
+<style>
+  .cf {
+    margin: 0;
+    min-width: 0;
+  }
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 16px;
+    margin-top: 6px;
+    font-size: 13px;
+    color: var(--ink-2);
+  }
+  .legend li {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .sw {
+    display: inline-block;
+    flex: none;
+  }
+  .sw-line {
+    width: 10px;
+    height: 2px;
+    background: var(--c);
+  }
+  .sw-dash {
+    width: 10px;
+    height: 0;
+    border-top: 2px dashed var(--c);
+  }
+  .sw-square {
+    width: 10px;
+    height: 10px;
+    background: var(--c);
+    border-radius: 2px;
+  }
+  .cf-chart {
+    margin-top: 12px;
+    min-height: var(--h);
+    width: 100%;
+    overflow: hidden;
+  }
+  .cf-chart :global(svg) {
+    display: block;
+    max-width: 100%;
+  }
+  .cap {
+    margin-top: 8px;
+    font-size: 13px;
+    color: var(--ink-3);
+  }
+</style>
