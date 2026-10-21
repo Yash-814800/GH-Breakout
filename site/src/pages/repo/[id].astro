@@ -172,9 +172,9 @@ const metaDesc = `${title}: breakout chance ${prob != null ? pct(prob) : 'not av
     susp?.signals && susp.score != null && (
       <Section id="who" title="Who's starring">
         <dl class="stat3">
-          <div><dt>New accounts</dt><dd class="num">{pct(susp.signals.s_new_accounts ?? 0)}</dd><p>of recent stars came from accounts under 30 days old (typical {pct(susp.medians?.s_new_accounts ?? 0.15)}).</p></div>
-          <div><dt>Inactive accounts</dt><dd class="num">{pct(susp.signals.s_inactive ?? 0)}</dd><p>of stargazers had no activity in the 90 days before starring (typical {pct(susp.medians?.s_inactive ?? 0.2)}).</p></div>
-          <div><dt>Stars with follow-up</dt><dd class="num">{pct(1 - (susp.signals.s_no_engagement ?? 0))}</dd><p>of what we expect from engaged stargazers (typical {pct(1 - (susp.medians?.s_no_engagement ?? 0.5))}).</p></div>
+          <div><dt>New accounts</dt><dd><span class="num big">{pct(susp.signals.s_new_accounts ?? 0)}</span><span class="desc3">of recent stars came from accounts under 30 days old (typical {pct(susp.medians?.s_new_accounts ?? 0.15)}).</span></dd></div>
+          <div><dt>Inactive accounts</dt><dd><span class="num big">{pct(susp.signals.s_inactive ?? 0)}</span><span class="desc3">of stargazers had no activity in the 90 days before starring (typical {pct(susp.medians?.s_inactive ?? 0.2)}).</span></dd></div>
+          <div><dt>Follow-up activity</dt><dd><span class="num big">{pct(1 - (susp.signals.s_no_engagement ?? 0))}</span><span class="desc3">of the forks, issues and comments expected for this many stars (typical {pct(1 - (susp.medians?.s_no_engagement ?? 0.5))}).</span></dd></div>
         </dl>
       </Section>
     )
@@ -263,7 +263,7 @@ const metaDesc = `${title}: breakout chance ${prob != null ? pct(prob) : 'not av
 
 <script>
   import * as Plot from '@observablehq/plot';
-  import { baseOptions, observeWidth, resolveTokens, type Tokens } from '../../lib/plot-theme';
+  import { baseOptions, observeWidth, resolveTokens, type Tokens, plot } from '../../lib/plot-theme';
   import { count, date, pct, pctAxis, shortDate } from '../../lib/format';
 
   type Pt = { date: string; stars: number };
@@ -298,7 +298,7 @@ const metaDesc = `${title}: breakout chance ${prob != null ? pct(prob) : 'not av
     }
     marks.push(Plot.ruleY([0], { stroke: t.line }));
     if (flags.length) marks.push(Plot.dot(flags, { x: 'x', y: 0, r: 4, fill: t.accent, stroke: t.bg, strokeWidth: 1.5 }));
-    host.replaceChildren(Plot.plot({ ...o, x: { ...o.x, type: 'utc', tickFormat: (d: Date) => shortDate(d), ticks: Math.min(6, Math.max(2, Math.floor(w / 110))) }, y: { ...o.y, nice: true }, marks }));
+    host.replaceChildren(plot({ ...o, x: { ...o.x, type: 'utc', tickFormat: (d: Date) => shortDate(d), ticks: Math.min(6, Math.max(2, Math.floor(w / 110))) }, y: { ...o.y, nice: true }, marks }));
   }
 
   const mHost = document.getElementById('chart-momentum');
@@ -322,7 +322,7 @@ const metaDesc = `${title}: breakout chance ${prob != null ? pct(prob) : 'not av
       const o = baseOptions(t, w, 200);
       const rows = data.preds.map((p) => ({ x: day(p.date), y: p.prob }));
       hHost.replaceChildren(
-        Plot.plot({
+        plot({
           ...o,
           x: { ...o.x, type: 'utc', tickFormat: (d: Date) => shortDate(d), ...(rows.length <= 6 ? { ticks: rows.map((r) => r.x) } : { ticks: Math.min(6, Math.floor(w / 110)) }) },
           y: { ...o.y, tickFormat: (v: number) => pctAxis(v), nice: true, zero: true },
@@ -425,6 +425,18 @@ const metaDesc = `${title}: breakout chance ${prob != null ? pct(prob) : 'not av
     margin-bottom: 12px;
     max-width: 68ch;
   }
+  /* the one animation that runs without a user action: the momentum chart draws in once */
+  :global(#chart-momentum) {
+    animation: draw-in var(--dur-3) var(--ease) both;
+  }
+  @keyframes draw-in {
+    from {
+      clip-path: inset(0 100% 0 0);
+    }
+    to {
+      clip-path: inset(0 0 0 0);
+    }
+  }
   :global(.hist) {
     margin-top: 16px;
   }
@@ -438,14 +450,16 @@ const metaDesc = `${title}: breakout chance ${prob != null ? pct(prob) : 'not av
     font-weight: 500;
     color: var(--ink-3);
   }
-  .stat3 dd {
+  .stat3 .big {
+    display: block;
     font-size: 28px;
     line-height: 1.2;
     font-weight: 600;
     letter-spacing: -0.02em;
     margin-top: 4px;
   }
-  .stat3 p {
+  .stat3 .desc3 {
+    display: block;
     margin-top: 4px;
     font-size: 13px;
     color: var(--ink-2);

@@ -85,8 +85,12 @@ const blank: Repo = {
     (li.querySelector('.rt-link') as HTMLAnchorElement).href = repoUrl(r.repo_id);
     li.querySelector('.fallback, .av-fallback')!.textContent = (named ? owner! : 'R').slice(0, 2).toUpperCase();
     li.querySelector('.av img')?.remove();
-    li.querySelector('.prob')!.textContent = r.prob < 0.01 ? '<1%' : r.prob > 0.99 ? '>99%' : `${Math.round(r.prob * 100)}%`;
+    const chance = r.prob < 0.01 ? '<1%' : r.prob > 0.99 ? '>99%' : `${Math.round(r.prob * 100)}%`;
+    li.querySelector('.prob')!.textContent = chance;
     li.querySelector('.odds')!.textContent = odds(r.prob);
+    const trigger = li.querySelector('.tip-trigger');
+    trigger?.setAttribute('aria-label', `Breakout chance ${chance}. ${odds(r.prob)}.`);
+    trigger?.removeAttribute('aria-describedby');
     li.querySelector('.desc')?.remove();
     li.querySelector('.meta')?.remove();
     li.querySelector('.tip-pop')?.remove();

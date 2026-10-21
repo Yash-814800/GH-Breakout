@@ -115,7 +115,7 @@ const mins = (s: number) => (s >= 90 ? `${(s / 60).toFixed(1)} min` : `${Math.ro
 
 <script>
   import * as Plot from '@observablehq/plot';
-  import { baseOptions, observeWidth, resolveTokens } from '../lib/plot-theme';
+  import { baseOptions, observeWidth, resolveTokens, plot } from '../lib/plot-theme';
 
   const steps = JSON.parse(document.getElementById('st-data')!.textContent!) as { name: string; s: number }[];
   const host = document.getElementById('chart-steps');
@@ -124,7 +124,7 @@ const mins = (s: number) => (s >= 90 ? `${(s / 60).toFixed(1)} min` : `${Math.ro
       const t = resolveTokens();
       const o = baseOptions(t, w, Math.max(160, steps.length * 36 + 40));
       host.replaceChildren(
-        Plot.plot({
+        plot({
           ...o,
           marginLeft: Math.min(160, Math.max(90, w * 0.25)),
           x: { ...o.x, grid: true, label: null, tickFormat: (d: number) => `${d} s` },

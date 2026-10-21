@@ -9,7 +9,14 @@
     "build": "astro build && node scripts/check-base-paths.mjs",
     "preview": "astro preview",
     "astro": "astro",
-    "check-base-paths": "node scripts/check-base-paths.mjs"
+    "check-base-paths": "node scripts/check-base-paths.mjs",
+    "build:fx": "DATA_DIR=test-data OUT_DIR=dist-fx astro build && OUT_DIR=dist-fx node scripts/check-base-paths.mjs",
+    "lint:tokens": "node scripts/lint-tokens.mjs",
+    "test": "vitest run",
+    "test:e2e": "playwright test",
+    "screenshots": "node scripts/screenshot.mjs",
+    "fixtures": "node scripts/make-fixtures.mjs",
+    "languages": "node scripts/gen-languages.mjs"
   },
   "dependencies": {
     "@astrojs/sitemap": "^3.7.4",
@@ -36,6 +43,7 @@
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.14.0",
+    "@capsizecss/metrics": "^4.4.0",
     "@lhci/cli": "^0.15.1",
     "@playwright/test": "^1.64.1",
     "linguist-languages": "^9.5.0",

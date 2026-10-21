@@ -1,3 +1,4 @@
+import * as Plot from '@observablehq/plot';
 import { count, shortDate } from './format';
 
 /** Concrete colors resolved from the CSS tokens (SVG attributes cannot read var() reliably). */
@@ -84,4 +85,16 @@ export function observeWidth(el: HTMLElement, fn: (width: number) => void): void
   document.addEventListener('themechange', run);
   matchMedia('(prefers-color-scheme: dark)').addEventListener('change', run);
   run();
+}
+
+/**
+ * Plot.plot with the accessibility tree cleaned up: Plot puts aria-label on plain <g> elements, which axe
+ * rejects, and the chart's text alternative already lives in its ChartFigure. The SVG itself is decorative.
+ */
+export function plot(options: Plot.PlotOptions): SVGSVGElement | HTMLElement {
+  const el = Plot.plot(options);
+  el.querySelectorAll('[aria-label]').forEach((n) => n.removeAttribute('aria-label'));
+  el.removeAttribute('aria-label');
+  el.setAttribute('aria-hidden', 'true');
+  return el;
 }

@@ -46,6 +46,17 @@ samp {
   font-family: var(--font-mono);
 }
 
+/* Metric-matched fallback so the swap to Instrument Sans does not move the layout (values from @capsizecss/metrics,
+   Arial as the base: size-adjust 102.74%, ascent 94.42%, descent 24.33%, line gap 0%). */
+@font-face {
+  font-family: 'Instrument Sans Fallback';
+  src: local('Arial'), local('Helvetica Neue'), local('Liberation Sans');
+  size-adjust: 102.74%;
+  ascent-override: 94.42%;
+  descent-override: 24.33%;
+  line-gap-override: 0%;
+}
+
 /* type scale */
 .t-display {
   font-size: 36px;

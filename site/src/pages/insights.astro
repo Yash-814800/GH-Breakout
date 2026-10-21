@@ -66,7 +66,7 @@ const summaries: Record<string, string> = {
 
 <script>
   import * as Plot from '@observablehq/plot';
-  import { baseOptions, observeWidth, resolveTokens, type Tokens } from '../lib/plot-theme';
+  import { baseOptions, observeWidth, resolveTokens, type Tokens, plot } from '../lib/plot-theme';
   import { count, pctAxis } from '../lib/format';
 
   type Story = { id: string; type: string; data: Record<string, number>[] };
@@ -83,7 +83,7 @@ const summaries: Record<string, string> = {
           { x: d.horizon_days!, y: d.breakouts!, g: 'a' },
           { x: d.horizon_days!, y: d.non_breakouts!, g: 'b' },
         ]);
-        return Plot.plot({
+        return plot({
           ...o,
           x: { ...o.x, ticks: s.data.map((d) => d.horizon_days!), tickFormat: (d: number) => `${d} days` },
           y: { ...o.y, tickFormat: pctNum, zero: true },
@@ -97,7 +97,7 @@ const summaries: Record<string, string> = {
       }
       case 'ai_share_trend': {
         const rows = s.data.map((d) => ({ x: d.year!, y: d.ai_breakout_pct! }));
-        return Plot.plot({
+        return plot({
           ...o,
           x: { ...o.x, tickFormat: (d: number) => String(d), ticks: Math.min(10, rows.length) },
           y: { ...o.y, tickFormat: pctNum, zero: true },
@@ -106,7 +106,7 @@ const summaries: Record<string, string> = {
       }
       case 'lead_time_distribution': {
         const rows = s.data.map((d) => ({ x: d.lead_days!, y: d.count!, early: d.lead_days! > 0 }));
-        return Plot.plot({
+        return plot({
           ...o,
           x: { ...o.x, tickFormat: (d: number) => (d > 0 ? `+${d}` : String(d)), ticks: 8 },
           y: { ...o.y, tickFormat: (v: number) => count(v, { compact: true }) },
@@ -119,7 +119,7 @@ const summaries: Record<string, string> = {
       default: {
         const all = s.data.map((d) => ({ x: d.year!, y: d.high_suspicion_pct! }));
         const br = s.data.map((d) => ({ x: d.year!, y: d.breakout_high_suspicion_pct! }));
-        return Plot.plot({
+        return plot({
           ...o,
           x: { ...o.x, tickFormat: (d: number) => String(d), ticks: Math.min(10, all.length) },
           y: { ...o.y, tickFormat: pctNum, zero: true },

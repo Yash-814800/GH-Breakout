@@ -27,9 +27,10 @@
   --scrim: rgb(0 0 0 / 0.4);
   /* white canvas for matplotlib figures, which are drawn for a light background in both themes */
   --paper: #ffffff;
+  --paper-ink: #555a6a;
 
   /* type */
-  --font-ui: 'Instrument Sans Variable', 'Instrument Sans', ui-sans-serif, system-ui, -apple-system, 'Segoe UI',
+  --font-ui: 'Instrument Sans Variable', 'Instrument Sans Fallback', ui-sans-serif, system-ui, -apple-system, 'Segoe UI',
     Roboto, 'Helvetica Neue', Arial, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace;
 

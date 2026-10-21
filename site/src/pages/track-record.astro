@@ -109,7 +109,7 @@ const chartData = { points: matured.map((m) => ({ date: m.snapshot_date, p25: m.
 
 <script>
   import * as Plot from '@observablehq/plot';
-  import { baseOptions, observeWidth, resolveTokens } from '../lib/plot-theme';
+  import { baseOptions, observeWidth, resolveTokens, plot } from '../lib/plot-theme';
   import { date, pct, pctAxis, shortDate } from '../lib/format';
 
   const data = JSON.parse(document.getElementById('tr-data')!.textContent!) as {
@@ -126,7 +126,7 @@ const chartData = { points: matured.map((m) => ({ date: m.snapshot_date, p25: m.
       const ours = data.points.map((d) => ({ x: day(d.date), y: d.p25 }));
       const base = data.points.filter((d) => d.b1 != null).map((d) => ({ x: day(d.date), y: d.b1! }));
       p.replaceChildren(
-        Plot.plot({
+        plot({
           ...o,
           x: { ...o.x, type: 'utc', tickFormat: (d: Date) => shortDate(d) },
           y: { ...o.y, tickFormat: (v: number) => pctAxis(v), zero: true, nice: true },
@@ -147,7 +147,7 @@ const chartData = { points: matured.map((m) => ({ date: m.snapshot_date, p25: m.
       const size = Math.min(420, w);
       const o = baseOptions(t, size, size);
       c.replaceChildren(
-        Plot.plot({
+        plot({
           ...o,
           marginBottom: 44,
           marginLeft: 64,

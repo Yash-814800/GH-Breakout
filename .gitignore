@@ -41,3 +41,6 @@ __pycache__/
 Thumbs.db
 dbt/dbt_packages/
 dbt/.user.yml
+site/.lighthouseci/
+site/test-results/
+site/playwright-report/

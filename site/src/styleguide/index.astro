@@ -215,6 +215,7 @@ const shap = [
   </Section>
 
   <Section id="format" title="Formatting examples">
+    <div data-no-content-check>
     <Table caption="Formatter inputs and outputs" captionHidden>
       <thead><tr><th>Function</th><th>Input</th><th>Output</th></tr></thead>
       <tbody>
@@ -234,12 +235,13 @@ const shap = [
         ].map(([f, i, o]) => <tr><td>{f}</td><td>{i}</td><td class="num">{o}</td></tr>)}
       </tbody>
     </Table>
+    </div>
   </Section>
 </AppLayout>
 
 <script>
   import * as Plot from '@observablehq/plot';
-  import { baseOptions, observeWidth, resolveTokens } from '../lib/plot-theme';
+  import { baseOptions, observeWidth, resolveTokens, plot } from '../lib/plot-theme';
 
   // contrast ratios, recomputed on every theme change
   const toRgb = (c: string): [number, number, number] => {
@@ -274,7 +276,7 @@ const shap = [
     const t = resolveTokens();
     const o = baseOptions(t, w);
     host.replaceChildren(
-      Plot.plot({
+      plot({
         ...o,
         marks: [
           Plot.barY(data, { x: 'i', y: 'v', fill: (d: { i: number }) => (d.i >= 21 ? t.accent : t.ink3), fillOpacity: (d: { i: number }) => (d.i >= 21 ? 1 : 0.35), inset: 0.5, rx: 2 }),
