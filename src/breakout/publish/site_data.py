@@ -1425,7 +1425,12 @@ def publish_site_data(
         )
 
         # Export historical data stories for /insights/ (Phase 11, §11.4)
-        insights_mod.export_insights_data(con=con)
+        # The stories query warehouse marts that only exist where the history warehouse was built
+        # (not on a clean Actions runner), so a failure must not stop the daily publication.
+        try:
+            insights_mod.export_insights_data(con=con)
+        except Exception as exc:
+            log.warning("Insights not exported (the /insights/ page keeps its last data): %s", exc)
 
         if upload:
             upload_site_data_to_hf(cfg)
