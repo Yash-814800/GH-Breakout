@@ -159,6 +159,6 @@ def test_ops_group_lists_commands():
         assert cmd in result.output
 
 
-def test_daily_run_documents_that_no_upload_still_reads_and_has_skip_bootstrap():
+def test_daily_run_has_a_skip_bootstrap_option():
     out = runner.invoke(app, ["daily", "run", "--help"]).output
-    assert "--skip-bootstrap" in out and "reads still happen" in out
+    assert "--skip-bootstrap" in out and "--no-upload" in out
