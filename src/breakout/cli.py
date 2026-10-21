@@ -1297,6 +1297,85 @@ def publish_insights_cmd(
     typer.echo(f"Wrote insights stories to {p}")
 
 
+@publish_app.command("feeds")
+def publish_feeds_cmd(ctx: typer.Context) -> None:
+    """Write feed_items.json (new leaderboard entries) for /feed.xml and /feed.json (Phase 12.1)."""
+    from breakout.publish import distribution
+
+    cfg = get_config(ctx.obj["config"])
+    distribution.restore_snapshots(cfg)
+    typer.echo(f"Wrote {distribution.export_feed_items(cfg)}")
+
+
+@publish_app.command("badges")
+def publish_badges_cmd(ctx: typer.Context) -> None:
+    """Write shields.io endpoint badges for every repo flagged in the last 90 days (Phase 12.2)."""
+    from breakout.publish import distribution
+
+    cfg = get_config(ctx.obj["config"])
+    distribution.restore_snapshots(cfg)
+    written = distribution.export_badges(cfg)
+    typer.echo(f"Wrote {len(written)} badge files to {distribution.BADGES_DIR}")
+
+
+@publish_app.command("digest")
+def publish_digest_cmd(
+    ctx: typer.Context,
+    week: Annotated[
+        str | None,
+        typer.Option("--week", help="ISO week, e.g. 2026-W43 (default: the last complete week)"),
+    ] = None,
+    upload: Annotated[
+        bool, typer.Option("--upload", help="store the digest on the derived repo (digests/)")
+    ] = False,
+) -> None:
+    """Generate the weekly digest from frozen snapshots and outcomes (Phase 12.3)."""
+    from breakout.publish import distribution
+
+    cfg = get_config(ctx.obj["config"])
+    wk = week or distribution.default_week()
+    distribution.restore_snapshots(cfg, outcomes=True)
+    distribution.pull_site_facts(cfg)
+    doc = distribution.build_digest(cfg, wk)
+    p = distribution.write_digest(doc)
+    typer.echo(f"Wrote {p}\n{doc['summary']}")
+    if upload:
+        distribution.upload_digests(cfg)
+        typer.echo("Uploaded digests/ to the derived repo")
+
+
+@publish_app.command("discuss-digest")
+def publish_discuss_digest_cmd(
+    ctx: typer.Context,
+    week: Annotated[
+        str | None, typer.Option("--week", help="ISO week (default: last complete)")
+    ] = None,
+    repo: Annotated[
+        str, typer.Option("--repo", help="owner/name of the repository with Discussions")
+    ] = "Yash-814800/GH-Breakout",
+    category: Annotated[str, typer.Option("--category")] = "Digest",
+    dry_run: Annotated[bool, typer.Option("--dry-run")] = False,
+) -> None:
+    """Post the weekly digest as a GitHub Discussion (Phase 12.5). Token from GITHUB_TOKEN."""
+    from breakout.publish import distribution
+
+    wk = week or distribution.default_week()
+    p = distribution.DIGESTS_DIR / f"{wk}.json"
+    if not p.exists():
+        typer.echo(f"No digest file for {wk}; run `breakout publish digest --week {wk}` first")
+        raise typer.Exit(1)
+    token = os.environ.get("GITHUB_TOKEN") or os.environ.get("GH_TOKEN") or ""
+    if not token and not dry_run:
+        typer.echo("GITHUB_TOKEN is not set")
+        raise typer.Exit(1)
+    res = distribution.post_discussion(
+        json.loads(p.read_text()), repo=repo, token=token, category=category, dry_run=dry_run
+    )
+    typer.echo(json.dumps({k: v for k, v in res.items() if k != "body"}, indent=2))
+    if dry_run:
+        typer.echo(res["body"])
+
+
 # ---- Detect (Phase 11) -------------------------------------------------------
 
 

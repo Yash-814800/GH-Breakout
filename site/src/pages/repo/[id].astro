@@ -20,6 +20,8 @@ import { apiGain, getLeaderboard, getMeta, getRepoDetails, nameParts } from '../
 import { CohortRetention, SimilarRepos, type Repo } from '../../lib/types';
 import { age, cleanText, count, date, delta, odds, pct, plural, sentence, shortDate } from '../../lib/format';
 import { url, repoUrl } from '../../lib/url';
+import { badgeMarkdown } from '../../lib/badge';
+import CopyButton from '../../components/ui/CopyButton.astro';
 
 export function getStaticPaths() {
   const board = new Map(getLeaderboard().map((r) => [r.id, r]));
@@ -68,6 +70,7 @@ const isNew = row?.rankChange === 'new' && (row?.daysOnBoard ?? 99) < 2;
 const flagged = (susp?.score ?? row?.suspicion.score ?? 0) >= 90;
 const reasons = susp?.reasons ?? row?.suspicion.reasons ?? [];
 
+const badgeMd = badgeMarkdown(d.repo_id, Astro.site);
 const daily = d.daily_stars.map((x) => ({ date: x.date, stars: x.stars }));
 const hasApiHistory = (d.star_count_history?.length ?? 0) >= 2;
 const chartData = {
@@ -233,6 +236,19 @@ const metaDesc = `${title}: breakout chance ${prob != null ? pct(prob) : 'not av
       </Section>
     )
   }
+
+  <Section id="badge" title="Add a badge to your README">
+    <p class="t-body-sm muted lead-in">
+      A live badge that shows this repo's place on the list while it is on it, and the day it was flagged after that. It never shows the unusual-pattern check.
+    </p>
+    <div class="badge-snippet">
+      <code class="num" id="badge-md">{badgeMd}</code>
+      <CopyButton text={badgeMd} label="Copy badge Markdown" />
+    </div>
+    <p class="t-caption faint note">
+      The badge address uses the repo id, so it keeps working after a rename. Badges by name (<code>badges/by-name/owner/name.json</code>) follow the current name and can break when the repo is renamed.
+    </p>
+  </Section>
 
   <Fragment slot="rail">
     <Panel title="Details" headingLevel="h2">
@@ -420,6 +436,22 @@ const metaDesc = `${title}: breakout chance ${prob != null ? pct(prob) : 'not av
   .note {
     margin-top: 12px;
     max-width: 68ch;
+  }
+  .badge-snippet {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 12px 12px 12px 16px;
+    border: 1px solid var(--line);
+    border-radius: var(--r-md);
+    background: var(--surface);
+  }
+  .badge-snippet code {
+    flex: 1;
+    min-width: 0;
+    font-size: 13px;
+    overflow-wrap: anywhere;
+    user-select: all;
   }
   .lead-in {
     margin-bottom: 12px;

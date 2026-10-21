@@ -196,3 +196,25 @@ Run from `site/`:
   `node scripts/make-fixtures.mjs --track-days 60 --out /tmp/track_record.json` writes a longer track record for manual checks.
 - **Brand name and tagline** live in `config/project.yaml` (`site.brand_name`, `site.tagline`). After a change run `npm run brand` (favicons, manifest) and rebuild; OG images regenerate on their own.
 - **Daily deploy gate:** if the content check fails on real data, `daily.yml` skips the deploy and writes a warning to the run summary; fix the data or the formatter and re-run the workflow.
+
+
+## Distribution (Phase 12)
+
+Everything below is built from frozen prediction snapshots and needs no extra service.
+
+| What | Where | How it is built |
+|---|---|---|
+| RSS feed of new leaderboard entries | `/feed.xml`, JSON Feed at `/feed.json` | `breakout publish feeds` writes `site/public/data/feed_items.json` (last 100 entries, GUID `repo_id:first_flag_date`); Astro renders both feeds at build time |
+| Weekly digest feed | `/digest/feed.xml` | one item per digest |
+| Badges | `/badges/<repo_id>.json`, `/badges/by-name/<owner>/<name>.json` | `breakout publish badges` (daily, and in `site.yml`); shields.io endpoint schema; never encodes the unusual-pattern check |
+| Weekly digest | `/digest/`, `/digest/<YYYY-Www>/` | `breakout publish digest --week 2026-W43 --upload` in `weekly.yml`; stored on the derived repo under `digests/`; `publish site-data` pulls it |
+| Digest in GitHub Discussions | repository Discussions | `breakout publish discuss-digest` in `weekly.yml` (token `GITHUB_TOKEN`, permission `discussions: write`) |
+
+- **Badge paths.** `by-name` files are written in lower case and follow the *current* repo name; after a rename the old path stops updating. Use the `repo_id` path in a README, it is stable.
+  The copyable Markdown is on every repo page.
+- **Discussions.** GitHub has no API to create a discussion category. Create a category named **Digest** once in the repo settings (Discussions > Categories, announcement format). Until then
+  `discuss-digest` posts to **Announcements** and says so in its output. Posts are idempotent: a discussion with the same title (`Weekly digest 2026-W43`) is never created twice.
+- **Bluesky bot: not built.** `optional.bluesky_enabled` stays `false` by decision of the owner (ADR-032); there is no Bluesky code in the repository.
+- **Mastodon variant (not implemented).** Post the same short text with `POST /api/v1/statuses` and a bearer token of a dedicated bot account. Only do this on an instance whose rules explicitly allow bots,
+  mark the account as a bot, post at most a few statuses a day, and keep the same de-duplication rule (a repo at most once in 60 days, never a high-suspicion one).
+- **A feed looks wrong.** Check `site/public/data/feed_items.json` first; if it is empty run `breakout publish feeds` (it restores the frozen snapshots from the snapshots repo, read only).

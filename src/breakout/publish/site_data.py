@@ -35,6 +35,7 @@ from breakout.detect import scoring as scoring_mod
 from breakout.detect import signals as signals_mod
 from breakout.detect import similarity as similarity_mod
 from breakout.logging import get_logger
+from breakout.publish import distribution as distribution_mod
 from breakout.publish import insights as insights_mod
 from breakout.publish import live_stats
 
@@ -1391,6 +1392,11 @@ def publish_site_data(
     hidden_ids, hidden_names = load_hidden_repos()
 
     _restore_star_snapshots(cfg)
+    # a clean runner has only today's snapshot; rank history, days on board and feeds need the rest
+    try:
+        distribution_mod.restore_snapshots(cfg, today=snap_date)
+    except Exception as exc:
+        log.warning("Earlier snapshots not restored (history fields start over): %s", exc)
     live: dict[int, dict[str, Any]] = {}
     wh_path = P.DATA_DIR / "warehouse.duckdb"
     con = duckdb.connect(str(wh_path), read_only=True) if wh_path.exists() else duckdb.connect()
@@ -1431,6 +1437,19 @@ def publish_site_data(
             insights_mod.export_insights_data(con=con)
         except Exception as exc:
             log.warning("Insights not exported (the /insights/ page keeps its last data): %s", exc)
+
+        # Phase 12: feeds, badges and digests. Distribution must never stop the daily publication.
+        for label, step in (
+            ("feed items", lambda: distribution_mod.export_feed_items(cfg)),
+            ("badges", lambda: distribution_mod.export_badges(cfg)),
+            ("digests", lambda: distribution_mod.pull_digests(cfg)),
+        ):
+            try:
+                step()
+            except Exception as exc:
+                log.warning(
+                    "Distribution step %s failed (site keeps its last copy): %s", label, exc
+                )
 
         if upload:
             upload_site_data_to_hf(cfg)

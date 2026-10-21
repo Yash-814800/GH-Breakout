@@ -35,37 +35,40 @@ jobs:
       - name: Install dependencies
         run: uv sync --frozen
 
-      - name: Pull site data from Hugging Face
+      - name: Pull site data and digests from Hugging Face
         env:
           HF_USER: ${{ vars.HF_USER }}
         run: |
           mkdir -p site/public/data
-          # Copy test-data first as baseline fixture
-          if [ -d "site/test-data" ]; then
-            cp -r site/test-data/* site/public/data/ || true
-          fi
-          # Attempt pulling latest published data from Hugging Face derived repo
+          # Fixtures are only a fallback for a failed pull: they must never mix with real data
+          # (fixture digests or feed items would be published as real ones).
           uv run python -c "
-          from huggingface_hub import HfApi, snapshot_download
+          from huggingface_hub import snapshot_download
           import os, shutil
           from pathlib import Path
 
           user = os.environ.get('HF_USER', 'Yasshh814')
           repo = f'{user}/gh-breakout-derived'
+          dst = Path('site/public/data')
           try:
-              snapshot_download(repo_id=repo, repo_type='dataset', allow_patterns='site_data/latest/*', local_dir='hf_site')
+              snapshot_download(repo_id=repo, repo_type='dataset', allow_patterns=['site_data/latest/*', 'digests/*'], local_dir='hf_site')
               src = Path('hf_site/site_data/latest')
-              dst = Path('site/public/data')
-              if src.exists():
-                  for item in src.glob('*'):
-                      if item.is_dir():
-                          shutil.copytree(item, dst / item.name, dirs_exist_ok=True)
-                      else:
-                          shutil.copy2(item, dst / item.name)
-                  print('Successfully pulled latest site data from HF')
+              if not (src / 'leaderboard.json').exists():
+                  raise FileNotFoundError('no published site data')
+              shutil.copytree(src, dst, dirs_exist_ok=True)
+              if Path('hf_site/digests').exists():
+                  shutil.copytree('hf_site/digests', dst / 'digests', dirs_exist_ok=True)
+              print('Pulled the latest site data and digests from HF')
           except Exception as exc:
-              print(f'Using local fallback site data: {exc}')
+              print(f'Using the fixture data as fallback: {exc}')
+              shutil.copytree('site/test-data', dst, dirs_exist_ok=True)
           "
+
+      - name: Build badges from the frozen snapshots
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          HF_USER: ${{ vars.HF_USER }}
+        run: uv run breakout publish badges || echo "::warning::badges not built"
 
       - name: Copy figures to site
         run: |
