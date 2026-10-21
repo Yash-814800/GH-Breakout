@@ -40,6 +40,16 @@ from breakout.publish import live_stats
 
 log = get_logger(__name__)
 
+# Display-side facts copied from the live GitHub lookup onto stored metadata.
+LIVE_META_KEYS = (
+    "name_with_owner",
+    "description",
+    "primary_language",
+    "owner_type",
+    "owner_id",
+    "owner_login",
+)
+
 SITE_DIR = P.ROOT / "site"
 SITE_DATA_DIR = SITE_DIR / "public" / "data"
 SCHEMAS_DIR = SITE_DIR / "schemas"
@@ -239,7 +249,7 @@ def _get_repo_metadata_map(
         rows = con.execute(
             f"SELECT repo_id, name_with_owner, description, primary_language, created_at, "
             f"owner_type, is_fork, parent_repo_id, is_archived, is_mirror, is_template, "
-            f"license_spdx, topics, homepage_url, fetched_at "
+            f"license_spdx, topics, homepage_url, fetched_at, owner_id, owner_login "
             f"FROM read_parquet('{meta_path}') WHERE repo_id IN ({idl})"
         ).fetchall()
         for r in rows:
@@ -258,6 +268,8 @@ def _get_repo_metadata_map(
                 "topics": list(r[12]) if r[12] is not None else [],
                 "homepage_url": r[13],
                 "fetched_at": r[14].isoformat() if r[14] else None,
+                "owner_id": r[15],
+                "owner_login": r[16],
             }
     except Exception as exc:
         log.warning("Failed querying repo_metadata.parquet: %s", exc)
@@ -514,13 +526,7 @@ def export_leaderboard(
         feat = feat_map.get(rid, {})
         lrow = live.get(rid, {})
         if lrow.get("status") == "ok":
-            meta.update(
-                {
-                    k: lrow[k]
-                    for k in ("name_with_owner", "description", "primary_language")
-                    if lrow.get(k)
-                }
-            )
+            meta.update({k: lrow[k] for k in LIVE_META_KEYS if lrow.get(k)})
 
         if meta.get("name_with_owner"):
             rname = meta["name_with_owner"]
@@ -581,6 +587,8 @@ def export_leaderboard(
                 else f"https://github.com/repo_id={rid}"
             ),
             "description": meta.get("description"),
+            "owner_id": meta.get("owner_id"),
+            "owner_type": meta.get("owner_type"),
             "language": lang,
             "age_days": age,
             "stars_total_observed": stot,
@@ -639,17 +647,9 @@ def export_repo_details(
     live.update(live_stats.fetch_live_info(cfg, [i for i in flagged_ids if i not in live]))
     for rid, lrow in live.items():
         if rid in meta_map and lrow.get("status") == "ok":
-            meta_map[rid].update(
-                {
-                    k: lrow[k]
-                    for k in ("name_with_owner", "description", "primary_language")
-                    if lrow.get(k)
-                }
-            )
+            meta_map[rid].update({k: lrow[k] for k in LIVE_META_KEYS if lrow.get(k)})
         elif lrow.get("status") == "ok":
-            meta_map[rid] = {
-                k: lrow.get(k) for k in ("name_with_owner", "description", "primary_language")
-            }
+            meta_map[rid] = {k: lrow.get(k) for k in LIVE_META_KEYS}
     flagged_ids -= {rid for rid, r in live.items() if r.get("status") in ("not_found", "blocked")}
     history = live_stats.load_snapshots(STAR_SNAPSHOTS_JSON)
 

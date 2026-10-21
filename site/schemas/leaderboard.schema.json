@@ -50,7 +50,9 @@
       "days_on_board": { "type": "integer", "minimum": 1 },
       "rank_change": { "type": "string", "enum": ["new", "up", "down", "same"] },
       "suspicion_score": { "type": ["number", "null"] },
-      "b1_rank": { "type": ["integer", "null"] }
+      "b1_rank": { "type": ["integer", "null"] },
+      "owner_id": { "type": ["integer", "null"] },
+      "owner_type": { "type": ["string", "null"], "enum": ["User", "Organization", null] }
     },
     "additionalProperties": true
   }

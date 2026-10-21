@@ -33,6 +33,8 @@
         "is_mirror": { "type": ["boolean", "null"] },
         "is_template": { "type": ["boolean", "null"] },
         "license_spdx": { "type": ["string", "null"] },
+        "owner_id": { "type": ["integer", "null"] },
+        "owner_login": { "type": ["string", "null"] },
         "topics": {
           "type": "array",
           "items": { "type": "string" }

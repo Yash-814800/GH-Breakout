@@ -1,0 +1,188 @@
+/* Base element styles, type scale classes and small shared utilities. Only token values are used. */
+html {
+  font-family: var(--font-ui);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  font-optical-sizing: auto;
+  font-kerning: normal;
+  -webkit-text-size-adjust: 100%;
+  scroll-padding-top: calc(var(--nav-h) + var(--space-4));
+}
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-size: 16px;
+  line-height: 1.5;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow-x: clip;
+}
+main {
+  flex: 1 0 auto;
+}
+a {
+  color: inherit;
+  text-decoration: none;
+}
+::selection {
+  background: var(--accent-soft);
+  color: var(--ink);
+}
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: var(--r-xs);
+}
+img,
+svg {
+  max-width: 100%;
+}
+code,
+kbd,
+pre,
+samp {
+  font-family: var(--font-mono);
+}
+
+/* type scale */
+.t-display {
+  font-size: 36px;
+  line-height: 1.08;
+  font-weight: 600;
+  letter-spacing: -0.025em;
+  text-wrap: balance;
+}
+.t-h1 {
+  font-size: 28px;
+  line-height: 1.18;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+}
+.t-h2 {
+  font-size: 22px;
+  line-height: 1.25;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  text-wrap: balance;
+}
+.t-h3 {
+  font-size: 17px;
+  line-height: 1.35;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+}
+.t-lead {
+  font-size: 17px;
+  line-height: 1.5;
+  letter-spacing: -0.005em;
+  color: var(--ink-2);
+  text-wrap: pretty;
+}
+.t-prose {
+  font-size: 17px;
+  line-height: 1.65;
+  text-wrap: pretty;
+}
+.t-body {
+  font-size: 16px;
+  line-height: 1.5;
+}
+.t-body-sm {
+  font-size: 14px;
+  line-height: 1.45;
+}
+.t-caption {
+  font-size: 13px;
+  line-height: 1.4;
+  font-weight: 400;
+}
+.t-micro {
+  font-size: 12px;
+  line-height: 1.35;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+}
+.t-num-lg {
+  font-size: 24px;
+  line-height: 1;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  font-stretch: 87.5%;
+  font-variant-numeric: tabular-nums;
+}
+.t-num-xl {
+  font-size: 36px;
+  line-height: 1;
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  font-stretch: 87.5%;
+  font-variant-numeric: tabular-nums;
+}
+@media (min-width: 768px) {
+  .t-display {
+    font-size: 48px;
+  }
+  .t-h1 {
+    font-size: 32px;
+  }
+  .t-h2 {
+    font-size: 24px;
+  }
+  .t-h3 {
+    font-size: 18px;
+  }
+  .t-lead {
+    font-size: 19px;
+  }
+  .t-num-lg {
+    font-size: 28px;
+  }
+  .t-num-xl {
+    font-size: 44px;
+  }
+}
+.num {
+  font-variant-numeric: tabular-nums;
+}
+
+/* shared layout */
+.container {
+  width: 100%;
+  max-width: calc(var(--container) + 2 * var(--gutter));
+  margin-inline: auto;
+  padding-inline: var(--gutter);
+}
+.stack-section {
+  margin-top: var(--space-12);
+}
+@media (min-width: 768px) {
+  .stack-section {
+    margin-top: var(--space-16);
+  }
+}
+.muted {
+  color: var(--ink-2);
+}
+.faint {
+  color: var(--ink-3);
+}
+.ph {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

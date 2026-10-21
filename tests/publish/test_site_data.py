@@ -116,3 +116,36 @@ def test_explorer_parquet_size_limit():
     assert site_data.OOF_TOP100_PARQUET.exists()
     size_mb = site_data.OOF_TOP100_PARQUET.stat().st_size / (1024 * 1024)
     assert size_mb <= max_mb, f"oof_top100.parquet ({size_mb:.2f} MB) exceeds budget ({max_mb} MB)"
+
+
+def test_owner_fields_are_exported_and_validated():
+    """Phase 14: leaderboard rows carry owner_id / owner_type for avatars (user vs organization)."""
+    assert {"owner_type", "owner_id", "owner_login"} <= set(site_data.LIVE_META_KEYS)
+    row = {
+        "rank": 1,
+        "repo_id": 1,
+        "repo_name": "o/r",
+        "html_url": "https://github.com/o/r",
+        "description": None,
+        "language": None,
+        "age_days": 1,
+        "stars_total_observed": 1,
+        "stars_7d": 0,
+        "spark_stars_28d": [0] * 28,
+        "prob": 0.1,
+        "prob_label": "~1 in 10",
+        "explanation": None,
+        "first_flagged_date": None,
+        "days_on_board": 1,
+        "rank_change": "new",
+        "suspicion_score": None,
+        "b1_rank": None,
+    }
+    site_data.validate_json(
+        [{**row, "owner_id": 5, "owner_type": "Organization"}], "leaderboard.schema.json"
+    )
+    site_data.validate_json(
+        [{**row, "owner_id": None, "owner_type": None}], "leaderboard.schema.json"
+    )
+    with pytest.raises(jsonschema.ValidationError):
+        site_data.validate_json([{**row, "owner_type": "Robot"}], "leaderboard.schema.json")
