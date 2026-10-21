@@ -1,0 +1,201 @@
+---
+import AppLayout from '../layouts/AppLayout.astro';
+import PageHeader from '../components/layout/PageHeader.astro';
+import Callout from '../components/ui/Callout.astro';
+import Button from '../components/ui/Button.astro';
+import Skeleton from '../components/ui/Skeleton.astro';
+import RepoRow from '../components/data/RepoRow.astro';
+import { getBacktest } from '../lib/data';
+import { date, isoDay, pct } from '../lib/format';
+import type { Repo } from '../lib/types';
+
+const bt = getBacktest();
+const dates = bt.historical_dates.map((d) => isoDay(d)!).sort();
+const summaries = Object.fromEntries(bt.date_summaries.map((s) => [isoDay(s.snapshot_date)!, { n: s.n_candidates, p25: s.precision_at_25 }]));
+const latest = dates.at(-1)!;
+
+// A placeholder row: the script clones it, so server-rendered styles and markup are reused.
+const blank: Repo = {
+  rank: 0, id: 0, fullName: 'o/r', owner: 'owner', name: 'name', url: null, ownerId: null, ownerType: null, description: null, language: null,
+  ageDays: null, starsTotal: null, starsSource: null, weekGain: null, gainDays: null, spark: [], prob: 0.1, why: null, firstFlagged: null,
+  daysOnBoard: 2, rankChange: 'same', suspicion: { level: 'low', score: null, reasons: [], flagged: false },
+};
+---
+
+<AppLayout title="Backtest" description="Simulated predictions from back-testing on past data, one list per week since 2018.">
+  <PageHeader slot="header" title="Backtest" lead="Pick a past week and see the 25 repos the model would have ranked highest, and what happened next." />
+
+  <Callout variant="info">These are simulated predictions from back-testing on past data, not predictions we published at the time.</Callout>
+
+  <form class="controls" id="controls" onsubmit="return false" aria-label="Choose a date">
+    <Button id="prev" variant="secondary" size="md" icon="chevron-left" label="Previous week" type="button" />
+    <label class="date">
+      <span class="sr-only">Snapshot date</span>
+      <input id="date" type="date" min={dates[0]} max={latest} value={latest} />
+    </label>
+    <Button id="next" variant="secondary" size="md" icon="chevron-right" label="Next week" type="button" />
+    <Button id="latest" variant="ghost" size="md" type="button">Latest</Button>
+    <p id="snap-note" class="note t-caption faint" aria-live="polite"></p>
+  </form>
+
+  <p id="summary" class="summary t-body" aria-live="polite">&nbsp;</p>
+
+  <div class="board">
+    <ol id="list" class="list" hidden></ol>
+    <div id="loading" class="loading" aria-hidden="true">
+      <Skeleton height="64px" /><Skeleton height="64px" /><Skeleton height="64px" />
+    </div>
+    <p id="fail" class="fail t-body-sm muted" hidden></p>
+  </div>
+
+  <template id="tpl-hit"><RepoRow repo={blank} mode="compact" outcome={{ hit: true, gain: 0 }} /></template>
+  <template id="tpl-miss"><RepoRow repo={blank} mode="compact" outcome={{ hit: false, gain: 0 }} /></template>
+  <script type="application/json" id="bt-data" set:html={JSON.stringify({ dates, summaries })} />
+</AppLayout>
+
+<script>
+  import { openDuck } from '../lib/duck';
+  import { count, date, delta, odds, pct } from '../lib/format';
+  import { repoUrl } from '../lib/url';
+
+  const { dates, summaries } = JSON.parse(document.getElementById('bt-data')!.textContent!) as {
+    dates: string[];
+    summaries: Record<string, { n: number; p25: number }>;
+  };
+  const input = document.getElementById('date') as HTMLInputElement;
+  const list = document.getElementById('list') as HTMLElement;
+  const loading = document.getElementById('loading')!;
+  const fail = document.getElementById('fail')!;
+  const summary = document.getElementById('summary')!;
+  const note = document.getElementById('snap-note')!;
+  const tplHit = document.getElementById('tpl-hit') as HTMLTemplateElement;
+  const tplMiss = document.getElementById('tpl-miss') as HTMLTemplateElement;
+
+  const nearest = (iso: string) => dates.reduce((best, d) => (Math.abs(+new Date(d) - +new Date(iso)) < Math.abs(+new Date(best) - +new Date(iso)) ? d : best), dates[0]!);
+  let current = '';
+  let seq = 0;
+
+  function row(r: { rank: number; repo_id: number; repo_name: string; prob: number; gain_30d: number | null; label: boolean }) {
+    const li = (r.label ? tplHit : tplMiss).content.firstElementChild!.cloneNode(true) as HTMLElement;
+    const named = r.repo_name.includes('/') && !r.repo_name.includes('=');
+    const [owner, ...rest] = r.repo_name.split('/');
+    li.querySelector('.rank')!.textContent = String(r.rank);
+    li.querySelector('.rt-owner')!.textContent = named ? `${owner}/` : '';
+    li.querySelector('.rt-name')!.textContent = named ? rest.join('/') : `Repo ${r.repo_id}`;
+    (li.querySelector('.rt-link') as HTMLAnchorElement).href = repoUrl(r.repo_id);
+    li.querySelector('.fallback, .av-fallback')!.textContent = (named ? owner! : 'R').slice(0, 2).toUpperCase();
+    li.querySelector('.av img')?.remove();
+    li.querySelector('.prob')!.textContent = r.prob < 0.01 ? '<1%' : r.prob > 0.99 ? '>99%' : `${Math.round(r.prob * 100)}%`;
+    li.querySelector('.odds')!.textContent = odds(r.prob);
+    li.querySelector('.desc')?.remove();
+    li.querySelector('.meta')?.remove();
+    li.querySelector('.tip-pop')?.remove();
+    const why = li.querySelector('.why');
+    if (why) why.textContent = r.gain_30d != null ? `${delta(Math.round(r.gain_30d))} stars in the next 30 days.` : 'Star gain is not available.';
+    li.querySelector('.gain')?.remove();
+    return li;
+  }
+
+  async function show(iso: string) {
+    const d = nearest(iso);
+    const mine = ++seq;
+    current = d;
+    input.value = d;
+    note.textContent = d !== iso ? `No list for that day. Showing ${date(d)}.` : '';
+    (document.getElementById('prev') as HTMLButtonElement).disabled = d === dates[0];
+    (document.getElementById('next') as HTMLButtonElement).disabled = d === dates.at(-1);
+    list.hidden = true;
+    fail.hidden = true;
+    loading.hidden = false;
+    summary.textContent = ' ';
+    try {
+      const { conn } = await openDuck();
+      const res = await conn.query(
+        `SELECT rank, repo_id, repo_name, prob, gain_30d, label FROM backtest_top100 WHERE CAST(snapshot_date AS DATE) = DATE '${d}' ORDER BY rank LIMIT 25`,
+      );
+      if (mine !== seq) return;
+      const rows = res.toArray().map((r: Record<string, unknown>) => ({
+        rank: Number(r.rank),
+        repo_id: Number(r.repo_id),
+        repo_name: String(r.repo_name ?? ''),
+        prob: Number(r.prob),
+        gain_30d: r.gain_30d == null ? null : Number(r.gain_30d),
+        label: r.label === true,
+      }));
+      list.replaceChildren(...rows.map(row));
+      list.hidden = rows.length === 0;
+      const hits = rows.filter((r) => r.label).length;
+      summary.textContent = rows.length
+        ? `On ${date(d)}: ${hits} of the top ${count(rows.length)} broke out (${Math.round((hits / rows.length) * 100)}%).`
+        : `No predictions are stored for ${date(d)}.`;
+      void summaries;
+    } catch (e) {
+      if (mine !== seq) return;
+      fail.hidden = false;
+      fail.textContent = `The list could not be loaded (${e instanceof Error ? e.message.split('\n')[0] : 'unknown error'}). You can query the same data on the Explore page.`;
+    } finally {
+      if (mine === seq) loading.hidden = true;
+    }
+  }
+
+  const step = (n: number) => show(dates[Math.min(dates.length - 1, Math.max(0, dates.indexOf(current) + n))]!);
+  document.getElementById('prev')!.addEventListener('click', () => step(-1));
+  document.getElementById('next')!.addEventListener('click', () => step(1));
+  document.getElementById('latest')!.addEventListener('click', () => show(dates.at(-1)!));
+  input.addEventListener('change', () => input.value && show(input.value));
+  void pct;
+  show(dates.at(-1)!);
+</script>
+
+<style>
+  .controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin-top: 16px;
+  }
+  .date input {
+    height: 36px;
+    padding: 0 12px;
+    background: var(--raised);
+    color: var(--ink);
+    border: 1px solid var(--line-strong);
+    border-radius: var(--r-md);
+    font: inherit;
+    font-size: 14px;
+    font-weight: 500;
+  }
+  @media (max-width: 639px) {
+    .date input {
+      height: 40px;
+    }
+  }
+  .note {
+    flex-basis: 100%;
+    min-height: 18px;
+  }
+  .summary {
+    margin-block: 16px;
+    font-weight: 500;
+  }
+  .list {
+    background: var(--raised);
+    border: 1px solid var(--line);
+    border-radius: var(--r-lg);
+    overflow: hidden;
+  }
+  .list :global(.row + .row) {
+    border-top: 1px solid var(--line);
+  }
+  .list[hidden],
+  .loading[hidden],
+  .fail[hidden] {
+    display: none;
+  }
+  .loading {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+</style>

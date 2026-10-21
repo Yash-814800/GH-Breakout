@@ -264,7 +264,7 @@ const metaDesc = `${title}: breakout chance ${prob != null ? pct(prob) : 'not av
 <script>
   import * as Plot from '@observablehq/plot';
   import { baseOptions, observeWidth, resolveTokens, type Tokens } from '../../lib/plot-theme';
-  import { count, date, pct, shortDate } from '../../lib/format';
+  import { count, date, pct, pctAxis, shortDate } from '../../lib/format';
 
   type Pt = { date: string; stars: number };
   const data = JSON.parse(document.getElementById('repo-data')!.textContent!) as {
@@ -325,7 +325,7 @@ const metaDesc = `${title}: breakout chance ${prob != null ? pct(prob) : 'not av
         Plot.plot({
           ...o,
           x: { ...o.x, type: 'utc', tickFormat: (d: Date) => shortDate(d), ...(rows.length <= 6 ? { ticks: rows.map((r) => r.x) } : { ticks: Math.min(6, Math.floor(w / 110)) }) },
-          y: { ...o.y, tickFormat: (v: number) => pct(v), nice: true, zero: true },
+          y: { ...o.y, tickFormat: (v: number) => pctAxis(v), nice: true, zero: true },
           marks: [
             Plot.lineY(rows, { x: 'x', y: 'y', stroke: t.accent, strokeWidth: 2 }),
             Plot.dot(rows, { x: 'x', y: 'y', fill: t.accent, r: 3 }),

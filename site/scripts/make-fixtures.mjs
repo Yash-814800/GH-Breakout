@@ -115,3 +115,31 @@ edits.forEach((e, i) => {
   writeFileSync(detailPath(id), JSON.stringify(d, null, 2) + '\n');
 });
 console.log('patched detail pages');
+
+// ---- track record: committed fixture has 3 matured days; `--track-days N --out FILE` writes another size ----
+function trackRecord(nDays) {
+  const base = JSON.parse(readFileSync(new URL('../test-data/track_record.json', import.meta.url), 'utf8'));
+  const names = rows.slice(0, 25);
+  const days = Array.from({ length: nDays }, (_, d) => {
+    const iso = new Date(Date.UTC(2026, 8, 19) - (nDays - 1 - d) * 864e5).toISOString().slice(0, 10);
+    const top25 = names.map((r, k) => {
+      const hit = (k * 7 + d * 3) % 9 === 0;
+      return { rank: k + 1, repo_id: r.repo_id, repo_name: r.repo_name, prob: r.prob, gain_30d: hit ? 400 + k * 20 : 12 + ((k * d) % 60), hit, label: hit };
+    });
+    const p25 = top25.filter((p) => p.hit).length / 25;
+    return { snapshot_date: iso, top25, precision_at_10: p25, precision_at_25: p25, precision_at_50: p25, b1_precision_at_25: Math.max(0, p25 - 0.08) };
+  });
+  base.matured_snapshots = days;
+  const hit = days.reduce((a, d) => a + d.precision_at_25, 0) / Math.max(1, days.length);
+  base.summary = { ...base.summary, n_live_days: nDays + 30, n_matured_days: nDays, top25_hit_rate: Number(hit.toFixed(4)), headline: nDays ? `Since ${new Date(days[0].snapshot_date + 'T00:00:00Z').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' })}, ${Math.round(hit * 100)}% of our top-25 picks broke out within 30 days, against 0.5% for all candidates.` : base.summary.headline };
+  base.calibration = base.calibration.map((c, i) => ({ ...c, predicted_avg: c.bin_start + 0.05, realized_avg: Math.max(0, c.bin_start + 0.05 - 0.02 * (i % 3)), count: nDays ? 20 + i * 15 : 0 }));
+  return base;
+}
+const arg = (k) => { const i = process.argv.indexOf(k); return i > 0 ? process.argv[i + 1] : null; };
+if (arg('--track-days')) {
+  writeFileSync(arg('--out'), JSON.stringify(trackRecord(Number(arg('--track-days'))), null, 2) + '\n');
+  console.log('wrote track record with', arg('--track-days'), 'days');
+} else {
+  writeFileSync(new URL('../test-data/track_record.json', import.meta.url), JSON.stringify(trackRecord(3), null, 2) + '\n');
+  console.log('track record fixture: 3 matured days');
+}

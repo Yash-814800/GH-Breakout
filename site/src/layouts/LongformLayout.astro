@@ -9,15 +9,17 @@ interface Props {
   type?: 'website' | 'article';
   /** Table of contents entries; rendered as a sticky left column at xl. */
   toc?: { id: string; label: string }[];
+  /** Full 880 px column with left-aligned text (data pages); otherwise a centered reading column. */
+  wide?: boolean;
 }
-const { toc, ...props } = Astro.props;
+const { toc, wide = false, ...props } = Astro.props;
 ---
 
 <BaseLayout {...props}>
   <slot name="head" slot="head" />
   <div class="container">
     <slot name="header" />
-    <div class:list={['lf-grid', toc && 'has-toc']}>
+    <div class:list={['lf-grid', toc && 'has-toc', wide && 'is-wide']}>
       {
         toc && (
           <nav class="toc" aria-label="On this page">
@@ -65,6 +67,24 @@ const { toc, ...props } = Astro.props;
     min-width: 0;
     max-width: var(--measure);
     margin-inline: auto;
+  }
+  .is-wide .lf-main {
+    max-width: 880px;
+  }
+  .lf-main :global(.measure) {
+    max-width: var(--measure);
+  }
+  /* figures break out of the reading column up to 880 px, centered on it */
+  .lf-main :global(.wide) {
+    width: min(880px, calc(100vw - 2 * var(--gutter)));
+    position: relative;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+  .is-wide .lf-main :global(.wide) {
+    width: auto;
+    left: 0;
+    transform: none;
   }
   .toc {
     display: none;

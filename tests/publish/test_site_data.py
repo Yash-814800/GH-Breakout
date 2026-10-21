@@ -149,3 +149,13 @@ def test_owner_fields_are_exported_and_validated():
     )
     with pytest.raises(jsonschema.ValidationError):
         site_data.validate_json([{**row, "owner_type": "Robot"}], "leaderboard.schema.json")
+
+
+def test_track_headline_is_generated_in_python():
+    assert "first list matures on Nov 19, 2026" in site_data.track_headline(
+        0, 0.0, 0.0051, "2026-10-20"
+    )
+    assert site_data.track_headline(5, 0.18, 0.0051, "2026-07-03") == (
+        "Since Jul 3, 2026, 18% of our top-25 picks broke out within 30 days, "
+        "against 0.5% for all candidates."
+    )

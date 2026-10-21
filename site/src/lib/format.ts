@@ -194,3 +194,8 @@ export function isoWeekLabel(d: DateLike): string {
   const week = Math.ceil(((t.getTime() - yearStart) / 86_400_000 + 1) / 7);
   return `Week ${week}, ${t.getUTCFullYear()}`;
 }
+
+/** Whole-percent axis tick: 1 becomes "100%" (pct() would say ">99%"). */
+export function pctAxis(p: Num): string {
+  return bad(p) ? DASH : `${Math.round(p * 100)}%`;
+}

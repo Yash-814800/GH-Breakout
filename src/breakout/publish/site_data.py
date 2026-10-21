@@ -878,6 +878,30 @@ def export_repo_details(
     return written
 
 
+def track_headline(
+    n_matured: int, top25_hit_rate: float, base_rate: float, first_date: str | None
+) -> str:
+    """One-sentence summary for the top of /track-record/ (the template only displays it)."""
+
+    def _d(iso: str) -> str:
+        d = date.fromisoformat(iso)
+        return f"{d:%b} {d.day}, {d.year}"
+
+    if n_matured < 1:
+        if first_date:
+            first_mature = date.fromisoformat(first_date) + timedelta(days=30)
+            return (
+                "No predictions have matured yet. A prediction needs 30 days to be judged; "
+                f"the first list matures on {_d(first_mature.isoformat())}."
+            )
+        return "No predictions have matured yet. A prediction needs 30 days to be judged."
+    since = f"Since {_d(first_date)}, " if first_date else ""
+    return (
+        f"{since}{round(top25_hit_rate * 100)}% of our top-25 picks broke out within 30 days, "
+        f"against {base_rate * 100:.1f}% for all candidates."
+    )
+
+
 def export_track_record(
     cfg: Config,
     con: duckdb.DuckDBPyConnection,
@@ -1006,6 +1030,7 @@ def export_track_record(
             "base_rate": 0.0051,
             "b1_hit_rate": b1_hr,
             "median_lead_time_days": 1.0,
+            "headline": track_headline(n_mat, top25_hr, 0.0051, ledger_summary.get("first_date")),
         },
         "calibration": cal_bins,
         "ledger": ledger_summary,
