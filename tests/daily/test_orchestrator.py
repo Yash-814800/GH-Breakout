@@ -63,3 +63,19 @@ def test_simulated_gap_planning(tmp_path: Path, monkeypatch) -> None:
     # Missing hours (including hour 14 and all unrecorded hours) are caught
     gap_hours = [h for h in todo if h == datetime(2024, 6, 3, 14, 0, 0)]
     assert len(gap_hours) == 1, "Expected missing hour 14:00 to be planned for ingest"
+
+
+def test_adopt_frozen_snapshot_replaces_the_regenerated_file(tmp_path: Path) -> None:
+    from breakout.daily.run import adopt_frozen_snapshot
+    from breakout.ops import ledger
+
+    frozen = tmp_path / "frozen.parquet"
+    frozen.write_bytes(b"frozen-bytes")
+    pred = tmp_path / "run" / "pred.parquet"
+    pred.parent.mkdir()
+    pred.write_bytes(b"regenerated")
+    snap = tmp_path / "snap" / "predictions.parquet"
+    snap.parent.mkdir()
+    sha = adopt_frozen_snapshot(frozen, pred, snap)
+    assert pred.read_bytes() == snap.read_bytes() == b"frozen-bytes"
+    assert sha == ledger.file_sha256(frozen)

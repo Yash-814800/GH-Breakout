@@ -88,6 +88,13 @@ def _manifest_fragments(cfg: Config, days: list[date]) -> list[hf_mod.UploadItem
     ]
 
 
+def adopt_frozen_snapshot(frozen: Path, pred_path: Path, snap_local: Path) -> str:
+    """Replace the regenerated predictions file by the frozen one; returns its sha256."""
+    shutil.copy2(frozen, pred_path)
+    shutil.copy2(frozen, snap_local)
+    return ledger_mod.file_sha256(pred_path)
+
+
 def _save_status(status_data: dict[str, Any]) -> None:
     STATUS_JSON_PATH.parent.mkdir(parents=True, exist_ok=True)
     STATUS_JSON_PATH.write_text(json.dumps(status_data, indent=2, default=str) + "\n")
@@ -641,14 +648,19 @@ def daily_run(
                         log.info("Snapshot already exists with identical sha256: no-op")
                         hf_commit = "existing"
                     else:
-                        log.error(
-                            "FREEZE CONFLICT: remote sha %s != local sha %s for %s",
-                            remote_sha,
-                            file_sha256,
+                        # A re-run of an already frozen date regenerates a file that is not
+                        # byte-identical (Parquet metadata, late source hours). The frozen
+                        # snapshot is the truth: keep it and publish from it (idempotent re-run).
+                        log.warning(
+                            "Re-run of a frozen date %s: regenerated sha %s differs from the "
+                            "frozen sha %s; keeping the frozen snapshot",
                             target_date,
+                            file_sha256,
+                            remote_sha,
                         )
-                        freeze_conflict = True
-                        status["freeze_conflict"] = True
+                        file_sha256 = adopt_frozen_snapshot(Path(down_path), pred_path, snap_local)
+                        hf_commit = "existing"
+                        status["reused_frozen_snapshot"] = True
                 finally:
                     if temp_down.exists():
                         temp_down.unlink()
