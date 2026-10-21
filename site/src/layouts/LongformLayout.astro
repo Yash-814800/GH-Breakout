@@ -1,0 +1,112 @@
+---
+import BaseLayout from './BaseLayout.astro';
+
+interface Props {
+  title?: string;
+  description?: string;
+  ogImage?: string;
+  noindex?: boolean;
+  type?: 'website' | 'article';
+  /** Table of contents entries; rendered as a sticky left column at xl. */
+  toc?: { id: string; label: string }[];
+}
+const { toc, ...props } = Astro.props;
+---
+
+<BaseLayout {...props}>
+  <slot name="head" slot="head" />
+  <div class="container">
+    <slot name="header" />
+    <div class:list={['lf-grid', toc && 'has-toc']}>
+      {
+        toc && (
+          <nav class="toc" aria-label="On this page">
+            <ul>
+              {toc.map((t) => (
+                <li><a href={`#${t.id}`} data-toc={t.id}>{t.label}</a></li>
+              ))}
+            </ul>
+          </nav>
+        )
+      }
+      <div class="lf-main"><slot /></div>
+    </div>
+  </div>
+</BaseLayout>
+
+<script>
+  // Highlights the TOC entry of the section currently in view.
+  const links = new Map<string, HTMLElement>();
+  document.querySelectorAll<HTMLElement>('[data-toc]').forEach((a) => links.set(a.dataset.toc!, a));
+  if (links.size && 'IntersectionObserver' in window) {
+    const io = new IntersectionObserver(
+      (entries) => {
+        for (const e of entries) {
+          if (e.isIntersecting) {
+            links.forEach((a) => a.removeAttribute('aria-current'));
+            links.get(e.target.id)?.setAttribute('aria-current', 'true');
+          }
+        }
+      },
+      { rootMargin: '-20% 0px -70% 0px' },
+    );
+    links.forEach((_, id) => {
+      const el = document.getElementById(id);
+      if (el) io.observe(el);
+    });
+  }
+</script>
+
+<style>
+  .lf-grid {
+    display: block;
+  }
+  .lf-main {
+    min-width: 0;
+    max-width: var(--measure);
+    margin-inline: auto;
+  }
+  .toc {
+    display: none;
+  }
+  @media (min-width: 1280px) {
+    .has-toc {
+      display: grid;
+      grid-template-columns: 200px minmax(0, 1fr) 200px;
+      column-gap: 40px;
+    }
+    .has-toc .lf-main {
+      grid-column: 2;
+    }
+    .toc {
+      display: block;
+      grid-column: 1;
+      grid-row: 1;
+      position: sticky;
+      top: calc(var(--nav-h) + 24px);
+      align-self: start;
+    }
+    .toc ul {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      border-left: 1px solid var(--line);
+    }
+    .toc a {
+      display: block;
+      padding: 4px 0 4px 12px;
+      margin-left: -1px;
+      border-left: 2px solid transparent;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--ink-3);
+    }
+    .toc a:hover {
+      color: var(--ink);
+    }
+    .toc a[aria-current='true'] {
+      color: var(--ink);
+      border-left-color: var(--accent);
+    }
+  }
+</style>

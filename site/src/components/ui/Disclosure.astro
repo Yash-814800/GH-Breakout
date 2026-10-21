@@ -1,0 +1,47 @@
+---
+import Icon from './Icon.astro';
+
+interface Props {
+  summary: string;
+  open?: boolean;
+  class?: string;
+}
+const { summary, open = false, class: cls } = Astro.props;
+---
+
+<details class:list={['disc', cls]} open={open}>
+  <summary>
+    <Icon name="chevron-right" size={16} class="disc-chev" />
+    <span>{summary}</span>
+  </summary>
+  <div class="disc-body"><slot /></div>
+</details>
+
+<style>
+  .disc summary {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 32px;
+    list-style: none;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--ink-2);
+  }
+  .disc summary::-webkit-details-marker {
+    display: none;
+  }
+  .disc summary:hover {
+    color: var(--ink);
+  }
+  .disc :global(.disc-chev) {
+    transition: transform var(--dur-2) var(--ease);
+  }
+  .disc[open] :global(.disc-chev) {
+    transform: rotate(90deg);
+  }
+  .disc-body {
+    padding-top: 12px;
+  }
+</style>

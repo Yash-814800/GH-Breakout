@@ -1,0 +1,50 @@
+---
+import Icon from './Icon.astro';
+
+interface Props {
+  icon?: string;
+  title: string;
+  class?: string;
+}
+const { icon = 'inbox', title, class: cls } = Astro.props;
+---
+
+<div class:list={['empty', cls]}>
+  <Icon name={icon} size={40} stroke={1.5} class="empty-icon" />
+  <p class="empty-title">{title}</p>
+  <p class="empty-help"><slot /></p>
+  <div class="empty-action"><slot name="action" /></div>
+</div>
+
+<style>
+  .empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 48px 20px;
+  }
+  .empty-icon {
+    color: var(--ink-3);
+  }
+  .empty-title {
+    margin-top: 12px;
+    font-size: 16px;
+    font-weight: 600;
+  }
+  .empty-help {
+    margin-top: 4px;
+    font-size: 14px;
+    color: var(--ink-2);
+    max-width: 44ch;
+  }
+  .empty-help:empty {
+    display: none;
+  }
+  .empty-action {
+    margin-top: 16px;
+  }
+  .empty-action:empty {
+    display: none;
+  }
+</style>

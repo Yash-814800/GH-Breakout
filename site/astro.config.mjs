@@ -7,12 +7,22 @@ import tailwindcss from '@tailwindcss/vite';
 const site = process.env.SITE_URL || 'https://yash-814800.github.io';
 const base = process.env.BASE_PATH || '/GH-Breakout';
 
+// Astro skips files that start with an underscore, so the style guide is injected as a route.
+const styleguide = {
+  name: 'styleguide-route',
+  hooks: {
+    'astro:config:setup': ({ injectRoute }) => {
+      injectRoute({ pattern: '/_styleguide', entrypoint: './src/styleguide/index.astro' });
+    },
+  },
+};
+
 export default defineConfig({
   site,
   base,
   output: 'static',
   trailingSlash: 'always',
-  integrations: [sitemap({ filter: (page) => !page.includes('/_styleguide/') })],
+  integrations: [styleguide, sitemap({ filter: (page) => !page.includes('/_styleguide/') })],
   vite: {
     plugins: [tailwindcss()],
     worker: {

@@ -1,0 +1,56 @@
+---
+interface Props {
+  title: string;
+  lead?: string;
+  size?: 'app' | 'display';
+  center?: boolean;
+  class?: string;
+}
+const { title, lead, size = 'app', center = false, class: cls } = Astro.props;
+---
+
+<header class:list={['ph-head', size === 'display' && 'ph-display', center && 'ph-center', cls]}>
+  <h1 class:list={[size === 'display' ? 't-display' : 't-h1']}>{title}</h1>
+  {lead && <p class="t-lead ph-lead">{lead}</p>}
+  {Astro.slots.has('meta') && <div class="ph-row"><slot name="meta" /></div>}
+  {Astro.slots.has('actions') && <div class="ph-row"><slot name="actions" /></div>}
+</header>
+
+<style>
+  .ph-head {
+    padding-top: 32px;
+    padding-bottom: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 0;
+  }
+  @media (min-width: 768px) {
+    .ph-head {
+      padding-top: 48px;
+    }
+  }
+  .ph-display {
+    padding-top: 64px;
+    padding-bottom: 32px;
+  }
+  .ph-center {
+    align-items: center;
+    text-align: center;
+  }
+  .ph-lead {
+    max-width: 60ch;
+  }
+  .ph-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 16px;
+    margin-top: 8px;
+    font-size: 13px;
+    color: var(--ink-3);
+  }
+  .ph-center .ph-row {
+    justify-content: center;
+  }
+</style>

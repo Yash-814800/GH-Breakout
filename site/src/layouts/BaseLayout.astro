@@ -1,0 +1,66 @@
+---
+import { existsSync } from 'node:fs';
+import fontUrl from '@fontsource-variable/instrument-sans/files/instrument-sans-latin-wdth-normal.woff2?url';
+import '../styles/global.css';
+import { BRAND, TAGLINE } from '../lib/site';
+import { url } from '../lib/url';
+import Seo from '../components/layout/Seo.astro';
+import SkipLink from '../components/layout/SkipLink.astro';
+import Nav from '../components/layout/Nav.astro';
+import Footer from '../components/layout/Footer.astro';
+
+interface Props {
+  /** Page name; the title becomes "{title} | Brand". Omit on the home page. */
+  title?: string;
+  description?: string;
+  ogImage?: string;
+  noindex?: boolean;
+  type?: 'website' | 'article';
+}
+const { title, description = TAGLINE, ogImage, noindex, type } = Astro.props;
+const fullTitle = title ? `${title} | ${BRAND}` : `${BRAND}: GitHub repos likely to break out`;
+const hasFeed = existsSync('public/feed.xml');
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#111216" media="(prefers-color-scheme: dark)" />
+    <script is:inline>
+      // Set the theme before first paint so there is no flash. Unset means "follow the system".
+      (function () {
+        var root = document.documentElement;
+        try {
+          var t = localStorage.getItem('theme');
+          if (t === 'light' || t === 'dark') {
+            root.dataset.theme = t;
+            root.dataset.themePref = t;
+            return;
+          }
+        } catch (e) {}
+        root.dataset.themePref = 'system';
+      })();
+    </script>
+    <link rel="preload" href={fontUrl} as="font" type="font/woff2" crossorigin />
+    <link rel="icon" href={url('/favicon.svg')} type="image/svg+xml" />
+    <link rel="icon" href={url('/favicon.ico')} sizes="32x32" />
+    <link rel="apple-touch-icon" href={url('/apple-touch-icon.png')} />
+    <link rel="manifest" href={url('/site.webmanifest')} />
+    {hasFeed && <link rel="alternate" type="application/rss+xml" title={`${BRAND} daily list`} href={url('/feed.xml')} />}
+    <Seo title={fullTitle} description={description} ogImage={ogImage} noindex={noindex} type={type} />
+    <slot name="head" />
+  </head>
+  <body>
+    <SkipLink />
+    <Nav />
+    <main id="content">
+      <slot />
+    </main>
+    <Footer />
+    <div id="live-region" class="sr-only" aria-live="polite" aria-atomic="true"></div>
+  </body>
+</html>

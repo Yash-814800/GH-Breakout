@@ -1,0 +1,78 @@
+---
+import Icon from './Icon.astro';
+
+interface Option {
+  value: string;
+  label: string;
+}
+interface Props {
+  name: string;
+  label: string;
+  options: Option[];
+  value?: string;
+  /** Show the label above the control; otherwise it is only the accessible name. */
+  showLabel?: boolean;
+  class?: string;
+}
+const { name, label, options, value, showLabel = false, class: cls } = Astro.props;
+---
+
+<div class:list={['sel', cls]}>
+  {showLabel && <label class="sel-label" for={`sel-${name}`}>{label}</label>}
+  <div class="sel-wrap">
+    <select id={`sel-${name}`} name={name} aria-label={showLabel ? undefined : label}>
+      {options.map((o) => <option value={o.value} selected={o.value === value}>{o.label}</option>)}
+    </select>
+    <Icon name="chevron-down" size={16} class="sel-chev" />
+  </div>
+</div>
+
+<style>
+  .sel {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+  }
+  .sel-label {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--ink-2);
+  }
+  .sel-wrap {
+    position: relative;
+    display: flex;
+    min-width: 0;
+  }
+  select {
+    appearance: none;
+    width: 100%;
+    height: 36px;
+    padding: 0 32px 0 12px;
+    background: var(--raised);
+    color: var(--ink);
+    border: 1px solid var(--line-strong);
+    border-radius: var(--r-md);
+    font: inherit;
+    font-size: 14px;
+    font-weight: 500;
+    text-overflow: ellipsis;
+    cursor: pointer;
+  }
+  select:hover {
+    background: var(--surface);
+  }
+  .sel-wrap :global(.sel-chev) {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    pointer-events: none;
+    color: var(--ink-3);
+  }
+  @media (max-width: 639px) {
+    select {
+      height: 40px;
+    }
+  }
+</style>

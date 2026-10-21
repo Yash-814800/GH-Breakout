@@ -236,6 +236,8 @@ class DailyCfg(_Section):
 
 
 class SiteCfg(_Section):
+    brand_name: str = "Breakout Radar"  # Phase 14: shown in the nav, titles and OG images
+    tagline: str = "GitHub repos likely to break out in the next 30 days. Updated daily."
     deploy_target: str
     leaderboard_size: int
     detail_pages_days: int

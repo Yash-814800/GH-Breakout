@@ -1,0 +1,98 @@
+---
+interface Props {
+  /** Tooltip text. */
+  text: string;
+  /** Accessible name of the trigger when it has no visible text. */
+  label?: string;
+  class?: string;
+}
+const { text, label, class: cls } = Astro.props;
+const id = `tip-${Math.random().toString(36).slice(2, 9)}`;
+---
+
+<span class:list={['tip', cls]}>
+  <button type="button" class="tip-trigger" aria-describedby={id} aria-label={label} data-tip-for={id}>
+    <slot />
+  </button>
+  <span id={id} role="tooltip" popover="manual" class="tip-pop">{text}</span>
+</span>
+
+<script>
+  // Shows on hover and focus after 150 ms, hides on leave/blur/Escape. Positioned in JS so it works
+  // in every browser (CSS anchor positioning is not universal).
+  function place(trigger: HTMLElement, pop: HTMLElement) {
+    const r = trigger.getBoundingClientRect();
+    const pw = pop.offsetWidth;
+    const ph = pop.offsetHeight;
+    let left = r.left + r.width / 2 - pw / 2;
+    left = Math.max(8, Math.min(left, window.innerWidth - pw - 8));
+    let top = r.bottom + 8;
+    if (top + ph > window.innerHeight - 8) top = Math.max(8, r.top - ph - 8);
+    pop.style.left = `${left}px`;
+    pop.style.top = `${top}px`;
+  }
+  document.querySelectorAll<HTMLElement>('[data-tip-for]').forEach((trigger) => {
+    const pop = document.getElementById(trigger.dataset.tipFor!);
+    if (!pop) return;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const show = () => {
+      clearTimeout(timer);
+      timer = setTimeout(() => {
+        pop.showPopover();
+        place(trigger, pop);
+      }, 150);
+    };
+    const hide = () => {
+      clearTimeout(timer);
+      if (pop.matches(':popover-open')) pop.hidePopover();
+    };
+    trigger.addEventListener('mouseenter', show);
+    trigger.addEventListener('mouseleave', hide);
+    trigger.addEventListener('focus', show);
+    trigger.addEventListener('blur', hide);
+    trigger.addEventListener('click', (e) => {
+      e.preventDefault();
+      pop.matches(':popover-open') ? hide() : (pop.showPopover(), place(trigger, pop));
+    });
+    trigger.addEventListener('keydown', (e) => e.key === 'Escape' && hide());
+  });
+</script>
+
+<style>
+  .tip {
+    display: inline-flex;
+    position: relative;
+    z-index: 1;
+  }
+  .tip-trigger {
+    display: inline-flex;
+    align-items: center;
+    gap: inherit;
+    padding: 0;
+    color: inherit;
+    font: inherit;
+    text-align: inherit;
+    cursor: help;
+    border-radius: var(--r-xs);
+  }
+  .tip-pop {
+    margin: 0;
+    inset: auto;
+    position: fixed;
+    max-width: 280px;
+    padding: 8px 10px;
+    background: var(--raised);
+    color: var(--ink);
+    border: 1px solid var(--line);
+    border-radius: var(--r-md);
+    box-shadow: var(--shadow-pop);
+    font-size: 13px;
+    line-height: 1.4;
+    font-weight: 400;
+    z-index: var(--z-tooltip);
+    text-wrap: pretty;
+  }
+  .tip-pop:not(:popover-open) {
+    display: none;
+  }
+</style>
