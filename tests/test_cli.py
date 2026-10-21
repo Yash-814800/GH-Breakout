@@ -160,5 +160,8 @@ def test_ops_group_lists_commands():
 
 
 def test_daily_run_has_a_skip_bootstrap_option():
-    out = runner.invoke(app, ["daily", "run", "--help"]).output
-    assert "--skip-bootstrap" in out and "--no-upload" in out
+    import typer.main
+
+    daily = typer.main.get_command(app).commands["daily"].commands["run"]  # type: ignore[attr-defined]
+    opts = {o for p in daily.params for o in p.opts}
+    assert {"--skip-bootstrap", "--no-upload"} <= opts
