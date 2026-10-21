@@ -5,12 +5,12 @@ description = "Predict which young GitHub repositories are about to break out, f
 readme = "README.md"
 requires-python = ">=3.12,<3.13"
 dependencies = [
-    "db-dtypes>=1.7.2",
+    "db-dtypes>=1.8.0",
     "dbt-core>=1.12.6",
     "dbt-duckdb>=1.11.0",
     "duckdb>=1.5.6",
-    "google-cloud-bigquery>=3.46.1",
-    "google-cloud-bigquery-storage>=2.42.0",
+    "google-cloud-bigquery>=3.46.2",
+    "google-cloud-bigquery-storage>=2.43.0",
     "httpx>=0.28.1",
     "huggingface-hub>=2.2.0",
     "lightgbm>=4.7.0",
@@ -73,10 +73,10 @@ addopts = "-q"
 dev = [
     "matplotlib>=3.11.2",
     "mypy>=2.4.0",
-    "pre-commit>=4.6.2",
+    "pre-commit>=4.7.0",
     "pytest>=9.1.1",
     "pytest-cov>=7.1.0",
-    "ruff>=0.17.0",
+    "ruff>=0.17.1",
     "types-pyyaml>=6.0.12.20260906",
 ]
 
