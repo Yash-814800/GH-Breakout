@@ -1,5 +1,6 @@
 # Progress
 
+Phase numbers are the build order of the project; the phase prompt files are kept locally and are not in the repository.
 Update this file at the end of every phase: tick the box, add the date, and record numbers you
 measured (row counts, sizes, runtimes, metrics). Future sessions rely on it.
 
@@ -305,7 +306,7 @@ measured (row counts, sizes, runtimes, metrics). Future sessions rely on it.
 
 ## Handoff to Phase 8 (state at 2026-10-19)
 
-Start a fresh session with CLAUDE.md, this file, DECISIONS.md (ADR-020..024), ARCHITECTURE.md and `docs/phases/PHASE_08_*.md`.
+Start a fresh session with CLAUDE.md, this file, DECISIONS.md (ADR-020..024), ARCHITECTURE.md and the Phase 8 brief (local).
 - **Training table:** `data/derived/training/features_labels/year=YYYY/part-0.parquet` (also on the derived Hub repo under
   `training/`), 3,098,574 rows, the 71 features of `config/feature_dictionary.yaml` then the label columns (`breakout_rel`
   primary, `breakout_abs`, `gain_30d`, `threshold_rel`, ...) after `bucket, repo_id, snapshot_date`. `feature_manifest.json` lists
@@ -424,7 +425,7 @@ Phase 5 (dbt staging and intermediate models) can start. Read `docs/DECISIONS.md
 ## Handoff to Phase 4 (state at 2026-10-16, commit 9440924; consumed by Phase 4)
 
 Start a fresh session with: CLAUDE.md, this file, DECISIONS.md (ADR-009..015), ARCHITECTURE.md and
-`docs/phases/PHASE_04_*.md`; then write the checklist plan and wait for the human's OK.
+the Phase 4 brief (local); then write the checklist plan and wait for the human's OK.
 
 **Prerequisites: all met.** Phases 0-3 done. `GH_ENRICH_TOKEN` (classic, no scopes, 5,000 req/h) is in
 `.env` and the Actions secrets; `HF_TOKEN`/`HF_USER` in `.env`, Actions secret `HF_TOKEN`, Actions variable

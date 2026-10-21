@@ -32,7 +32,7 @@ sources:
           external_location: "read_parquet('{{ env_var(\"GHB_LAKE\") }}/push_daily/**/*.parquet', hive_partitioning = false, union_by_name = true)"
 
   - name: enrich
-    description: Phase 4 enrichment tables (breakout enrich ...), under GHB_DERIVED/enrich.
+    description: Enrichment tables (breakout enrich ...), under GHB_DERIVED/enrich.
     tables:
       - name: repo_metadata
         meta: {external_location: "read_parquet('{{ env_var(\"GHB_DERIVED\") }}/enrich/repo_metadata.parquet')"}
@@ -46,7 +46,7 @@ sources:
         meta: {external_location: "read_parquet('{{ env_var(\"GHB_DERIVED\") }}/enrich/hn_stories.parquet')"}
 
   - name: state
-    description: Phase 9 persistent state tables (breakout build state ...), under GHB_DERIVED/state.
+    description: Persistent state tables (breakout build state ...), under GHB_DERIVED/state.
     tables:
       - name: tastemaker_state
         meta: {external_location: "read_parquet('{{ env_var(\"GHB_DERIVED\") }}/state/tastemaker_state.parquet')"}

@@ -1,6 +1,6 @@
 # BigQuery cost plan and backfill schedule (ADR-010)
 
-Generated 2026-10-12. Supersedes the Phase 2 default and the earlier schedules in ADR-009. **Approved split (human, 2026-10-12): BigQuery spine only for 2015-01-01..2023-05-31; everything from `history.cutover_date` = 2023-06-01 comes from data.gharchive.org hourly files through the Phase 1 parser.** Nothing in the range below has been run; only dry runs.
+Generated 2026-10-12. Supersedes the original default plan and the earlier schedules in ADR-009. **Approved split (human, 2026-10-12): BigQuery spine only for 2015-01-01..2023-05-31; everything from `history.cutover_date` = 2023-06-01 comes from data.gharchive.org hourly files through the Phase 1 parser.** Nothing in the range below has been run; only dry runs.
 
 ## 1. BigQuery spine, 2015-01..2023-05 (dry-run, to be approved before running)
 
@@ -29,7 +29,7 @@ Generated 2026-10-12. Supersedes the Phase 2 default and the earlier schedules i
 
 ## 2. Hourly files from the cutover onward (GitHub Actions per ADR-011, no BigQuery quota)
 
-> Superseded by ADR-011: this runs as an Actions matrix built in Phase 3, not on the laptop. The disk figures below describe the work, not a local footprint.
+> Superseded by ADR-011: this runs as an Actions matrix, not on the laptop. The disk figures below describe the work, not a local footprint.
 
 - Order: trusted era 2023-06-01..2025-05-23 first, then the degraded era the day after 2025-05-23 .. last complete day (kept, flagged, never trained or evaluated on). Within an era oldest to newest.
 - `breakout backfill hourly [--dry]`: resumable through the hourly manifest (hours already `ok` at the current parser version are skipped), at most 4 concurrent downloads (`--workers`, default 2).

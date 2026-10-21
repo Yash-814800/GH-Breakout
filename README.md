@@ -167,8 +167,7 @@ uv run breakout daily run --date 2026-10-20 --no-upload --no-commit   # score on
 cd site && npm ci && npm run build:fx && npx playwright test         # the website on fixture data
 ```
 
-Run a slice instead of the full history by pulling only the last three months (`--since`). The phase
-by phase build order is in [docs/phases/](docs/phases/), what to set up by hand (tokens, secrets, Pages)
+Run a slice instead of the full history by pulling only the last three months (`--since`). What to set up by hand (tokens, secrets, Pages)
 is in [docs/HUMAN_SETUP.md](docs/HUMAN_SETUP.md), and operations (rerun a failed day, roll back a model,
 rotate a token) are in [docs/runbook.md](docs/runbook.md).
 

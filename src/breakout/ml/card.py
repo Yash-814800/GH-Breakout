@@ -101,7 +101,7 @@ def render(cfg: Config, metrics: dict[str, Any], cv: dict[str, Any] | None) -> s
         "## Known limitations",
         "",
         "- Attention outside GitHub is invisible except Hacker News stories linking to the repository; a repo that is about to trend on X, Reddit or YouTube is not seen until the stars arrive.",
-        "- Unstars are not observable; stars from the Events API only. Star farms and bots are not removed from the label (Phase 11 adds a detector); rapid fake-star growth can look like a breakout.",
+        "- Unstars are not observable; stars from the Events API only. Star farms and bots are not removed from the label (the suspicious-growth detector flags such repos); rapid fake-star growth can look like a breakout.",
         "- GitHub trimmed Events payloads on 2025-10-07 (PR author, merged flag, commit lists). The shipped model uses only features that survive the trim; pre-2023-06 history has no payload detail (Tier B is NULL), so Tier B signals are learned from 2023-06 onward only.",
         "- After 2025-05-23 GH Archive star capture collapsed (ADR-009). The training and evaluation data end there; live scoring on later data depends on the live source decision (ADR-010) and on metadata (language, owner type) that is 'Unknown' until fetched.",
         "- Left-censoring: repository history before the first observed event is unknown; `age_days` is measured from the first observed activity.",
