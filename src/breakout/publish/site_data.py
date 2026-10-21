@@ -1334,7 +1334,7 @@ def upload_site_data_to_hf(cfg: Config) -> list[str]:
     files = list(SITE_DATA_DIR.rglob("*"))
     items: list[hf_mod.UploadItem] = []
     for f in files:
-        if f.is_file():
+        if f.is_file() and ".cache" not in f.relative_to(SITE_DATA_DIR).parts:
             rel_in_data = f.relative_to(SITE_DATA_DIR)
             rel_in_repo = f"site_data/latest/{rel_in_data}"
             items.append(hf_mod.UploadItem(f, rel_in_repo))
