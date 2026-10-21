@@ -284,7 +284,7 @@ file for the code still needs the copyright holder's name.
 deliverables; PROGRESS "Handoff to Phase 3" lists what exists and what is missing.
 
 ## ADR-015: Phase 3 lake sync design (2026-10-15)
-**Context:** Phase 3 implementation choices that differ from or extend `PHASE_03_lake_on_hf.md`.
+**Context:** Phase 3 implementation choices that differ from or extend the Phase 3 brief (kept locally).
 **Decision:**
 1. **Catalog in every commit.** Each upload commit carries the refreshed `catalog.parquet` and is
    guarded by `parent_commit`; a lost race re-reads the remote catalog and continues (already-committed
@@ -331,7 +331,7 @@ risk in ADR-013/014 item 5 now applies (mitigation unchanged: keep month files o
 finished months).
 
 ## ADR-016: Phase 4 plumbing: name history, actor-age sampling, config (2026-10-16)
-**Context:** Phase 4 (`docs/phases/PHASE_04_enrichment.md`) needs a name <-> repo_id map for trending and
+**Context:** Phase 4 (phase brief, kept locally) needs a name <-> repo_id map for trending and
 HN, a monotone actor-id -> account-age map, and shared HTTP/rate-limit code. The phase file says "all
 `events` files"; the local lake has only the `bq` history, the hourly era lives on the Hub (ADR-015).
 **Decision:**
@@ -447,7 +447,7 @@ them for a snapshot `D` would leak future popularity (CLAUDE.md section 5).
 points at story time retroactively.
 
 ## ADR-020: Phase 5 dbt design: bucketed builds, candidate-first prefilter, local warehouse (2026-10-19)
-**Context:** Phase 5 (`docs/phases/PHASE_05_dbt_staging_intermediate.md`) as written is one `dbt build` over
+**Context:** Phase 5 (phase brief, kept locally) as written is one `dbt build` over
 the whole history. On this machine (15 GB RAM, 4 GB cgroup cap, DuckDB `memory_limit` 2 GB, 1 thread) five
 design points of the phase file did not survive contact with 4.3 G events (3 failed full builds, ~25 h of
 wall clock): single statements over the biggest tables OOM or spill past any sane cap; the NTFS (ntfs-3g)
@@ -497,7 +497,7 @@ window will OOM. The daily run (Phase 9) uses a short window and builds the same
 The warehouse is 33 GB; do not keep two copies on the 193 GB `/home` disk longer than needed.
 
 ## ADR-021: Phase 6 candidates, labels and evaluation design (2026-10-19)
-**Context:** Phase 6 (`docs/phases/PHASE_06_labels_baseline_eval.md`) left several details open.
+**Context:** Phase 6 (phase brief, kept locally) left several details open.
 **Decision:**
 1. **Latest ingested day** (`latest_ingested_day` macro): the day of the newest star in `stg_stars` if that star
    is in hour 23, otherwise the day before; capped at `events_end - 1`. Snapshots run to that day + 1;
@@ -530,7 +530,7 @@ The warehouse is 33 GB; do not keep two copies on the 193 GB `/home` disk longer
 `snapshot_dates_mode: single` and a warehouse that contains the staging/intermediate tables of the daily window.
 
 ## ADR-022: Phase 7 feature design: tastemaker, groups, deviations from the phase file (2026-10-19)
-**Context:** Phase 7 (`docs/phases/PHASE_07_features.md`) specifies seven feature groups. Implementing them on the
+**Context:** Phase 7 (phase brief, kept locally) specifies seven feature groups. Implementing them on the
 real tables (`int_*` of Phase 5, `mart_candidates` of Phase 6) forced several definitions that the file leaves open or
 that cannot be built as written.
 **Decision:**
@@ -639,7 +639,7 @@ were rebuilt for the whole trusted history, the labels export and the baseline r
   'Unknown' share now (not_found repos), so the model sees the category.
 
 ## ADR-025: Phase 8 model design, evaluation and promotion (2026-10-19)
-**Context:** Phase 8 (`docs/phases/PHASE_08_model.md`) leaves compute, holdout and promotion details open. The
+**Context:** Phase 8 (phase brief, kept locally) leaves compute, holdout and promotion details open. The
 corrected B1 baseline (ADR-024) is the bar: pooled PR-AUC 0.0286, P@25 0.109. The laptop has 15 GB RAM and one worker
 under a 4 GB cap (CLAUDE.md section 10).
 **Decision:**
@@ -692,7 +692,7 @@ daily probabilities from the Monday calibrator unchanged**: either train / calib
 `range` mode makes them) or apply a documented scale correction. Ranking quality is unaffected within the noise.
 
 ## ADR-026: Phase 9 daily pipeline, persistent state, and ops tooling (2026-10-20)
-**Context:** Phase 9 (`docs/phases/PHASE_09_daily_pipeline.md`) operationalizes daily inference, weekly retrain,
+**Context:** Phase 9 (phase brief, kept locally) operationalizes daily inference, weekly retrain,
 monthly maintenance, and health checks on free GitHub Actions runners ($0 cost, 2 vCPU / 7 GB RAM limit, no persistent
 disk across runs). It requires persistent feature state on Hugging Face to avoid re-scanning 10 years of history on each
 daily run, a training/serving parity test (§9.6), a tamper-evident prediction ledger, drift monitoring (PSI), and an
@@ -792,7 +792,7 @@ event-based numbers, which are what the model saw; the page says so. Ledger rows
 
 ## ADR-030: Phase 11 suspicious-growth detector, similar repos, cohort retention, and insights (2026-10-21)
 
-**Context:** Phase 11 (`docs/phases/PHASE_11_fake_stars_similarity_cohorts.md`) implements game-resistance and deep repository analysis:
+**Context:** Phase 11 (phase brief, kept locally) implements game-resistance and deep repository analysis:
 1. A transparent, non-accusatory suspicious-growth score protecting the leaderboard from farmed stars.
 2. Item-item co-star similarity ("People who starred this also starred...").
 3. Stargazer cohort retention benchmarks comparing new repos against past breakouts.
@@ -870,7 +870,7 @@ event-based numbers, which are what the model saw; the page says so. Ledger rows
 
 ## ADR-032: Phase 12 and 13 design: distribution, dbt docs, benchmark, no Bluesky bot (2026-10-21)
 
-**Context:** Phases 12 and 13 (`docs/phases/PHASE_12_distribution.md`, `PHASE_13_polish.md`) were implemented together on the owner's instruction, "everything except the Bluesky bot".
+**Context:** Phases 12 and 13 (phase brief, kept locally) were implemented together on the owner's instruction, "everything except the Bluesky bot".
 
 **Decision:**
 1. **Bluesky bot (12.4) is not built.** `optional.bluesky_enabled` stays `false`; no `atproto` dependency, no posting code. The Mastodon variant is documented only (runbook). This is a deliberate deviation from the phase file.

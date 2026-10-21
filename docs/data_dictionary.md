@@ -32,7 +32,7 @@ Materialized as **incremental**. Tests: 4. Built from: `known_bots`.
 
 ### `stg_bot_actors`
 
-Automation accounts (login ending in [bot] / -bot / _bot, the known_bots seed, or > 1,000 non-star events on >= 3 UTC days). Heavy starrers are NOT classified here (Phase 11).
+Automation accounts (login ending in [bot] / -bot / _bot, the known_bots seed, or > 1,000 non-star events on >= 3 UTC days). Heavy starrers are NOT classified here (see mart_suspicion).
 
 Materialized as **table**. Tests: 4. Built from: `known_bots`, `stg_bot_actor_signals`.
 
@@ -220,7 +220,7 @@ Materialized as **view**. Tests: 7. Built from: `ReleaseEvent`, `stg_bot_actors`
 
 ### `stg_repo_metadata`
 
-GitHub GraphQL metadata (Phase 4, trusted era). status 'not_found' = deleted/private/blocked: every other column is then NULL = UNKNOWN, not "false".
+GitHub GraphQL metadata (trusted era). status 'not_found' = deleted/private/blocked: every other column is then NULL = UNKNOWN, not "false".
 
 Materialized as **view**. Tests: 4. Built from: `repo_metadata`.
 
@@ -934,7 +934,7 @@ Materialized as **table**. Tests: 13. Built from: `int_repo_star_daily`, `mart_c
 
 ### `mart_similar_repos`
 
-Grain (repo_id, similar_repo_id). Co-starring cosine similarity between candidate repos and related projects (Phase 11, §11.2).
+Grain (repo_id, similar_repo_id). Co-starring cosine similarity between candidate repos and related projects.
 
 Materialized as **view**. Tests: 6. Built from: `mart_candidates`, `stg_bot_actors`, `stg_repo_metadata`, `stg_repo_name_history`, `stg_stars`.
 
@@ -961,7 +961,7 @@ Materialized as **table**. Tests: 5. Built from: `stg_stars`.
 
 ### `mart_suspicion`
 
-Grain (repo_id, snapshot_date) for candidates. Robust z-score suspicion metric and 0-100 score (Phase 11, §11.1).
+Grain (repo_id, snapshot_date) for candidates. Robust z-score suspicion metric and 0-100 score.
 
 Materialized as **view**. Tests: 7. Built from: `feat_activity`, `feat_star_dynamics`, `feat_stargazers`, `mart_candidates`.
 

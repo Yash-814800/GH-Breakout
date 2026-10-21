@@ -36,7 +36,7 @@ clear docs matter as much as the model itself.
    embargo. See section 6.
 7. **BigQuery: never `SELECT *`, always dry-run first, always set
    `maximum_bytes_billed`.** The `payload` column dominates cost; scan it at most once per
-   month table. See `docs/phases/PHASE_02_bigquery_backfill.md`.
+   month table. See `docs/bigquery_cost_plan.md`.
 8. **Never fabricate API fields or schema.** If you are unsure whether a field exists in
    GH Archive for a given era, check `docs/schema_audit.md` (produced in Phase 1) or
    inspect a real sample. GitHub removed many payload fields on 2025-10-07.
@@ -88,7 +88,7 @@ stable versions available at install time; do not guess version numbers from mem
 ├── site/                         # Astro website
 ├── tests/                        # pytest; fixtures in tests/fixtures/
 ├── docs/
-│   ├── phases/                   # PHASE_XX_*.md build prompts (do not edit except to fix errors)
+│   ├── phases/                   # PHASE_XX_*.md build prompts: local only, git-ignored, not in the public repo
 │   ├── ARCHITECTURE.md  DECISIONS.md  PROGRESS.md  HUMAN_SETUP.md
 │   ├── schema_audit.md           # produced in Phase 1
 │   ├── bigquery_cost_plan.md     # produced in Phase 2

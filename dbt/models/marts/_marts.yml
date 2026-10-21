@@ -100,7 +100,7 @@ models:
   - name: mart_suspicion
     description: >
       Grain (repo_id, snapshot_date) for candidates.
-      Robust z-score suspicion metric and 0-100 score (Phase 11, §11.1).
+      Robust z-score suspicion metric and 0-100 score.
     tests:
       - dbt_utils.unique_combination_of_columns:
           arguments: {combination_of_columns: [repo_id, snapshot_date]}
@@ -137,7 +137,7 @@ models:
   - name: mart_similar_repos
     description: >
       Grain (repo_id, similar_repo_id).
-      Co-starring cosine similarity between candidate repos and related projects (Phase 11, §11.2).
+      Co-starring cosine similarity between candidate repos and related projects.
     columns:
       - name: repo_id
         description: GitHub repository id. The only key used to join repositories; names are display-only.

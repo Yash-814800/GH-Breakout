@@ -28,7 +28,7 @@ for the enrichment budget).
 > returns 404 and GraphQL `stargazers` returns an empty list for repositories we do not own.
 > `stargazerCount`, search, repo metadata and `/users/{u}/starred` still work. See ADR-010.
 
-## Lake on Hugging Face (Phase 3)
+## Lake on Hugging Face
 
 Repos (all public, created by `breakout lake init`; names from `config/project.yaml`):
 `gh-breakout-events` (events, push_daily, manifests, `catalog.parquet`, README),
@@ -70,7 +70,7 @@ the audit trail). Never squash `gh-breakout-snapshots`; `hf.PROTECTED_REPOS` blo
 **If Hugging Face throttles or refuses.** Keep `bq` history in the repo and publish the hourly era
 as month files only (ADR-014 item 5); tell the human before deleting anything remotely.
 
-## Feature marts (Phase 7)
+## Feature marts
 
 Models: `int_actor_early_stars`, `int_actor_early_cum`, `int_repo_first_hit`, `int_tastemaker_thresholds`
 (tastemaker inputs), `feat_{star_dynamics,activity,stargazers,tastemaker,owner,detail,enrich}` and
@@ -95,7 +95,7 @@ project and a half-written model aborts the job). For long jobs run from a froze
 (`tests/test_features_dict.py` and the dictionary<->mart check fail otherwise), run
 `tests/features` (hand-computed synthetic expectations plus the leak machinery), then rebuild.
 
-## Operations and Daily Pipeline (Phase 9)
+## Operations and Daily Pipeline
 
 Orchestrator and scheduled pipelines running on GitHub Actions (`.github/workflows/`):
 - `daily.yml`: daily ingest, feature build, scoring, freeze, ledger append, outcomes, site data, heartbeat.
@@ -144,7 +144,7 @@ The `Pipeline Health & Keepalive` workflow runs every 6 hours and monitors `stat
 - **Missing hours older than 3 days**: GH Archive hours failed to download or parse repeatedly across multiple retry days. Run `backfill-day.yml` or check upstream GH Archive availability.
 - **dbt source freshness failed**: Upstream lake tables have not been updated within the expected freshness threshold. Check lake sync logs.
 
-## Website & deployment (Phase 10)
+## Website & deployment
 
 The public static website lives in `site/` (built with Astro) and deploys automatically to GitHub Pages.
 
@@ -174,7 +174,7 @@ If deploying to Cloudflare Pages:
 
 
 
-## Front-end QA (Phase 14)
+## Front-end QA
 
 Run from `site/`:
 
@@ -198,7 +198,7 @@ Run from `site/`:
 - **Daily deploy gate:** if the content check fails on real data, `daily.yml` skips the deploy and writes a warning to the run summary; fix the data or the formatter and re-run the workflow.
 
 
-## Distribution (Phase 12)
+## Distribution
 
 Everything below is built from frozen prediction snapshots and needs no extra service.
 
@@ -219,7 +219,7 @@ Everything below is built from frozen prediction snapshots and needs no extra se
   mark the account as a bot, post at most a few statuses a day, and keep the same de-duplication rule (a repo at most once in 60 days, never a high-suspicion one).
 - **A feed looks wrong.** Check `site/public/data/feed_items.json` first; if it is empty run `breakout publish feeds` (it restores the frozen snapshots from the snapshots repo, read only).
 
-## Portfolio polish (Phase 13)
+## Portfolio polish
 
 | Task | Command |
 |---|---|

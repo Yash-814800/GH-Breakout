@@ -3,7 +3,7 @@
  "metadata": {
   "dbt_schema_version": "https://schemas.getdbt.com/dbt/catalog/v1.json",
   "env": {},
-  "generated_at": "2026-10-21T12:35:04.636995Z"
+  "generated_at": "2026-10-21T16:02:12.530412Z"
  },
  "nodes": {
   "model.breakout.feat_activity": {

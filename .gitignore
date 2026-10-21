@@ -53,3 +53,6 @@ site/public/badges/
 # Blog images copied from docs/blog/img at build time
 site/public/blog/
 site/public/dbt-docs/
+
+# Build-order prompts: kept locally only, not published
+docs/phases/

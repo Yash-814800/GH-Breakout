@@ -1,12 +1,12 @@
 # Human setup checklist (do these yourself — Claude Code cannot)
 
-None of these need a credit card. Do steps 1–5 before Phase 0, step 6 before Phase 2,
-step 7 before Phase 4, step 8 before Phase 10, step 9 only if you enable the Bluesky bot.
+None of these need a credit card. Do steps 1–5 first, step 6 before the one-time BigQuery history
+extraction, and step 8 before the first site deploy. The Bluesky bot (step 9) is not implemented.
 
 ## 1. Local machine
 
 - Laptop with **≥ 16 GB RAM** and **≥ 150 GB free disk** for the one-time history build
-  (you can lower `history.start_date` coverage if you have less — see Phase 2).
+  (you can lower `history.start_date` coverage if you have less; see `docs/bigquery_cost_plan.md`).
 - Install: `git`, `uv` (https://docs.astral.sh/uv/), Node.js LTS (for the site),
   the Google Cloud CLI `gcloud` (for BigQuery auth), and Claude Code.
 
@@ -22,7 +22,7 @@ step 7 before Phase 4, step 8 before Phase 10, step 9 only if you enable the Blu
 
 1. Create a free account at https://huggingface.co (no card).
 2. Settings → Access Tokens → create a token with **write** access. Name it `gh-breakout`.
-3. You do not need to create repos by hand; Phase 3 creates them via the API.
+3. You do not need to create repos by hand; `breakout lake` creates them via the API.
 
 ## 4. GitHub token for metadata enrichment
 
@@ -52,7 +52,7 @@ GitHub repo → Settings → Secrets and variables → Actions:
 
 Locally, create `.env` (git-ignored) with the same names plus `GCP_PROJECT_ID`.
 
-## 6. Google Cloud BigQuery sandbox (Phase 2)
+## 6. Google Cloud BigQuery sandbox (one-time history)
 
 1. Go to https://console.cloud.google.com/bigquery with a Google account. Create a new
    project (e.g. `gh-breakout-backfill`). **Do not add a billing account.** You should see
@@ -64,17 +64,25 @@ Locally, create `.env` (git-ignored) with the same names plus `GCP_PROJECT_ID`.
 4. The sandbox gives 1 TB of scanned data per calendar month. If the backfill needs more,
    it pauses and resumes next month automatically from its manifest.
 
-## 7. Nothing extra for Phase 4 enrichment
+## 7. Nothing extra for enrichment
 
 Uses `GH_ENRICH_TOKEN` (and no key for the Hacker News Algolia API).
 
 ## 8. Site
 
 GitHub Pages is enabled in step 2. If you prefer Vercel (Hobby plan, no card) or
-Cloudflare Pages (free, no card), Phase 10 documents the switch.
+Cloudflare Pages (free, no card), `docs/runbook.md` (Website and deployment) documents the switch.
 
-## 9. Optional Bluesky bot
+## 9. Bluesky bot (not implemented)
+
+The project deliberately has no Bluesky bot (ADR-032); `optional.bluesky_enabled` stays `false`. The steps below only apply if
+you add one yourself.
 
 Create a Bluesky account for the bot, then Settings → Privacy and security → App
 passwords → create one. Save handle + app password as secrets. Set
 `optional.bluesky_enabled: true` in `config/project.yaml`.
+
+## 10. GitHub Discussions category for the weekly digest
+
+Settings, Discussions: enable Discussions and create a category named **Digest** (GitHub has no API for creating categories).
+Until it exists, `breakout publish discuss-digest` posts to **Announcements**.

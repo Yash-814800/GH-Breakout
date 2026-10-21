@@ -1,6 +1,6 @@
 # Design decisions and deviations (Phase 14)
 
-Changes to the values in `docs/phases/PHASE_14_frontend_redesign.md`, and choices the phase file left open, with the reason.
+Changes to the original front-end redesign brief, and choices it left open, with the reason.
 
 ## Fonts and type
 - **Font axes.** `@fontsource-variable/instrument-sans/wdth.css` exists, so the full-axes file is used. The `@font-face` rules declare `font-weight: 400 700` and `font-stretch: 75% 100%`, matching the expected ranges. `num-lg` and `num-xl` use `font-stretch: 87.5%`.

@@ -27,7 +27,7 @@ models:
   - name: stg_bot_actors
     description: >
       Automation accounts (login ending in [bot] / -bot / _bot, the known_bots seed, or > 1,000
-      non-star events on >= 3 UTC days). Heavy starrers are NOT classified here (Phase 11).
+      non-star events on >= 3 UTC days). Heavy starrers are NOT classified here (see mart_suspicion).
     columns:
       - name: actor_id
         description: GitHub user id of the actor. The key for users; logins are display-only.
@@ -330,7 +330,7 @@ models:
 
   - name: stg_repo_metadata
     description: >
-      GitHub GraphQL metadata (Phase 4, trusted era). status 'not_found' = deleted/private/blocked:
+      GitHub GraphQL metadata (trusted era). status 'not_found' = deleted/private/blocked:
       every other column is then NULL = UNKNOWN, not "false".
     columns:
       - name: repo_id
