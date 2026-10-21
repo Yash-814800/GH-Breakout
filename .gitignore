@@ -46,3 +46,6 @@ site/.lighthouseci/
 site/test-results/
 site/playwright-report/
 site/public/og/
+
+# Generated badges (Phase 12)
+site/public/badges/

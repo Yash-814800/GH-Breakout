@@ -7,6 +7,7 @@ on:
 
 permissions:
   contents: write
+  discussions: write
 
 concurrency:
   group: pipeline
@@ -66,6 +67,20 @@ jobs:
 
       - name: Build similarity reference index
         run: uv run breakout detect similarity-reference
+
+      # Phase 12: the digest is built from frozen snapshots and outcomes. Neither step may fail the retrain.
+      - name: Weekly digest
+        continue-on-error: true
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          HF_USER: ${{ vars.HF_USER }}
+        run: uv run breakout publish digest --upload
+
+      - name: Post the digest to GitHub Discussions
+        continue-on-error: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: uv run breakout publish discuss-digest --repo "$GITHUB_REPOSITORY"
 
       - name: Commit retraining reports and model updates
         run: |

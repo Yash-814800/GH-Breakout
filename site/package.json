@@ -23,6 +23,7 @@
     "lh": "lhci autorun --config=lighthouserc.desktop.json && lhci autorun --config=lighthouserc.mobile.json && node scripts/lh-summary.mjs"
   },
   "dependencies": {
+    "@astrojs/rss": "^4.0.19",
     "@astrojs/sitemap": "^3.7.4",
     "@codemirror/commands": "^6.11.1",
     "@codemirror/lang-sql": "^6.10.0",

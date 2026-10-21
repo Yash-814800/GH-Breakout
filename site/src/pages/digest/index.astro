@@ -4,13 +4,20 @@ import PageHeader from '../../components/layout/PageHeader.astro';
 import EmptyState from '../../components/ui/EmptyState.astro';
 import { getDigestIndex } from '../../lib/data';
 import { dateRange, isoWeekLabel } from '../../lib/format';
-import { url } from '../../lib/url';
+import { GITHUB_REPO, url } from '../../lib/url';
 
 const digests = getDigestIndex();
 ---
 
 <AppLayout title="Digest" description="One short issue each week: new repos on the list, biggest movers, and which past predictions hit or missed.">
   <PageHeader slot="header" title="Weekly digest" lead="One issue a week: who joined the list, who moved most, and which predictions from 30 days ago hit or missed." />
+  <p class="subscribe t-body-sm muted">
+    Subscribe:
+    <a class="inline" href={url('/digest/feed.xml')}>weekly digest (RSS)</a>,
+    <a class="inline" href={url('/feed.xml')}>new on the list (RSS)</a> or
+    <a class="inline" href={url('/feed.json')}>new on the list (JSON Feed)</a>. Followers of the repository can also watch the Digest discussions on
+    <a class="inline" href={`${GITHUB_REPO}/discussions`}>GitHub</a>.
+  </p>
   {
     digests.length === 0 ? (
       <div class="box"><EmptyState title="No digests yet" icon="newspaper">The first issue is published after the first full week of lists.</EmptyState></div>
@@ -31,6 +38,10 @@ const digests = getDigestIndex();
 </AppLayout>
 
 <style>
+  .subscribe {
+    margin-bottom: 20px;
+    max-width: 72ch;
+  }
   .box {
     border: 1px solid var(--line);
     border-radius: var(--r-lg);

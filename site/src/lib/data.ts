@@ -6,6 +6,7 @@ import {
   Backtest,
   Digest,
   DigestMeta,
+  FeedItem,
   Insights,
   Leaderboard,
   Meta,
@@ -129,3 +130,5 @@ export const getDigestIndex = () => (loadOptional('digests/index.json', z.array(
 export function getDigests() {
   return getDigestIndex().map((m) => load(`digests/${m.week}.json`, Digest));
 }
+
+export const getFeedItems = () => loadOptional('feed_items.json', z.array(FeedItem)) ?? [];

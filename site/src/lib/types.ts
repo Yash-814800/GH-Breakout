@@ -292,3 +292,19 @@ export const Digest = DigestMeta.extend({
 });
 export type DigestData = z.infer<typeof Digest>;
 export type DigestRepoData = z.infer<typeof DigestRepo>;
+
+/** Phase 12: one entry of `feed_items.json` (a repo entering the leaderboard), newest first. */
+export const FeedItem = z.looseObject({
+  guid: z.string(),
+  repo_id: z.number(),
+  repo_name: z.string(),
+  date: z.string(),
+  rank: z.number(),
+  prob: z.number(),
+  explanation: str,
+  age_days: num,
+  stars_7d: num,
+  stars_total: num,
+  suspicion_note: str,
+});
+export type FeedItemData = z.infer<typeof FeedItem>;
