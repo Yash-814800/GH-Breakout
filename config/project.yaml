@@ -163,6 +163,8 @@ enrich:                           # Phase 4 (ADR-016)
   hn_initial_window_days: 7       # adaptive: halved while a window returns >= 1000 hits
 
 site:
+  brand_name: Breakout Radar
+  tagline: GitHub repos likely to break out in the next 30 days. Updated daily.
   deploy_target: github_pages     # alternatives documented in Phase 10: cloudflare_pages, vercel
   leaderboard_size: 50
   detail_pages_days: 90           # build detail pages for any repo flagged in the last N days

@@ -6,15 +6,53 @@
   "scripts": {
     "dev": "astro dev",
     "start": "astro dev",
-    "build": "astro build && node scripts/check-base-paths.mjs",
+    "build": "node scripts/gen-og.mjs && astro build && node scripts/check-base-paths.mjs",
     "preview": "astro preview",
     "astro": "astro",
-    "check-base-paths": "node scripts/check-base-paths.mjs"
+    "check-base-paths": "node scripts/check-base-paths.mjs",
+    "build:fx": "DATA_DIR=test-data node scripts/gen-og.mjs && DATA_DIR=test-data OUT_DIR=dist-fx astro build && OUT_DIR=dist-fx node scripts/check-base-paths.mjs",
+    "lint:tokens": "node scripts/lint-tokens.mjs",
+    "test": "vitest run",
+    "test:e2e": "playwright test",
+    "screenshots": "node scripts/screenshot.mjs",
+    "fixtures": "node scripts/make-fixtures.mjs",
+    "languages": "node scripts/gen-languages.mjs",
+    "brand": "node scripts/gen-brand.mjs",
+    "og": "node scripts/gen-og.mjs",
+    "check:links": "node scripts/check-links.mjs",
+    "lh": "lhci autorun --config=lighthouserc.desktop.json && lhci autorun --config=lighthouserc.mobile.json && node scripts/lh-summary.mjs"
   },
   "dependencies": {
+    "@astrojs/sitemap": "^3.7.4",
+    "@codemirror/commands": "^6.11.1",
+    "@codemirror/lang-sql": "^6.10.0",
+    "@codemirror/language": "^6.13.1",
+    "@codemirror/state": "^6.7.6",
+    "@codemirror/view": "^6.43.15",
     "@duckdb/duckdb-wasm": "^1.29.0",
+    "@fontsource-variable/instrument-sans": "^5.3.0",
+    "@fontsource/instrument-sans": "^5.3.0",
+    "@lezer/highlight": "^1.2.5",
     "@observablehq/plot": "^0.6.16",
+    "@resvg/resvg-js": "^2.6.2",
+    "@tailwindcss/vite": "^4.3.3",
     "apache-arrow": "^18.1.0",
-    "astro": "^5.4.2"
+    "astro": "^5.4.2",
+    "lucide-static": "^1.61.0",
+    "satori": "^0.63.2",
+    "sharp": "^0.35.5",
+    "tailwindcss": "^4.3.3",
+    "yaml": "^2.9.1",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "^4.14.0",
+    "@capsizecss/metrics": "^4.4.0",
+    "@lhci/cli": "^0.15.1",
+    "@playwright/test": "^1.64.1",
+    "linguist-languages": "^9.5.0",
+    "linkinator": "^8.1.0",
+    "typescript": "^5.9.3",
+    "vitest": "^5.0.5"
   }
 }

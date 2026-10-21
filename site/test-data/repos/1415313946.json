@@ -2,8 +2,12 @@
   "repo_id": 1415313946,
   "repo_name": "jhaizhou-ops/d2r-mobile",
   "html_url": "https://github.com/jhaizhou-ops/d2r-mobile",
-  "description": null,
-  "metadata": {},
+  "description": "Open-source iOS / macOS compatibility layer for Diablo II: Resurrected with the Reign of the Warlock expansion. Runs your own Switch copy natively on iPhone, iPad and Mac \u2014 full touch controls, 60 fps, new endgame modes. Bring your own game files. \u5f00\u6e90\u7684\u300a\u6697\u9ed1\u7834\u574f\u795e II\uff1a\u72f1\u706b\u91cd\u751f\u300b\u672f\u58eb\u541b\u4e34 iOS / macOS \u517c\u5bb9\u5c42",
+  "metadata": {
+    "name_with_owner": "jhaizhou-ops/d2r-mobile",
+    "description": "Open-source iOS / macOS compatibility layer for Diablo II: Resurrected with the Reign of the Warlock expansion. Runs your own Switch copy natively on iPhone, iPad and Mac \u2014 full touch controls, 60 fps, new endgame modes. Bring your own game files. \u5f00\u6e90\u7684\u300a\u6697\u9ed1\u7834\u574f\u795e II\uff1a\u72f1\u706b\u91cd\u751f\u300b\u672f\u58eb\u541b\u4e34 iOS / macOS \u517c\u5bb9\u5c42",
+    "primary_language": "C"
+  },
   "daily_stars": [
     {
       "date": "2026-10-12",
@@ -16,6 +20,14 @@
     {
       "date": "2026-10-14",
       "stars": 16
+    }
+  ],
+  "stars_total": 4223,
+  "stars_total_source": "github_api",
+  "star_count_history": [
+    {
+      "date": "2026-10-20",
+      "stars": 4223
     }
   ],
   "prediction_history": [
@@ -32,7 +44,28 @@
   "realized_outcome": null,
   "trending_appearances": [],
   "hn_stories": [],
-  "cohort_retention": null,
-  "similar_repos": null,
-  "suspicion_breakdown": null
+  "cohort_retention": {
+    "cohorts": [],
+    "reference_comparison": null
+  },
+  "similar_repos": [],
+  "suspicion_breakdown": {
+    "score": null,
+    "level": "low",
+    "reasons": [],
+    "signals": {
+      "s_new_accounts": 0.0,
+      "s_inactive": 0.0,
+      "s_bulk": 0.0,
+      "s_burst": 0.0,
+      "s_no_engagement": 0.0
+    },
+    "medians": {
+      "s_new_accounts": 0.15,
+      "s_inactive": 0.2,
+      "s_bulk": 0.0,
+      "s_burst": 0.35,
+      "s_no_engagement": 0.5
+    }
+  }
 }

@@ -1,414 +1,377 @@
 ---
-import Layout from '../layouts/Layout.astro';
-import Sparkline from '../components/Sparkline.astro';
-import fs from 'node:fs';
-import path from 'node:path';
+import { existsSync } from 'node:fs';
+import AppLayout from '../layouts/AppLayout.astro';
+import PageHeader from '../components/layout/PageHeader.astro';
+import StaleBanner from '../components/layout/StaleBanner.astro';
+import RepoRow from '../components/data/RepoRow.astro';
+import RailLine from '../components/data/RailLine.astro';
+import SegmentedControl from '../components/ui/SegmentedControl.astro';
+import Select from '../components/ui/Select.astro';
+import Panel from '../components/ui/Panel.astro';
+import Pill from '../components/ui/Pill.astro';
+import Button from '../components/ui/Button.astro';
+import EmptyState from '../components/ui/EmptyState.astro';
+import Icon from '../components/ui/Icon.astro';
+import ExternalLink from '../components/ui/ExternalLink.astro';
+import { getLeaderboard, getMeta, getStatus, getTrackRecord } from '../lib/data';
+import { date, delta, pct, plural, shortDate, count } from '../lib/format';
+import { url, repoUrl, GITHUB_REPO, HF_SNAPSHOTS } from '../lib/url';
 
-const base = import.meta.env.BASE_URL.replace(/\/+$/, '');
+const repos = getLeaderboard();
+const meta = getMeta();
+const status = getStatus();
+const track = getTrackRecord();
+const lastSuccess = status.heartbeat?.last_success_at ?? meta.build_time;
 
-// GH Archive misses most stars after mid-2025; a sparkline of the captured ones next to a real
-// total would mislead, so it is drawn only when it covers at least half of the real total.
-const sparkTrusted = (item) =>
-  item.stars_total_source !== 'github_api' ||
-  (item.spark_stars_28d || []).reduce((a, b) => a + b, 0) >= 0.5 * (item.stars_total_observed || 0);
+const langCounts = new Map<string, number>();
+repos.forEach((r) => r.language && langCounts.set(r.language, (langCounts.get(r.language) ?? 0) + 1));
+const langs = [...langCounts.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
 
-// Load leaderboard data
-let leaderboard = [];
-let meta = { data_through: 'Today', model_version: 'champion', counts: { leaderboard: 0 } };
-
-const lbPath = path.resolve('public/data/leaderboard.json');
-const metaPath = path.resolve('public/data/meta.json');
-
-if (fs.existsSync(lbPath)) {
-  try {
-    leaderboard = JSON.parse(fs.readFileSync(lbPath, 'utf-8'));
-  } catch (e) {
-    console.error('Error reading leaderboard.json', e);
-  }
-}
-
-if (fs.existsSync(metaPath)) {
-  try {
-    meta = JSON.parse(fs.readFileSync(metaPath, 'utf-8'));
-  } catch (e) {
-    console.error('Error reading meta.json', e);
-  }
-}
-
-// Extract unique languages for filter
-const languages = Array.from(new Set(leaderboard.map((r) => r.language).filter(Boolean))).sort();
+const matured = [...track.matured_snapshots].sort((a, b) => a.snapshot_date.localeCompare(b.snapshot_date));
+const lastMatured = matured.at(-1);
+const nMatured = track.summary.n_matured_days;
+const firstMatureDay = track.ledger.first_date ? new Date(`${track.ledger.first_date}T00:00:00Z`) : null;
+if (firstMatureDay) firstMatureDay.setUTCDate(firstMatureDay.getUTCDate() + 30);
+const hasFeed = existsSync('public/feed.xml');
 ---
 
-<Layout title="Leaderboard · gh-breakout">
-  <div class="container">
-    <div class="page-header">
-      <div class="header-titles">
-        <h1>Breakout Candidate Leaderboard</h1>
-        <p class="subtitle">
-          Early-stage repositories predicted to gain an unusual number of stars (top 0.5% growth) over the next 30 days.
-        </p>
-      </div>
-      <div class="header-meta">
-        <span class="badge badge-accent">Data through: {meta.data_through}</span>
-        <span class="badge badge-neutral">Model: {meta.model_version}</span>
-      </div>
-    </div>
+<AppLayout title={undefined}>
+  <PageHeader
+    slot="header"
+    title="Repos likely to break out"
+    lead="Young GitHub repositories most likely to break out in the next 30 days, ranked by breakout chance. Updated every morning from public GitHub activity."
+  >
+    <Fragment slot="meta">
+      <span class="mi"><Icon name="clock" size={14} />Data through {date(meta.data_through)}</span>
+      <a class="mi link" href={url('/methodology/#definitions')}><Icon name="info" size={14} />What the numbers mean</a>
+    </Fragment>
+  </PageHeader>
 
-    <div class="caption-banner">
-      <div class="caption-icon">ℹ️</div>
-      <div class="caption-text">
-        <strong>Honest probability:</strong> Each probability is calibrated against historical outcomes. A ~1 in 4 probability means about 25% of candidates with this profile broke out within 30 days. Star totals are current counts from the GitHub API; the sparkline shows only the stars GH Archive captured, which understates real growth since mid-2025. Read our <a href={`${base}/methodology/`}>methodology</a> and inspect verified outcomes on our <a href={`${base}/track-record/`}>live track record</a>.
-      </div>
-    </div>
+  <StaleBanner lastSuccess={lastSuccess} dataThrough={meta.data_through} />
 
-    <!-- Filter Controls -->
-    <div class="filter-bar">
-      <div class="filter-group">
-        <label for="search-input" class="filter-label">Search:</label>
-        <input type="text" id="search-input" class="form-input" placeholder="Search repository..." />
-      </div>
+  <form id="filters" class="filters" onsubmit="return false" aria-label="Filter the list">
+    <SegmentedControl name="show" legend="Show" options={[{ value: 'all', label: 'All' }, { value: 'new', label: 'New today' }]} value="all" />
+    <Select name="lang" label="Language" options={[{ value: '', label: 'All languages' }, ...langs.map(([l, n]) => ({ value: l, label: `${l} (${n})` }))]} />
+    <Select
+      name="sort"
+      label="Sort by"
+      options={[
+        { value: 'chance', label: 'Sort: Chance' },
+        { value: 'gain', label: 'Sort: Weekly gain' },
+        { value: 'stars', label: 'Sort: Stars' },
+        { value: 'newest', label: 'Sort: Newest' },
+      ]}
+    />
+    <label class="check"><input type="checkbox" name="hide" value="unusual" />Hide unusual star patterns</label>
+    <span class="count num" id="count" aria-live="polite">{plural(repos.length, 'repo')}</span>
+  </form>
 
-      <div class="filter-group">
-        <label for="lang-select" class="filter-label">Language:</label>
-        <select id="lang-select" class="form-select">
-          <option value="">All languages</option>
-          {languages.map((lang) => <option value={lang}>{lang}</option>)}
-        </select>
-      </div>
-
-      <div class="filter-group">
-        <label for="prob-select" class="filter-label">Min Probability:</label>
-        <select id="prob-select" class="form-select">
-          <option value="0">All</option>
-          <option value="0.05">≥ 5% (~1 in 20)</option>
-          <option value="0.10">≥ 10% (~1 in 10)</option>
-          <option value="0.20">≥ 20% (~1 in 5)</option>
-        </select>
-      </div>
-
-      <div class="filter-group checkbox-group">
-        <label class="checkbox-label">
-          <input type="checkbox" id="hide-suspicious" />
-          <span>Hide suspicious (Phase 11)</span>
-        </label>
-      </div>
-    </div>
-
-    <!-- Desktop Table View -->
-    <div class="table-wrapper desktop-table">
-      <table id="leaderboard-table">
-        <thead>
-          <tr>
-            <th style="width: 60px;">Rank</th>
-            <th>Repository</th>
-            <th>Language</th>
-            <th>Age</th>
-            <th>Stars (total · gain · 28d captured)</th>
-            <th>Breakout Prob</th>
-            <th>Why Flagged</th>
-            <th>On Board</th>
-          </tr>
-        </thead>
-        <tbody>
-          {leaderboard.length === 0 ? (
-            <tr>
-              <td colspan="8" style="text-align: center; padding: 2rem;">
-                No candidates available. Run <code>breakout publish site-data</code> to generate data.
-              </td>
-            </tr>
-          ) : (
-            leaderboard.map((item) => (
-              <tr
-                class="repo-row"
-                data-name={item.repo_name.toLowerCase()}
-                data-lang={item.language || ''}
-                data-prob={item.prob}
-                data-suspicious={item.suspicion_score ? 'true' : 'false'}
-              >
-                <td class="num">
-                  <div class="rank-badge">
-                    <span class="rank-num">{item.rank}</span>
-                    {item.rank_change === 'up' && <span class="change-up" title="Moved up">↑</span>}
-                    {item.rank_change === 'down' && <span class="change-down" title="Moved down">↓</span>}
-                    {item.rank_change === 'new' && <span class="change-new" title="New entry">★</span>}
-                    {item.rank_change === 'same' && <span class="change-same" title="Unchanged">•</span>}
-                  </div>
-                </td>
-                <td>
-                  <div class="repo-cell">
-                    <a href={`${base}/repo/${item.repo_id}/`} class="repo-title">
-                      {item.repo_name}
-                    </a>
-                    {item.description && <div class="repo-desc">{item.description}</div>}
-                  </div>
-                </td>
-                <td>
-                  <span class="badge badge-neutral">{item.language || 'Unknown'}</span>
-                </td>
-                <td class="num">
-                  {item.age_days != null ? `${item.age_days} d` : '—'}
-                </td>
-                <td class="num">
-                  <div class="stars-cell">
-                    <span class="stars-total" title={item.stars_total_source === 'github_api' ? 'Current star count from the GitHub API' : 'Stars seen in GH Archive (an undercount)'}>
-                      ★ {item.stars_total_observed != null ? item.stars_total_observed.toLocaleString('en-US') : '—'}
-                    </span>
-                    <span class="stars-7d" title="Gain in GitHub stars between daily snapshots; the first day on the board has no gain yet">
-                      {item.stars_gain_api != null ? `+${item.stars_gain_api.toLocaleString('en-US')} in ${item.stars_gain_days}d` : 'gain: n/a yet'}
-                    </span>
-                    {sparkTrusted(item)
-                      ? <Sparkline values={item.spark_stars_28d || []} width={80} height={20} />
-                      : <span class="text-muted" title="GH Archive captured only a fraction of this repo's stars, so no daily chart is drawn">daily n/a</span>}
-                  </div>
-                </td>
-                <td class="num">
-                  <div class="prob-cell">
-                    <span class="prob-pct">{(item.prob * 100).toFixed(1)}%</span>
-                    <span class="prob-label">{item.prob_label}</span>
-                  </div>
-                </td>
-                <td class="explanation-cell">
-                  <span class="explanation-text" title={item.explanation || ''}>
-                    {item.explanation || 'Score elevated by recent star velocity.'}
-                  </span>
-                </td>
-                <td class="num text-muted">
-                  {item.days_on_board}d
-                </td>
-              </tr>
-            ))
-          )}
-        </tbody>
-      </table>
-    </div>
-
-    <!-- Mobile Stacked Cards View -->
-    <div class="mobile-cards" id="mobile-cards">
-      {leaderboard.map((item) => (
-        <div
-          class="card mobile-card"
-          data-name={item.repo_name.toLowerCase()}
-          data-lang={item.language || ''}
-          data-prob={item.prob}
-          data-suspicious={item.suspicion_score ? 'true' : 'false'}
-        >
-          <div class="mobile-card-top">
-            <span class="badge badge-accent">Rank #{item.rank}</span>
-            <span class="prob-pct">{(item.prob * 100).toFixed(1)}% ({item.prob_label})</span>
-          </div>
-          <a href={`${base}/repo/${item.repo_id}/`} class="repo-title" style="margin: 0.5rem 0;">
-            {item.repo_name}
-          </a>
-          {item.description && <p class="repo-desc">{item.description}</p>}
-          <div class="mobile-meta">
-            <span class="badge badge-neutral">{item.language || 'Unknown'}</span>
-            <span class="num">Age: {item.age_days ?? '—'} d</span>
-            <span class="num">★ {item.stars_total_observed != null ? item.stars_total_observed.toLocaleString('en-US') : '—'}</span>
-            <span class="num">{item.stars_gain_api != null ? `+${item.stars_gain_api.toLocaleString('en-US')} in ${item.stars_gain_days}d` : 'gain: n/a yet'}</span>
-          </div>
-          {item.explanation && <p class="explanation-text" style="margin-top: 0.5rem;">{item.explanation}</p>}
-        </div>
-      ))}
+  <div class="board">
+    <ol id="board" class="list" data-total={repos.length}>
+      {repos.map((r, i) => <RepoRow repo={r} eager={i < 6} endDate={meta.data_through} />)}
+    </ol>
+    <div id="empty" class="empty-wrap" hidden>
+      <EmptyState title="No repos match these filters." icon="search">
+        <Button slot="action" variant="secondary" size="sm" data-clear>Clear filters</Button>
+      </EmptyState>
     </div>
   </div>
-</Layout>
 
-<script>
-  // Client-side filtering
-  const searchInput = document.getElementById('search-input') as HTMLInputElement;
-  const langSelect = document.getElementById('lang-select') as HTMLSelectElement;
-  const probSelect = document.getElementById('prob-select') as HTMLSelectElement;
-  const hideSuspicious = document.getElementById('hide-suspicious') as HTMLInputElement;
+  <Fragment slot="rail">
+    <Panel title="How to read this list">
+      <ul class="how">
+        <li><strong>Breakout chance</strong> is the model's estimate that a repo breaks out in the next 30 days.</li>
+        <li>The smaller line gives the same number as odds.</li>
+        <li>The strip shows stars per day for 28 days, with the last 7 days in color. Each strip uses its own scale, so the shape matters, not the height.</li>
+        <li>Star totals come from GitHub. The strip counts stars GH Archive captured, which undercounts since May 2025.</li>
+      </ul>
+      <a class="more" href={url('/methodology/')}>Read the methodology</a>
+    </Panel>
 
-  function filterItems() {
-    const query = searchInput?.value.toLowerCase().trim() || '';
-    const lang = langSelect?.value || '';
-    const minProb = parseFloat(probSelect?.value || '0');
-    const hideSusp = hideSuspicious?.checked || false;
+    <Panel title="Track record so far">
+      {
+        nMatured >= 1 ? (
+          <>
+            <p class="t-body-sm">
+              <strong class="num">{pct(track.summary.top25_hit_rate)}</strong> of top-25 picks broke out, against <strong class="num">{pct(track.summary.base_rate, { digits: 1 })}</strong> for all candidates.
+            </p>
+            {matured.length >= 3 && <div class="rail-chart"><RailLine values={matured.map((m) => m.precision_at_25)} label="Share of top-25 picks that broke out, by day" /></div>}
+            <a class="more" href={url('/track-record/')}>See the track record</a>
+          </>
+        ) : (
+          <>
+            <p class="t-body-sm muted">
+              No predictions have matured yet. A prediction needs 30 days to be judged{firstMatureDay ? `; the first list matures on ${date(firstMatureDay)}` : ''}.
+            </p>
+            <a class="more" href={url('/track-record/')}>See the track record</a>
+          </>
+        )
+      }
+    </Panel>
 
-    const rows = document.querySelectorAll('.repo-row');
-    const cards = document.querySelectorAll('.mobile-card');
-
-    function checkElem(el: Element) {
-      const name = el.getAttribute('data-name') || '';
-      const rLang = el.getAttribute('data-lang') || '';
-      const prob = parseFloat(el.getAttribute('data-prob') || '0');
-      const isSusp = el.getAttribute('data-suspicious') === 'true';
-
-      const matchesQuery = !query || name.includes(query);
-      const matchesLang = !lang || rLang === lang;
-      const matchesProb = prob >= minProb;
-      const matchesSusp = !hideSusp || !isSusp;
-
-      return matchesQuery && matchesLang && matchesProb && matchesSusp;
+    {
+      lastMatured && (
+        <Panel title="Matured this week">
+          <ul class="mat">
+            {lastMatured.top25.slice(0, 3).map((p) => (
+              <li>
+                <a href={repoUrl(p.repo_id)} class="mat-name">{p.repo_name}</a>
+                {p.hit ? <Pill variant="rise" icon="check">Hit</Pill> : <Pill>Miss</Pill>}
+                <span class="mat-gain num faint">{p.gain_30d != null ? `${delta(p.gain_30d)} stars` : ''}</span>
+              </li>
+            ))}
+          </ul>
+          <a class="more" href={url('/track-record/')}>All matured lists</a>
+        </Panel>
+      )
     }
 
-    rows.forEach((r) => {
-      (r as HTMLElement).style.display = checkElem(r) ? '' : 'none';
-    });
+    <Panel title="Follow the list">
+      <ul class="follow">
+        {hasFeed && <li><a href={url('/feed.xml')}><Icon name="rss" size={16} />RSS feed</a></li>}
+        <li><a href={GITHUB_REPO} target="_blank" rel="noopener"><Icon name="github" size={16} />Source code<Icon name="arrow-up-right" size={12} /></a></li>
+        <li><a href={HF_SNAPSHOTS} target="_blank" rel="noopener"><Icon name="database" size={16} />Daily snapshots<Icon name="arrow-up-right" size={12} /></a></li>
+      </ul>
+    </Panel>
+  </Fragment>
+</AppLayout>
 
-    cards.forEach((c) => {
-      (c as HTMLElement).style.display = checkElem(c) ? '' : 'none';
-    });
+<script>
+  import { plural } from '../lib/format';
+
+  const form = document.getElementById('filters') as HTMLFormElement;
+  const board = document.getElementById('board') as HTMLElement;
+  const empty = document.getElementById('empty') as HTMLElement;
+  const countEl = document.getElementById('count') as HTMLElement;
+  const rows = [...board.querySelectorAll<HTMLLIElement>(':scope > li.row')];
+  const el = (n: string) => form.elements.namedItem(n) as HTMLInputElement | RadioNodeList;
+  const num = (v: string | undefined) => (v === '' || v == null ? null : Number(v));
+
+  const DEFAULTS = { show: 'all', lang: '', sort: 'chance', hide: '' };
+  type State = typeof DEFAULTS;
+  const KEYS: Record<keyof State, string> = { show: 'new', lang: 'lang', sort: 'sort', hide: 'hide' };
+
+  function fromUrl(): State {
+    const p = new URLSearchParams(location.search);
+    return {
+      show: p.get('new') === '1' ? 'new' : 'all',
+      lang: p.get('lang') ?? '',
+      sort: ['gain', 'stars', 'newest'].includes(p.get('sort') ?? '') ? p.get('sort')! : 'chance',
+      hide: p.get('hide') === 'unusual' ? 'unusual' : '',
+    };
+  }
+  function fromForm(): State {
+    return {
+      show: (el('show') as RadioNodeList).value || 'all',
+      lang: (el('lang') as HTMLSelectElement).value,
+      sort: (el('sort') as HTMLSelectElement).value,
+      hide: (el('hide') as HTMLInputElement).checked ? 'unusual' : '',
+    };
+  }
+  function toForm(s: State) {
+    (el('show') as RadioNodeList).value = s.show;
+    const lang = el('lang') as HTMLSelectElement;
+    lang.value = [...lang.options].some((o) => o.value === s.lang) ? s.lang : '';
+    (el('sort') as HTMLSelectElement).value = s.sort;
+    (el('hide') as HTMLInputElement).checked = s.hide === 'unusual';
+  }
+  function toUrl(s: State) {
+    const p = new URLSearchParams();
+    if (s.show === 'new') p.set('new', '1');
+    if (s.lang) p.set('lang', s.lang);
+    if (s.sort !== 'chance') p.set('sort', s.sort);
+    if (s.hide) p.set('hide', 'unusual');
+    const q = p.toString();
+    history.replaceState(null, '', location.pathname + (q ? `?${q}` : '') + location.hash);
   }
 
-  searchInput?.addEventListener('input', filterItems);
-  langSelect?.addEventListener('change', filterItems);
-  probSelect?.addEventListener('change', filterItems);
-  hideSuspicious?.addEventListener('change', filterItems);
+  const key = (li: HTMLElement, sort: string): number => {
+    const d = li.dataset;
+    if (sort === 'gain') return -(num(d.gain) ?? -Infinity);
+    if (sort === 'stars') return -(num(d.stars) ?? -Infinity);
+    if (sort === 'newest') return num(d.age) ?? Infinity;
+    return Number(d.rank);
+  };
+
+  function apply(s: State) {
+    const sorted = [...rows].sort((a, b) => key(a, s.sort) - key(b, s.sort) || Number(a.dataset.rank) - Number(b.dataset.rank));
+    sorted.forEach((li) => board.append(li));
+    let shown = 0;
+    for (const li of rows) {
+      const ok =
+        (s.show !== 'new' || li.dataset.new === '1') &&
+        (!s.lang || li.dataset.lang === s.lang) &&
+        (s.hide !== 'unusual' || li.dataset.unusual !== '1');
+      li.hidden = !ok;
+      if (ok) shown++;
+    }
+    empty.hidden = shown > 0;
+    board.hidden = shown === 0;
+    countEl.textContent = plural(shown, 'repo');
+  }
+
+  toForm(fromUrl());
+  apply(fromForm());
+  form.addEventListener('change', () => {
+    const s = fromForm();
+    toUrl(s);
+    apply(s);
+  });
+  document.querySelector('[data-clear]')?.addEventListener('click', () => {
+    toForm(DEFAULTS);
+    toUrl(DEFAULTS);
+    apply(DEFAULTS);
+  });
+  void KEYS;
 </script>
 
 <style>
-  .page-header {
+  .mi {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .link:hover {
+    color: var(--ink);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+  .filters {
     display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
     flex-wrap: wrap;
-    gap: 1rem;
-    margin-bottom: 1.5rem;
-  }
-
-  .header-meta {
-    display: flex;
-    gap: 0.5rem;
-  }
-
-  .caption-banner {
-    display: flex;
-    gap: 1rem;
-    padding: 1rem 1.25rem;
-    background: var(--bg-card);
-    border: 1px solid var(--border-color);
-    border-left: 4px solid var(--accent);
-    border-radius: var(--radius-md);
-    margin-bottom: 1.5rem;
-    font-size: 0.875rem;
-  }
-
-  .caption-icon {
-    font-size: 1.25rem;
-    line-height: 1;
-  }
-
-  .caption-text {
-    color: var(--text-secondary);
-    line-height: 1.5;
-  }
-
-  .filter-group {
-    display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 12px;
+    margin-bottom: 16px;
   }
-
-  .filter-label {
-    font-size: 0.8125rem;
-    font-weight: 600;
-    color: var(--text-secondary);
+  .filters :global(.sel) {
+    min-width: 0;
   }
-
-  .checkbox-group {
-    margin-left: auto;
-  }
-
-  .checkbox-label {
-    display: flex;
+  .check {
+    display: inline-flex;
     align-items: center;
-    gap: 0.5rem;
-    font-size: 0.8125rem;
-    color: var(--text-secondary);
+    gap: 8px;
+    min-height: 40px;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--ink-2);
     cursor: pointer;
   }
-
-  .rank-badge {
-    display: flex;
-    align-items: center;
-    gap: 0.25rem;
-    font-weight: 700;
+  .check input {
+    width: 16px;
+    height: 16px;
+    accent-color: var(--accent);
   }
-
-  .change-up { color: var(--success); font-weight: bold; }
-  .change-down { color: var(--danger); font-weight: bold; }
-  .change-new { color: var(--warning); font-size: 0.8rem; }
-  .change-same { color: var(--text-muted); font-size: 1.2rem; }
-
-  .repo-cell {
+  .count {
+    margin-left: auto;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--ink-3);
+  }
+  @media (max-width: 639px) {
+    .filters {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+    }
+    .filters :global(.seg),
+    .check,
+    .count {
+      grid-column: 1 / -1;
+    }
+    .filters :global(.seg) {
+      display: flex;
+    }
+    .filters :global(.seg-opt) {
+      flex: 1;
+    }
+    .filters :global(.seg-opt span) {
+      flex: 1;
+      justify-content: center;
+    }
+    .count {
+      margin-left: 0;
+    }
+  }
+  .list {
+    background: var(--raised);
+    border: 1px solid var(--line);
+    border-radius: var(--r-lg);
+    overflow: hidden;
+  }
+  .list :global(.row + .row) {
+    border-top: 1px solid var(--line);
+  }
+  .list :global(.row[hidden] + .row:not([hidden])) {
+    border-top: 0;
+  }
+  .list[hidden],
+  .empty-wrap[hidden] {
+    display: none;
+  }
+  .empty-wrap {
+    background: var(--raised);
+    border: 1px solid var(--line);
+    border-radius: var(--r-lg);
+  }
+  .how {
     display: flex;
     flex-direction: column;
-    gap: 0.2rem;
-    max-width: 260px;
+    gap: 10px;
+    font-size: 14px;
+    line-height: 1.45;
+    color: var(--ink-2);
   }
-
-  .repo-title {
+  .how strong {
+    color: var(--ink);
     font-weight: 600;
-    color: var(--text-primary);
   }
-
-  .repo-title:hover {
+  .more {
+    display: inline-block;
+    margin-top: 12px;
+    font-size: 14px;
+    font-weight: 500;
     color: var(--accent);
+  }
+  .more:hover {
     text-decoration: underline;
+    text-underline-offset: 3px;
   }
-
-  .repo-desc {
-    font-size: 0.75rem;
-    color: var(--text-muted);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+  .rail-chart {
+    margin-top: 12px;
   }
-
-  .stars-cell {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-  }
-
-  .stars-7d {
-    font-weight: 600;
-    color: var(--success);
-    min-width: 40px;
-  }
-
-  .prob-cell {
+  .mat {
     display: flex;
     flex-direction: column;
+    gap: 10px;
   }
-
-  .prob-pct {
-    font-weight: 700;
-    font-size: 0.95rem;
-    color: var(--accent);
-  }
-
-  .prob-label {
-    font-size: 0.75rem;
-    color: var(--text-muted);
-  }
-
-  .explanation-cell {
-    max-width: 320px;
-  }
-
-  .explanation-text {
-    font-size: 0.8125rem;
-    color: var(--text-secondary);
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-  }
-
-  .mobile-card-top {
-    display: flex;
-    justify-content: space-between;
+  .mat li {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 2px 8px;
     align-items: center;
   }
-
-  .mobile-meta {
+  .mat-name {
+    font-size: 14px;
+    font-weight: 500;
+    overflow-wrap: anywhere;
+  }
+  .mat-gain {
+    grid-column: 1 / -1;
+    font-size: 12px;
+  }
+  .follow {
     display: flex;
-    gap: 0.75rem;
-    font-size: 0.8125rem;
-    color: var(--text-secondary);
-    margin-top: 0.5rem;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .follow a {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 28px;
+    font-size: 14px;
+    color: var(--ink-2);
+  }
+  .follow a:hover {
+    color: var(--ink);
   }
 </style>

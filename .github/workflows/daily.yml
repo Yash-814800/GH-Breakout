@@ -117,11 +117,29 @@ jobs:
           npm ci
           npm run build
 
+      # Phase 14: check the real data before publishing. A failure keeps yesterday's site and logs a warning.
+      - name: Content check on real data
+        id: qa
+        continue-on-error: true
+        run: |
+          cd site
+          npx playwright install --with-deps chromium
+          QA_DATA_DIR=public/data E2E_OUT=dist npx playwright test tests/content.spec.ts
+
+      - name: Warn when the content check failed
+        if: steps.qa.outcome == 'failure'
+        run: |
+          echo "::warning::Content check failed on today's data; the deploy was skipped and yesterday's site stays up."
+          echo "### Site deploy skipped" >> "$GITHUB_STEP_SUMMARY"
+          echo "The content check found raw values or console errors in today's build. Yesterday's site is still live." >> "$GITHUB_STEP_SUMMARY"
+
       - name: Upload Pages artifact
+        if: steps.qa.outcome == 'success'
         uses: actions/upload-pages-artifact@v3
         with:
           path: site/dist
 
       - name: Deploy to GitHub Pages
         id: deployment
+        if: steps.qa.outcome == 'success'
         uses: actions/deploy-pages@v4

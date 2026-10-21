@@ -1,0 +1,78 @@
+---
+interface Option {
+  value: string;
+  label: string;
+}
+interface Props {
+  name: string;
+  legend: string;
+  options: Option[];
+  value?: string;
+  class?: string;
+}
+const { name, legend, options, value = options[0]?.value, class: cls } = Astro.props;
+---
+
+<fieldset class:list={['seg', cls]} data-seg={name}>
+  <legend class="sr-only">{legend}</legend>
+  {
+    options.map((o) => (
+      <label class="seg-opt">
+        <input type="radio" name={name} value={o.value} checked={o.value === value} />
+        <span>{o.label}</span>
+      </label>
+    ))
+  }
+</fieldset>
+
+<style>
+  .seg {
+    display: inline-flex;
+    height: 36px;
+    padding: 2px;
+    gap: 2px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--r-md);
+    min-width: 0;
+  }
+  .seg-opt {
+    position: relative;
+    display: flex;
+  }
+  .seg-opt input {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    margin: 0;
+    cursor: pointer;
+  }
+  .seg-opt span {
+    display: flex;
+    align-items: center;
+    padding-inline: 12px;
+    border-radius: var(--r-sm);
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--ink-2);
+    white-space: nowrap;
+    transition: background-color var(--dur-1) var(--ease), color var(--dur-1) var(--ease);
+  }
+  .seg-opt input:checked + span {
+    background: var(--raised);
+    color: var(--ink);
+    box-shadow: var(--shadow-seg);
+  }
+  .seg-opt input:not(:checked):hover + span {
+    color: var(--ink);
+  }
+  .seg-opt input:focus-visible + span {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+  }
+  @media (max-width: 639px) {
+    .seg {
+      height: 46px;
+    }
+  }
+</style>

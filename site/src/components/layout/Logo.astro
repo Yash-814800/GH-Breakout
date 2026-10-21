@@ -1,0 +1,14 @@
+---
+interface Props {
+  size?: number;
+}
+const { size = 20 } = Astro.props;
+---
+
+<!-- Rounded square with three ascending bars; the last is taller and offset, like a momentum strip. 24 x 24 grid, flat colors. -->
+<svg class="logo" width={size} height={size} viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+  <rect width="24" height="24" rx="6" fill="var(--accent)" />
+  <rect x="5" y="13" width="3.5" height="6" rx="1" fill="var(--on-accent)" />
+  <rect x="10.25" y="10" width="3.5" height="9" rx="1" fill="var(--on-accent)" />
+  <rect x="15.5" y="5" width="3.5" height="14" rx="1" fill="var(--on-accent)" />
+</svg>

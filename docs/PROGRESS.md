@@ -16,9 +16,10 @@ measured (row counts, sizes, runtimes, metrics). Future sessions rely on it.
 | 08 | LightGBM, calibration, SHAP, model registry | ☑ (HF upload pending approval) | 2026-10-19 | Model beats B1 in all 29 folds: pooled PR-AUC **0.108** [0.101, 0.113] vs 0.029, P@25 **0.241** [0.229, 0.255] vs 0.109; holdout (26 weeks to 2025-04-21) 0.158 / 0.338 vs B1 0.032 / 0.106. Sanity checks pass; calibrated ECE 0.0002. Champion `20261019-b5ff585` (local registry). Daily check: calibration over-predicts on non-Mondays (ADR-025). 310 tests pass. See "Phase 8 status". |
 | 09 | Daily pipeline, weekly retrain, health checks | ☑ (live enrichment not wired) | 2026-10-20 | Validated on GitHub Actions: `daily.yml` succeeds (203 s, 1,033 candidates, ledger row, snapshot on HF); a same-day re-run ingests nothing and adds no ledger row; `weekly.yml` retrains and keeps the champion; `monthly.yml` passes (`lake verify-remote`); `health.yml` opens and closes the alert issue. Parity PASS (2024-06-03). CI green again. See ADR-027 and "Phase 9 status". |
 | 10 | Website (Astro) + deploy | ☑ | 2026-10-20 | Astro static site (105 pages, 8 routes) deployed to GitHub Pages via GitHub Actions ($0 cost). Leaderboard: 50 candidates, sparklines, language & probability filters, raw 185 KB (< 200 KB cap), Lighthouse Performance 100, Accessibility 96. Detail pages: 98 repos. DuckDB-WASM SQL explorer with HTTP 206 range requests. 332 pytest pass. Screenshots in reports/site_screenshots/. See "Phase 10 status" and ADR-028. |
-| 11 | Fake-star detector, similar repos, cohort retention | ☐ | | |
+| 11 | Fake-star detector, similar repos, cohort retention | ☑ | 2026-10-21 | Suspicious-growth score (6 signals, robust z-score, empirical CDF [0, 100], Low/Med/High). Validated vs StarScout ICSE 2026 dataset (0.51% historical breakout prevalence). Item-item co-star similarity (80,965 repos, 17.25M pairs indexed in 71.7s, 90.9 MB). Stargazer cohort retention benchmarks. 4-story /insights/ page with DuckDB SQL. 344 pytest pass. See ADR-030 and "Phase 11 status". |
 | 12 | Distribution (RSS, badges, digest, Bluesky) | ☐ | | |
 | 13 | Portfolio polish, dbt docs, ClickHouse benchmark, final audit | ☐ | | |
+| 14 | Frontend redesign: design system, every page, pixel-level QA | ☑ (human checkpoints A and B pending) | 2026-10-21 | New design system (tokens, Tailwind v4, Instrument Sans self-hosted, 40 components), 15 routes rebuilt, light/dark, 360-1920 px. Fixture build: Lighthouse desktop 100 / 100 / 96 / 100, mobile 99-100 / 100 / 96 / 100, CLS 0.000. 136 Playwright + 34 Vitest + 347 pytest pass; content check passes on real data. See "Phase 14 status" and ADR-031. |
 
 ## Amendments after Phase 1 (ADR-009, ADR-010, 2026-10-12)
 
@@ -37,6 +38,67 @@ measured (row counts, sizes, runtimes, metrics). Future sessions rely on it.
 | Source test from a GitHub Actions runner | ☑ NO-GO | OpenDigger ~0.01 MB/s from the runner (needs >= 1), manifests 404; gharchive 54 MB/s. `reports/source_validation.md`, run 38194688025 |
 | Stargazers API for per-repo ground truth | ✖ not available | GitHub restricted it to admins/collaborators in July 2026 (ADR-010) |
 | Live-source gate / item 5 | ☐ not started | waits for your review of the source test |
+
+## Phase 14 status (2026-10-21)
+
+- **What changed:** `site/` was rebuilt on a design system ("Breakout Radar"): `src/styles/{tokens,base,prose,global}.css`, Tailwind v4 (CSS-first,
+  default palette off), Instrument Sans Variable self-hosted (both axes), 3 layouts, 12 layout and 16 ui components, 11 data components, `lib/format.ts`
+  with tests, a typed zod data layer, logo and favicons, Open Graph images (96 for today's data, regenerated only when inputs change), sitemap, robots, JSON-LD.
+  Routes: `/`, `/repo/<id>/`, `/track-record/`, `/backtest/`, `/explore/` (CodeMirror), `/methodology/`, `/about/`, `/insights/`, `/status/`,
+  `/digest/`, `/digest/<week>/` (layout only, fixture data), `/404`, `/_styleguide/`. Exporter: `owner_id` / `owner_type` on leaderboard rows and
+  `summary.headline` on the track record (Python tests added).
+- **Checks (all pass):** Playwright layout 76 (19 routes x 360/768/1024/1440 px), content 20 on fixtures and 19 on the real production data, axe 38 (light and dark, zero
+  serious or critical), 2 structure tests, 16 visual snapshots (pinned `mcr.microsoft.com/playwright:v1.64.1-noble`, Podman); Vitest 34; token lint; base-path check
+  (HTML and CSS); link check 1,040 links, 0 broken; ruff, ruff format, mypy; pytest 347.
+- **Lighthouse (fixture build, median of 3):** desktop `/` 100 / 100 / 96 / 100 (performance / accessibility / best practices / SEO), LCP 0.40 s; repo page 100 / 100 / 96 / 100, 0.45 s; `/track-record/`
+  100 / 100 / 96 / 100, 0.45 s; mobile `/` 100 / 100 / 96 / 100, LCP 1.65 s; repo page 99 / 100 / 96 / 100, 1.95 s; `/track-record/` 99 / 100 / 96 / 100, 1.96 s. CLS 0.000 everywhere.
+- **Bundle sizes (gzip):** leaderboard 2.0 KB of JS files (small scripts are inlined in the 31.5 KB HTML), 6.7 KB CSS, one 56 KB font file; pages with charts 96 KB JS (Observable Plot).
+  `/explore/` and `/backtest/` also download DuckDB-WASM (34 MB, self-hosted). `dist/` is 45 MB.
+- **Review:** `reports/design/audit_before.md` (19 defects), 3 review rounds (`review_round_{1,2,3}.md`, the last with no defects), `decisions.md`.
+  Before and after contact sheets: `reports/design/before/contact_sheet_{light,dark}.jpg` and `reports/design/after/contact_sheet_{light,dark}.jpg`.
+- **CI:** `ci.yml` job `site-qa` (Vitest, token lint, fixture build, Playwright, link check, Lighthouse CI) in the pinned container; workflow
+  `update-visual-snapshots.yml` (manual, opens a PR); `daily.yml` runs the content check on real data and skips the deploy, keeping yesterday's site, when it fails.
+  PR #2: `site-build`, `site-qa` (150 Playwright tests including the 16 visual snapshots, Vitest 34, token lint, link check, Lighthouse CI; 10 min) and `test` are green. The daily
+  content gate and the snapshot-update workflow are written and YAML-valid but have **not been run** yet; the site is **not deployed** from this branch until the PR is merged.
+- **Found while building (not fixed here, owners are earlier phases):**
+  - `export_track_record` writes `realized_avg = predicted_avg` with `count = 0` once any list has matured. The page hides the diagram without counts, but the exporter should write
+    real calibration bins.
+  - `export_status` hardcodes `dbt_summary.tests_passing = 162` and always writes an empty `rows_ingested_last_14d`.
+  - The Phase 11 insight texts contradict their own data: story 1 says breakouts retain more engagement, the chart shows 7.0% against 8.0% for other candidates; story 4 is titled
+    "The Rise of Commercial Star Farming" and talks about "coordinated lockstep campaigns", which breaks the glossary rule of never saying fake, fraud or farm and is not what the
+    plotted measure shows; story 2 claims Python became "the undisputed primary language" without a language chart, and its AI measure is a name match (`ai`, `gpt`, ...).
+  - `live_predictions.parquet` has non-consecutive ranks for the first rows (9, 19, 21, ...), so the Explore example "Today's top candidates" starts at rank 9.
+- **Open for the human:** checkpoints A (name and tagline) and B (feedback on direction), see ADR-031. Allow Actions to create pull requests if you want to use `update-visual-snapshots.yml`.
+
+## Phase 11 status (2026-10-21)
+
+- **Deliverables & Verification:**
+  - **Suspicious-Growth Detector (`src/breakout/detect/`, dbt `mart_suspicion`):**
+    - 6 point-in-time signals over candidate stargazers in `[D-14, D)` (`s_new_accounts`, `s_inactive`, `s_bulk`, `s_burst` + CV regularity, `s_lockstep` ring detection, `s_no_engagement`).
+    - Robust z-scores with fallback for zero-MAD distributions, documented equal weights (1/6 each), empirical CDF percentile mapping to $[0, 100]$, and Low (< 90), Medium (90-98), High ($\ge 98$) classifications with non-accusatory reason codes.
+    - Daily pipeline integration in Step 9 filling the reserved `suspicion_score` column on `pred_df`. Display-side only (never fed to model).
+  - **Validation & Ablation Report (`reports/suspicion.md`):**
+    - StarScout academic dataset (He et al., ICSE 2026, Socket / CMU / NC State, Apache 2.0).
+    - Historical prevalence: 81 of 15,773 historical `breakout_rel` positives (0.51%) exhibited high suspicion.
+    - Model ablation: relabeling high-suspicion positives as negatives yields negligible change on holdout PR-AUC (0.1407 vs 0.1396) and P@25 (0.3338 vs 0.3200). Training labels preserved unchanged.
+  - **Item-Item Co-star Similarity (`mart_similar_repos`, `src/breakout/detect/similarity.py`):**
+    - Reference index built in 71.7s via DuckDB native Parquet export indexing 80,965 repos and 17,251,385 stargazer pairs into `reference_stargazers.parquet` (90.9 MB) and `reference_repo_sizes.parquet` (471 KB).
+    - Daily candidate lookup joining candidate stargazers against the reference index in ~3s, returning top 5 similar repos with overlap $\ge 5$, cosine $\in (0, 1]$, excluding self and forks.
+    - Weekly workflow integration added to `.github/workflows/weekly.yml`.
+  - **Cohort Retention (`src/breakout/detect/cohorts.py`):**
+    - Precomputed median and IQR reference bands across repo age buckets for historical breakouts (`retention_reference.parquet`, 0.15s).
+    - Repo detail pages render weekly cohort retention heatmap matrix (action type $\times$ elapsed weeks) benchmarked against historical median bands.
+  - **Insights Page (`site/src/pages/insights.astro`, `src/breakout/publish/insights.py`):**
+    - 4 rich data stories rendered with Observable Plot, 3-sentence takeaways, and collapsible DuckDB SQL blocks (`/insights/`).
+    - Exported by `breakout publish insights` to `site/public/data/insights.json` (and `site/test-data/insights.json`).
+  - **UI & Maintainer Experience:**
+    - Leaderboard badge `⚠️ Unusual pattern` with tooltip reasons and "Hide unusual star patterns" checkbox toggle.
+    - Repo detail sections: Growth Integrity & Star Audit, Similar Repositories ("People who starred this also starred..."), Stargazer Cohort Retention Heatmap.
+    - About page audit policy and `.github/ISSUE_TEMPLATE/review-request.md` for maintainer review requests.
+  - **Tests & Quality:**
+    - 344 pytest passing across full suite (100% green), including 7 new detect tests and 16 CLI tests.
+    - `npm run build` static site compilation succeeds with 103 pages and 0 base path issues.
+    - `ruff check .` clean, `ruff format --check .` clean. ADR-030 recorded in `docs/DECISIONS.md`.
 
 ## Phase 10 status (2026-10-20)
 

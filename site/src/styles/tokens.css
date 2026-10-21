@@ -1,0 +1,143 @@
+/* Design tokens. The only file in the codebase that may contain color literals (scripts/lint-tokens.mjs). */
+:root {
+  color-scheme: light dark;
+
+  /* color: light */
+  --bg: #ffffff;
+  --surface: #f5f6f8;
+  --raised: #ffffff;
+  --ink: #17181c;
+  --ink-2: #555a6a;
+  --ink-3: #6a6f82;
+  --line: #e4e6ec;
+  --line-strong: #c9cdd8;
+  --accent: #4650c4;
+  --accent-hover: #3a43ad;
+  --accent-soft: #eef0fc;
+  --on-accent: #ffffff;
+  --rise: #17744b;
+  --rise-soft: #e7f4ec;
+  --caution: #995706;
+  --caution-soft: #fcf1e1;
+  --danger: #b42318;
+  --star: #d99a0b;
+  --row-hover: #f8f9fb;
+  --shadow-pop: 0 1px 2px rgb(16 18 24 / 0.06), 0 8px 24px rgb(16 18 24 / 0.12);
+  --shadow-seg: 0 1px 2px rgb(16 18 24 / 0.1);
+  --scrim: rgb(0 0 0 / 0.4);
+  /* white canvas for matplotlib figures, which are drawn for a light background in both themes */
+  --paper: #ffffff;
+  --paper-ink: #555a6a;
+
+  /* type */
+  --font-ui: 'Instrument Sans Variable', 'Instrument Sans Fallback', ui-sans-serif, system-ui, -apple-system, 'Segoe UI',
+    Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace;
+
+  /* 4px spacing scale */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+  --space-24: 96px;
+
+  /* layout */
+  --container: 1200px;
+  --gutter: 16px;
+  --rail: 300px;
+  --aside: 320px;
+  --measure: 68ch;
+  --nav-h: 56px;
+
+  /* radius */
+  --r-xs: 4px;
+  --r-sm: 6px;
+  --r-md: 8px;
+  --r-lg: 12px;
+  --r-xl: 16px;
+  --r-pill: 999px;
+
+  /* motion */
+  --ease: cubic-bezier(0.2, 0, 0, 1);
+  --dur-1: 120ms;
+  --dur-2: 200ms;
+  --dur-3: 600ms;
+
+  /* z-index */
+  --z-nav: 50;
+  --z-menu: 60;
+  --z-tooltip: 70;
+  --z-skip: 100;
+}
+
+@media (min-width: 640px) {
+  :root {
+    --gutter: 24px;
+  }
+}
+@media (min-width: 1024px) {
+  :root {
+    --gutter: 32px;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --bg: #111216;
+    --surface: #17191e;
+    --raised: #1d2026;
+    --ink: #ecedf1;
+    --ink-2: #a9adbb;
+    --ink-3: #8e93a4;
+    --line: #2a2d35;
+    --line-strong: #3b3f4a;
+    --accent: #929bf2;
+    --accent-hover: #a9b0f5;
+    --accent-soft: #23264a;
+    --on-accent: #111216;
+    --rise: #52c48e;
+    --rise-soft: #163126;
+    --caution: #eaa545;
+    --caution-soft: #33260f;
+    --danger: #f97066;
+    --star: #e8b23a;
+    --row-hover: #1a1c22;
+    --shadow-pop: 0 1px 2px rgb(0 0 0 / 0.4), 0 12px 32px rgb(0 0 0 / 0.5);
+    --shadow-seg: 0 1px 2px rgb(0 0 0 / 0.5);
+  }
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --bg: #111216;
+  --surface: #17191e;
+  --raised: #1d2026;
+  --ink: #ecedf1;
+  --ink-2: #a9adbb;
+  --ink-3: #8e93a4;
+  --line: #2a2d35;
+  --line-strong: #3b3f4a;
+  --accent: #929bf2;
+  --accent-hover: #a9b0f5;
+  --accent-soft: #23264a;
+  --on-accent: #111216;
+  --rise: #52c48e;
+  --rise-soft: #163126;
+  --caution: #eaa545;
+  --caution-soft: #33260f;
+  --danger: #f97066;
+  --star: #e8b23a;
+  --row-hover: #1a1c22;
+  --shadow-pop: 0 1px 2px rgb(0 0 0 / 0.4), 0 12px 32px rgb(0 0 0 / 0.5);
+  --shadow-seg: 0 1px 2px rgb(0 0 0 / 0.5);
+}
+
+:root[data-theme='light'] {
+  color-scheme: light;
+}

@@ -1,0 +1,57 @@
+---
+interface Props {
+  title?: string;
+  headingLevel?: 'h2' | 'h3';
+  class?: string;
+}
+const { title, headingLevel = 'h2', class: cls } = Astro.props;
+const H = headingLevel;
+---
+
+<section class:list={['panel', cls]}>
+  {
+    (title || Astro.slots.has('action')) && (
+      <div class="panel-head">
+        {title && <H class="panel-title">{title}</H>}
+        <slot name="action" />
+      </div>
+    )
+  }
+  <slot />
+</section>
+
+<style is:global>
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--r-lg);
+    padding: 16px;
+    min-width: 0;
+  }
+  @media (min-width: 640px) {
+    .panel {
+      padding: 20px;
+    }
+  }
+  :root[data-theme='dark'] .panel {
+    background: var(--raised);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme='light']) .panel {
+      background: var(--raised);
+    }
+  }
+  .panel-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+  .panel-title {
+    font-size: 16px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    line-height: 1.35;
+  }
+</style>

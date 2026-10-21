@@ -1,175 +1,196 @@
 ---
-import Layout from '../layouts/Layout.astro';
-import fs from 'node:fs';
-import path from 'node:path';
+import AppLayout from '../layouts/AppLayout.astro';
+import PageHeader from '../components/layout/PageHeader.astro';
+import Section from '../components/layout/Section.astro';
+import Table from '../components/ui/Table.astro';
+import Pill from '../components/ui/Pill.astro';
+import Icon from '../components/ui/Icon.astro';
+import ChartFigure from '../components/data/ChartFigure.astro';
+import { getMeta, getStatus, isStale } from '../lib/data';
+import { count, date, plural, relTime, utcTime } from '../lib/format';
+import { modelRows } from '../lib/model-metrics';
 
-const base = import.meta.env.BASE_URL.replace(/\/+$/, '');
-
-let status = {
-  snapshot_date: '2026-10-20',
-  published_at: new Date().toISOString(),
-  n_leaderboard: 50,
-  data_through_date: '2026-10-20',
-  step_durations: {},
-  rows_ingested_last_14d: [],
-  missing_hours: [],
-  dbt_summary: { tests_passing: 162, status: 'clean' },
-  model: {
-    version: '20261019-b5ff585',
-    holdout_pr_auc: 0.1578,
-  },
-  drift: null,
-  heartbeat: { last_success_at: new Date().toISOString() },
-};
-
-const statusPath = path.resolve('public/data/status.json');
-if (fs.existsSync(statusPath)) {
-  try {
-    status = JSON.parse(fs.readFileSync(statusPath, 'utf-8'));
-  } catch (e) {
-    console.error('Error reading status.json', e);
-  }
-}
-
-const steps = status.step_durations ? Object.entries(status.step_durations) : [];
-const dbt = status.dbt_summary || { tests_passing: 162, status: 'clean' };
-const model = status.model || {};
-const missing = status.missing_hours || [];
+const st = getStatus();
+const meta = getMeta();
+const last = st.heartbeat?.last_success_at ?? meta.build_time;
+const lateAtBuild = isStale(last, new Date()) || (st.heartbeat?.status != null && st.heartbeat.status !== 'healthy');
+const steps = Object.entries(st.step_durations ?? {}).map(([name, s]) => ({ name, s }));
+const totalSec = steps.reduce((a, b) => a + b.s, 0);
+const ingest = st.rows_ingested_last_14d as { event_type?: string; latest_event?: string; rows_24h?: number; missing_hours?: number }[];
+const model = st.model ?? null;
+const b1 = modelRows()?.find((r) => r.key === 'B1')?.prAuc ?? null;
+const driftRaw = st.drift as { psi_by_feature?: Record<string, number>; high_drift_threshold?: number; as_of?: string } | null;
+const psi = Object.entries(driftRaw?.psi_by_feature ?? {}).sort((a, b) => b[1] - a[1]);
+const limit = driftRaw?.high_drift_threshold ?? 0.25;
+const label = (f: string) => f.replace(/_/g, ' ');
+const mins = (s: number) => (s >= 90 ? `${(s / 60).toFixed(1)} min` : `${Math.round(s)} s`);
 ---
 
-<Layout title="Pipeline Observability · gh-breakout">
-  <div class="container">
-    <div class="page-header">
-      <div>
-        <h1>Pipeline Observability & Health</h1>
-        <p class="subtitle">
-          Real-time metrics, step execution timings, feature drift tracking, and data warehouse integrity tests.
-        </p>
-      </div>
-      <div>
-        <span class="badge badge-success">● Daily Pipeline: Operational</span>
-      </div>
-    </div>
+<AppLayout title="Status" description="Whether today's update ran, how long each step took, and whether the model's inputs have drifted.">
+  <PageHeader slot="header" title="Status" />
 
-    <!-- Health Summary Grid -->
-    <div class="grid-4" style="margin-bottom: 2rem;">
-      <div class="stat-box">
-        <div class="stat-label">Last Ingested Snapshot</div>
-        <div class="stat-value">{status.snapshot_date}</div>
-        <div class="stat-sub">Updated daily at 03:17 UTC</div>
-      </div>
-
-      <div class="stat-box">
-        <div class="stat-label">dbt Warehouse Tests</div>
-        <div class="stat-value">{dbt.tests_passing} / {dbt.tests_passing}</div>
-        <div class="stat-sub">100% data integrity tests pass</div>
-      </div>
-
-      <div class="stat-box">
-        <div class="stat-label">Champion Model</div>
-        <div class="stat-value" style="font-size: 1.25rem;">{model.version || '20261019'}</div>
-        <div class="stat-sub">Holdout PR-AUC: {model.holdout_pr_auc ?? '0.158'}</div>
-      </div>
-
-      <div class="stat-box">
-        <div class="stat-label">Missing Event Hours</div>
-        <div class="stat-value">{missing.length}</div>
-        <div class="stat-sub">{missing.length === 0 ? 'Full hourly stream intact' : 'Recovering upstream'}</div>
-      </div>
-    </div>
-
-    <!-- Daily Pipeline Step Durations -->
-    <div class="card" style="margin-bottom: 2rem;">
-      <h2>15-Step Pipeline Execution Durations</h2>
-      <p>
-        The daily pipeline runs end-to-end inside standard GitHub Actions runners with a hard 90-minute timeout cap (typical duration: ~3.5 minutes).
-      </p>
-
-      {steps.length === 0 ? (
-        <p class="text-muted">Step execution timings recorded automatically on each daily orchestrator run.</p>
-      ) : (
-        <div class="table-wrapper">
-          <table>
-            <thead>
-              <tr>
-                <th>Step</th>
-                <th>Duration (seconds)</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {steps.map(([name, duration]) => (
-                <tr>
-                  <td><code>{name}</code></td>
-                  <td class="num">{typeof duration === 'number' ? `${duration.toFixed(2)} s` : String(duration)}</td>
-                  <td><span class="badge badge-success">✓ OK</span></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-    </div>
-
-    <!-- Drift & Data Quality -->
-    <div class="grid-2">
-      <div class="card">
-        <h2>Feature Drift Monitoring (PSI)</h2>
-        <p>
-          Population Stability Index (PSI) is calculated on each live run against the training feature distributions. Alert threshold is set to PSI ≥ 0.25.
-        </p>
-        <div class="table-wrapper">
-          <table>
-            <thead>
-              <tr>
-                <th>Feature</th>
-                <th>Status</th>
-                <th>PSI Metric</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td><code>stars_7d</code></td>
-                <td><span class="badge badge-success">Stable</span></td>
-                <td class="num">&lt; 0.05</td>
-              </tr>
-              <tr>
-                <td><code>stars_3d</code></td>
-                <td><span class="badge badge-success">Stable</span></td>
-                <td class="num">&lt; 0.05</td>
-              </tr>
-              <tr>
-                <td><code>stars_1d</code></td>
-                <td><span class="badge badge-success">Stable</span></td>
-                <td class="num">&lt; 0.05</td>
-              </tr>
-              <tr>
-                <td><code>actor_days_14d</code></td>
-                <td><span class="badge badge-success">Stable</span></td>
-                <td class="num">&lt; 0.08</td>
-              </tr>
-              <tr>
-                <td><code>sg_share_experienced</code></td>
-                <td><span class="badge badge-success">Stable</span></td>
-                <td class="num">&lt; 0.06</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <div class="card">
-        <h2>Data Freshness & SLA Guarantees</h2>
-        <p>
-          Our continuous monitoring alerts maintainers if the scheduled cron job is delayed or if upstream GH Archive events stall:
-        </p>
-        <ul style="margin-left: 1.5rem; color: var(--text-secondary); line-height: 1.7;">
-          <li><strong>Cron Schedule:</strong> 03:17 UTC daily (ensures full capture of the prior UTC day).</li>
-          <li><strong>Heartbeat Check:</strong> Monitored by <code>.github/workflows/health.yml</code> every 6 hours.</li>
-          <li><strong>Stale Alert:</strong> Automatically opens a GitHub issue if no successful run is registered within 36 hours.</li>
-          <li><strong>Idempotency:</strong> Re-running the pipeline on the same day is guaranteed no-op with zero duplicate data.</li>
-        </ul>
-      </div>
-    </div>
+  <div class="hero" data-fresh={last} data-stale={lateAtBuild ? '1' : '0'}>
+    <p class="line ok"><Icon name="circle-check" size={28} />All systems normal</p>
+    <p class="line late"><Icon name="triangle-alert" size={28} />Today's update is late</p>
+    <p class="t-body-sm muted">
+      Last successful run: {date(last)}, {utcTime(last)} (<span data-fresh-rel>{relTime(last, new Date())}</span>). Data through {date(meta.data_through)}.
+    </p>
   </div>
-</Layout>
+
+  {
+    steps.length > 0 && (
+      <Section id="steps" title="Pipeline steps">
+        <ChartFigure id="chart-steps" title="Time per step, last run" level="h3" height={Math.max(160, steps.length * 36 + 40)} summary={`Duration of ${steps.length} pipeline steps, ${mins(totalSec)} in total.`} caption={`Total ${mins(totalSec)}.`} />
+      </Section>
+    )
+  }
+
+  <Section id="freshness" title="Data freshness">
+    {
+      ingest.length > 0 ? (
+        <Table caption="Latest event and rows ingested per event type" stickyFirst>
+          <thead><tr><th>Event type</th><th>Latest event</th><th class="r">Rows, last 24 h</th><th class="r">Missing hours</th></tr></thead>
+          <tbody>
+            {ingest.map((r) => (
+              <tr>
+                <td>{r.event_type}</td>
+                <td class="nowrap">{date(r.latest_event)}, {utcTime(r.latest_event)}</td>
+                <td class="r">{count(r.rows_24h)}</td>
+                <td class="r">{r.missing_hours ? <Pill variant="caution">{plural(r.missing_hours, 'hour')}</Pill> : '0'}</td>
+              </tr>
+            ))}
+          </tbody>
+        </Table>
+      ) : (
+        <p class="t-body-sm muted">Per-type counts are not published yet.</p>
+      )
+    }
+    <p class="t-body-sm note">
+      {st.missing_hours.length === 0 ? 'No hours are missing from the latest run.' : `Missing hours: ${st.missing_hours.join(', ')}.`}
+    </p>
+  </Section>
+
+  {
+    model && (
+      <Section id="model" title="Model">
+        <Table caption="Champion model" captionHidden>
+          <thead><tr><th>Version</th><th>Trained</th><th class="r">Cross-validation PR-AUC</th><th class="r">Holdout PR-AUC</th></tr></thead>
+          <tbody>
+            <tr>
+              <td>{model.version}</td>
+              <td class="nowrap">{model.promoted_at ? date(model.promoted_at) : '—'}</td>
+              <td class="r">{model.cv_pooled_pr_auc != null ? model.cv_pooled_pr_auc.toFixed(3) : '—'}</td>
+              <td class="r">{model.holdout_pr_auc != null ? model.holdout_pr_auc.toFixed(3) : '—'}</td>
+            </tr>
+          </tbody>
+        </Table>
+        {b1 != null && <p class="t-caption faint note">The baseline, which ranks repos by stars in the last 7 days, scores {b1.toFixed(3)} on the same cross-validation.</p>}
+      </Section>
+    )
+  }
+
+  {
+    psi.length > 0 && (
+      <Section id="drift" title="Drift">
+        <p class="t-body-sm muted lead-in">How far each input's recent distribution has moved from the training data (population stability index{driftRaw?.as_of ? `, as of ${date(driftRaw.as_of)}` : ''}). Above {limit.toFixed(2)} is a large shift.</p>
+        <Table caption="Population stability index per feature" captionHidden stickyFirst>
+          <thead><tr><th>Feature</th><th class="r">PSI</th><th class="barcol"><span class="sr-only">Scale</span></th><th></th></tr></thead>
+          <tbody>
+            {psi.map(([f, v]) => (
+              <tr>
+                <td>{label(f)}</td>
+                <td class="r">{v.toFixed(2)}</td>
+                <td class="barcol"><span class="meter" aria-hidden="true"><span class:list={['fill', v > limit && 'hot']} style={`--w:${Math.min(100, (v / 0.5) * 100)}%`}></span></span></td>
+                <td>{v > limit ? <Pill variant="caution">Large shift</Pill> : ''}</td>
+              </tr>
+            ))}
+          </tbody>
+        </Table>
+      </Section>
+    )
+  }
+
+  <script type="application/json" id="st-data" set:html={JSON.stringify(steps)} />
+</AppLayout>
+
+<script>
+  import * as Plot from '@observablehq/plot';
+  import { baseOptions, observeWidth, resolveTokens, plot } from '../lib/plot-theme';
+
+  const steps = JSON.parse(document.getElementById('st-data')!.textContent!) as { name: string; s: number }[];
+  const host = document.getElementById('chart-steps');
+  if (host && steps.length) {
+    observeWidth(host, (w) => {
+      const t = resolveTokens();
+      const o = baseOptions(t, w, Math.max(160, steps.length * 36 + 40));
+      host.replaceChildren(
+        plot({
+          ...o,
+          marginLeft: Math.min(170, Math.max(112, w * 0.3)),
+          x: { ...o.x, grid: true, label: null, tickFormat: (d: number) => `${d} s`, domain: [0, Math.max(...steps.map((s) => s.s)) * 1.18] },
+          y: { ...o.y, grid: false, domain: steps.map((s) => s.name), tickFormat: (d: string) => d },
+          marks: [
+            Plot.barX(steps, { x: 's', y: 'name', fill: t.accent, rx: 2, inset: 5 }),
+            Plot.text(steps, { x: 's', y: 'name', text: (d: { s: number }) => (d.s >= 90 ? `${(d.s / 60).toFixed(1)} min` : `${Math.round(d.s)} s`), dx: 6, textAnchor: 'start', fill: t.ink2 }),
+            Plot.ruleX([0], { stroke: t.line }),
+          ],
+        }),
+      );
+    });
+  }
+</script>
+
+<style>
+  .hero {
+    padding: 8px 0 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .line {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 24px;
+    font-weight: 600;
+    letter-spacing: -0.015em;
+  }
+  .ok {
+    color: var(--rise);
+  }
+  .late {
+    color: var(--caution);
+  }
+  .hero[data-stale='0'] .late,
+  .hero[data-stale='1'] .ok {
+    display: none;
+  }
+  .note {
+    margin-top: 12px;
+  }
+  .lead-in {
+    margin-bottom: 12px;
+    max-width: 68ch;
+  }
+  .barcol {
+    width: 40%;
+    min-width: 120px;
+  }
+  .meter {
+    display: block;
+    height: 8px;
+    border-radius: var(--r-pill);
+    background: var(--surface);
+    overflow: hidden;
+  }
+  .fill {
+    display: block;
+    height: 100%;
+    width: var(--w);
+    background: var(--ink-3);
+    border-radius: var(--r-pill);
+  }
+  .fill.hot {
+    background: var(--caution);
+  }
+</style>

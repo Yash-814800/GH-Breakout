@@ -1,0 +1,25 @@
+---
+import Icon from './Icon.astro';
+
+interface Props {
+  href: string;
+  class?: string;
+}
+const { href, class: cls } = Astro.props;
+---
+
+<a class:list={['xlink', cls]} href={href} target="_blank" rel="noopener"><slot /><Icon name="arrow-up-right" size={14} /><span class="sr-only"> (opens in new tab)</span></a>
+
+<style>
+  .xlink {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    min-height: 24px;
+    color: var(--accent);
+  }
+  .xlink:hover {
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+</style>

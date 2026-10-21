@@ -1,0 +1,48 @@
+---
+import Button from './Button.astro';
+
+interface Props {
+  text: string;
+  label?: string;
+  size?: 'sm' | 'md';
+  withLabel?: boolean;
+}
+const { text, label = 'Copy', size = 'sm', withLabel = false } = Astro.props;
+---
+
+{
+  withLabel ? (
+    <Button variant="secondary" size={size} icon="copy" data-copy={text} data-copy-label={label}>{label}</Button>
+  ) : (
+    <Button variant="icon" size={size} icon="copy" label={label} data-copy={text} data-copy-label={label} />
+  )
+}
+
+<script>
+  const CHECK =
+    '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>';
+  document.querySelectorAll<HTMLButtonElement>('[data-copy]').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(btn.dataset.copy ?? '');
+      } catch {
+        const ta = document.createElement('textarea');
+        ta.value = btn.dataset.copy ?? '';
+        document.body.append(ta);
+        ta.select();
+        document.execCommand('copy');
+        ta.remove();
+      }
+      const icon = btn.querySelector('svg');
+      const saved = icon?.outerHTML;
+      if (icon) icon.outerHTML = CHECK;
+      const live = document.getElementById('live-region');
+      if (live) live.textContent = 'Copied';
+      setTimeout(() => {
+        const cur = btn.querySelector('svg');
+        if (cur && saved) cur.outerHTML = saved;
+        if (live) live.textContent = '';
+      }, 1500);
+    });
+  });
+</script>

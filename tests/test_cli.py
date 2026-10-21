@@ -6,8 +6,30 @@ from typer.testing import CliRunner
 from breakout.cli import app
 
 runner = CliRunner()
-GROUPS = ["ingest", "backfill", "lake", "enrich", "build", "ml", "daily", "publish", "ops"]
-REAL_GROUPS = ("ingest", "backfill", "lake", "enrich", "build", "ml", "daily", "publish", "ops")
+GROUPS = [
+    "ingest",
+    "backfill",
+    "lake",
+    "enrich",
+    "build",
+    "ml",
+    "daily",
+    "publish",
+    "ops",
+    "detect",
+]
+REAL_GROUPS = (
+    "ingest",
+    "backfill",
+    "lake",
+    "enrich",
+    "build",
+    "ml",
+    "daily",
+    "publish",
+    "ops",
+    "detect",
+)
 STUB_GROUPS = [g for g in GROUPS if g not in REAL_GROUPS]
 
 
@@ -119,7 +141,15 @@ def test_daily_group_lists_commands():
 def test_publish_group_lists_commands():
     result = runner.invoke(app, ["publish", "--help"])
     assert result.exit_code == 0
-    assert "site-data" in result.output
+    for cmd in ("site-data", "insights"):
+        assert cmd in result.output
+
+
+def test_detect_group_lists_commands():
+    result = runner.invoke(app, ["detect", "--help"])
+    assert result.exit_code == 0
+    for cmd in ("suspicion", "similarity-reference", "cohorts-reference", "validate"):
+        assert cmd in result.output
 
 
 def test_ops_group_lists_commands():

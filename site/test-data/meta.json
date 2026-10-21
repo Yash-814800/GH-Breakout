@@ -1,10 +1,10 @@
 {
-  "build_time": "2026-10-20T14:11:12+00:00",
+  "build_time": "2026-10-21T06:37:44+00:00",
   "model_version": "20261019-b5ff585",
   "data_through": "2026-10-20",
   "counts": {
     "leaderboard": 50,
-    "detail_pages": 98,
+    "detail_pages": 95,
     "matured_snapshots": 0,
     "backtest_snapshots": 377
   }

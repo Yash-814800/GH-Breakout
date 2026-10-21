@@ -1,0 +1,36 @@
+---
+import Icon from '../ui/Icon.astro';
+---
+
+<button type="button" class="btn btn-icon btn-md theme-toggle" data-theme-toggle aria-label="Theme: System">
+  <span class="ico ico-system"><Icon name="monitor" size={18} /></span>
+  <span class="ico ico-light"><Icon name="sun" size={18} /></span>
+  <span class="ico ico-dark"><Icon name="moon" size={18} /></span>
+</button>
+
+<script>
+  import { applyPref, getPref, nextPref } from '../../lib/theme';
+  const label = (p: string) => `Theme: ${p[0]!.toUpperCase()}${p.slice(1)}`;
+  document.querySelectorAll<HTMLButtonElement>('[data-theme-toggle]').forEach((btn) => {
+    const sync = () => btn.setAttribute('aria-label', label(getPref()));
+    sync();
+    btn.addEventListener('click', () => {
+      applyPref(nextPref(getPref()));
+      document.querySelectorAll('[data-theme-toggle]').forEach((b) => b.setAttribute('aria-label', label(getPref())));
+      const live = document.getElementById('live-region');
+      if (live) live.textContent = label(getPref());
+    });
+  });
+</script>
+
+<style>
+  .theme-toggle .ico {
+    display: none;
+  }
+  :global(html:not([data-theme-pref])) .ico-system,
+  :global(html[data-theme-pref='system']) .ico-system,
+  :global(html[data-theme-pref='light']) .ico-light,
+  :global(html[data-theme-pref='dark']) .ico-dark {
+    display: inline-flex;
+  }
+</style>

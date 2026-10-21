@@ -1,83 +1,787 @@
 {
-  "matured_snapshots": [],
+  "matured_snapshots": [
+    {
+      "snapshot_date": "2026-09-17",
+      "top25": [
+        {
+          "rank": 1,
+          "repo_id": 1407951147,
+          "repo_name": "some-org/an-extremely-long-repository-name-without-any-breaks-at-all",
+          "prob": 0.34,
+          "gain_30d": 400,
+          "hit": true,
+          "label": true
+        },
+        {
+          "rank": 2,
+          "repo_id": 1423101235,
+          "repo_name": "quiet-dev/no-description",
+          "prob": 0.004,
+          "gain_30d": 12,
+          "hit": false,
+          "label": false
+        },
+        {
+          "rank": 3,
+          "repo_id": 1396526702,
+          "repo_name": "wordy/four-hundred-characters",
+          "prob": 0.07,
+          "gain_30d": 12,
+          "hit": false,
+          "label": false
+        },
+        {
+          "rank": 4,
+          "repo_id": 1409246014,
+          "repo_name": "zhongwen/agent-tools",
+          "prob": 0.51,
+          "gain_30d": 12,
+          "hit": false,
+          "label": false
+        },
+        {
+          "rank": 5,
+          "repo_id": 1390273274,
+          "repo_name": "rtl-lab/arabic-notes",
+          "prob": 0.97,
+          "gain_30d": 12,
+          "hit": false,
+          "label": false
+        },
+        {
+          "rank": 6,
+          "repo_id": 1416386910,
+          "repo_name": "emoji-fan/sparkly",
+          "prob": 0.12,
+          "gain_30d": 12,
+          "hit": false,
+          "label": false
+        },
+        {
+          "rank": 7,
+          "repo_id": 1407727187,
+          "repo_name": "Supermedo/bloodborne_pc",
+          "prob": 0.0455,
+          "gain_30d": 12,
+          "hit": false,
+          "label": false
+        },
+        {
+          "rank": 8,
+          "repo_id": 1346870728,
+          "repo_name": "monid-ai/monid",
+          "prob": 0.04,
+          "gain_30d": 12,
+          "hit": false,
+          "label": false
+        },
+        {
+          "rank": 9,
+          "repo_id": 1333652151,
+          "repo_name": "PC2005-cloud/dsh-pet",
+          "prob": 0.0371,
+          "gain_30d": 12,
+          "hit": false,
+          "label": false
+        },
+        {
+          "rank": 10,
+          "repo_id": 1381093165,
+          "repo_name": "Saffsanity/sill",
+          "prob": 0.0371,
+          "gain_30d": 580,
+          "hit": true,
+          "label": true
+        },
+        {
+          "rank": 11,
+          "repo_id": 1406482535,
+          "repo_name": "obsidianmd/pele",
+          "prob": 0.0297,
+          "gain_30d": 12,
+          "hit": false,
+          "label": false
+        },
+        {
+          "rank": 12,
+          "repo_id": 1409013846,
+          "repo_name": "Fei2411/DeepSeek-Bot",
+          "prob": 0.0293,
+          "gain_30d": 12,
+          "hit": false,
+          "label": false
+        },
+        {
+          "rank": 13,
+          "repo_id": 1389011744,
+          "repo_name": "lemomo-ai/lemo-opuscar",
+          "prob": 0.0293,
+          "gain_30d": 12,
+          "hit": false,
+          "label": false
+        },
+        {
+          "rank": 14,
+          "repo_id": 1412045987,
+          "repo_name": "SubmitGame/awesome-decomp-games",
+          "prob": 0.0293,
+          "gain_30d": 12,
+          "hit": false,
+          "label": false
+        },
+        {
+          "rank": 15,
+          "repo_id": 1408289866,
+          "repo_name": "storytold/cadcraft",
+          "prob": 0.0293,
+          "gain_30d": 12,
+          "hit": false,
+          "label": false
+        },
+        {
+          "rank": 16,
+          "repo_id": 1424340323,
+          "repo_name": "alchaincyf/huashu-motion",
+          "prob": 0.0293,
+          "gain_30d": 12,
+          "hit": false,
+          "label": false
+        },
+        {
+          "rank": 17,
+          "repo_id": 1423689866,
+          "repo_name": "ly05010419/MacNativeGames",
+          "prob": 0.0293,
+          "gain_30d": 12,
+          "hit": false,
+          "label": false
+        },
+        {
+          "rank": 18,
+          "repo_id": 1400136506,
+          "repo_name": "storytold/effectcraft",
+          "prob": 0.0293,
+          "gain_30d": 12,
+          "hit": false,
+          "label": false
+        },
+        {
+          "rank": 19,
+          "repo_id": 1101146119,
+          "repo_name": "Fractal-Compute-Orchestrations/FractalAndroid",
+          "prob": 0.0293,
+          "gain_30d": 760,
+          "hit": true,
+          "label": true
+        },
+        {
+          "rank": 20,
+          "repo_id": 1398097510,
+          "repo_name": "storytold/vectorcraft",
+          "prob": 0.0293,
+          "gain_30d": 12,
+          "hit": false,
+          "label": false
+        },
+        {
+          "rank": 21,
+          "repo_id": 1324949198,
+          "repo_name": "ranxianglei/billion-context",
+          "prob": 0.0293,
+          "gain_30d": 12,
+          "hit": false,
+          "label": false
+        },
+        {
+          "rank": 22,
+          "repo_id": 1420305104,
+          "repo_name": "Leonxlnx/earshot",
+          "prob": 0.0293,
+          "gain_30d": 12,
+          "hit": false,
+          "label": false
+        },
+        {
+          "rank": 23,
+          "repo_id": 1289062062,
+          "repo_name": "AhmadHassan-BTed/FractalWorkspace",
+          "prob": 0.0293,
+          "gain_30d": 12,
+          "hit": false,
+          "label": false
+        },
+        {
+          "rank": 24,
+          "repo_id": 1417456983,
+          "repo_name": "HeyPuter/everything",
+          "prob": 0.0293,
+          "gain_30d": 12,
+          "hit": false,
+          "label": false
+        },
+        {
+          "rank": 25,
+          "repo_id": 1323332140,
+          "repo_name": "AhmadHassan-BTed/MotionShot",
+          "prob": 0.0293,
+          "gain_30d": 12,
+          "hit": false,
+          "label": false
+        }
+      ],
+      "precision_at_10": 0.12,
+      "precision_at_25": 0.12,
+      "precision_at_50": 0.12,
+      "b1_precision_at_25": 0.039999999999999994
+    },
+    {
+      "snapshot_date": "2026-09-18",
+      "top25": [
+        {
+          "rank": 1,
+          "repo_id": 1407951147,
+          "repo_name": "some-org/an-extremely-long-repository-name-without-any-breaks-at-all",
+          "prob": 0.34,
+          "gain_30d": 12,
+          "hit": false,
+          "label": false
+        },
+        {
+          "rank": 2,
+          "repo_id": 1423101235,
+          "repo_name": "quiet-dev/no-description",
+          "prob": 0.004,
+          "gain_30d": 13,
+          "hit": false,
+          "label": false
+        },
+        {
+          "rank": 3,
+          "repo_id": 1396526702,
+          "repo_name": "wordy/four-hundred-characters",
+          "prob": 0.07,
+          "gain_30d": 14,
+          "hit": false,
+          "label": false
+        },
+        {
+          "rank": 4,
+          "repo_id": 1409246014,
+          "repo_name": "zhongwen/agent-tools",
+          "prob": 0.51,
+          "gain_30d": 15,
+          "hit": false,
+          "label": false
+        },
+        {
+          "rank": 5,
+          "repo_id": 1390273274,
+          "repo_name": "rtl-lab/arabic-notes",
+          "prob": 0.97,
+          "gain_30d": 16,
+          "hit": false,
+          "label": false
+        },
+        {
+          "rank": 6,
+          "repo_id": 1416386910,
+          "repo_name": "emoji-fan/sparkly",
+          "prob": 0.12,
+          "gain_30d": 17,
+          "hit": false,
+          "label": false
+        },
+        {
+          "rank": 7,
+          "repo_id": 1407727187,
+          "repo_name": "Supermedo/bloodborne_pc",
+          "prob": 0.0455,
+          "gain_30d": 520,
+          "hit": true,
+          "label": true
+        },
+        {
+          "rank": 8,
+          "repo_id": 1346870728,
+          "repo_name": "monid-ai/monid",
+          "prob": 0.04,
+          "gain_30d": 19,
+          "hit": false,
+          "label": false
+        },
+        {
+          "rank": 9,
+          "repo_id": 1333652151,
+          "repo_name": "PC2005-cloud/dsh-pet",
+          "prob": 0.0371,
+          "gain_30d": 20,
+          "hit": false,
+          "label": false
+        },
+        {
+          "rank": 10,
+          "repo_id": 1381093165,
+          "repo_name": "Saffsanity/sill",
+          "prob": 0.0371,
+          "gain_30d": 21,
+          "hit": false,
+          "label": false
+        },
+        {
+          "rank": 11,
+          "repo_id": 1406482535,
+          "repo_name": "obsidianmd/pele",
+          "prob": 0.0297,
+          "gain_30d": 22,
+          "hit": false,
+          "label": false
+        },
+        {
+          "rank": 12,
+          "repo_id": 1409013846,
+          "repo_name": "Fei2411/DeepSeek-Bot",
+          "prob": 0.0293,
+          "gain_30d": 23,
+          "hit": false,
+          "label": false
+        },
+        {
+          "rank": 13,
+          "repo_id": 1389011744,
+          "repo_name": "lemomo-ai/lemo-opuscar",
+          "prob": 0.0293,
+          "gain_30d": 24,
+          "hit": false,
+          "label": false
+        },
+        {
+          "rank": 14,
+          "repo_id": 1412045987,
+          "repo_name": "SubmitGame/awesome-decomp-games",
+          "prob": 0.0293,
+          "gain_30d": 25,
+          "hit": false,
+          "label": false
+        },
+        {
+          "rank": 15,
+          "repo_id": 1408289866,
+          "repo_name": "storytold/cadcraft",
+          "prob": 0.0293,
+          "gain_30d": 26,
+          "hit": false,
+          "label": false
+        },
+        {
+          "rank": 16,
+          "repo_id": 1424340323,
+          "repo_name": "alchaincyf/huashu-motion",
+          "prob": 0.0293,
+          "gain_30d": 700,
+          "hit": true,
+          "label": true
+        },
+        {
+          "rank": 17,
+          "repo_id": 1423689866,
+          "repo_name": "ly05010419/MacNativeGames",
+          "prob": 0.0293,
+          "gain_30d": 28,
+          "hit": false,
+          "label": false
+        },
+        {
+          "rank": 18,
+          "repo_id": 1400136506,
+          "repo_name": "storytold/effectcraft",
+          "prob": 0.0293,
+          "gain_30d": 29,
+          "hit": false,
+          "label": false
+        },
+        {
+          "rank": 19,
+          "repo_id": 1101146119,
+          "repo_name": "Fractal-Compute-Orchestrations/FractalAndroid",
+          "prob": 0.0293,
+          "gain_30d": 30,
+          "hit": false,
+          "label": false
+        },
+        {
+          "rank": 20,
+          "repo_id": 1398097510,
+          "repo_name": "storytold/vectorcraft",
+          "prob": 0.0293,
+          "gain_30d": 31,
+          "hit": false,
+          "label": false
+        },
+        {
+          "rank": 21,
+          "repo_id": 1324949198,
+          "repo_name": "ranxianglei/billion-context",
+          "prob": 0.0293,
+          "gain_30d": 32,
+          "hit": false,
+          "label": false
+        },
+        {
+          "rank": 22,
+          "repo_id": 1420305104,
+          "repo_name": "Leonxlnx/earshot",
+          "prob": 0.0293,
+          "gain_30d": 33,
+          "hit": false,
+          "label": false
+        },
+        {
+          "rank": 23,
+          "repo_id": 1289062062,
+          "repo_name": "AhmadHassan-BTed/FractalWorkspace",
+          "prob": 0.0293,
+          "gain_30d": 34,
+          "hit": false,
+          "label": false
+        },
+        {
+          "rank": 24,
+          "repo_id": 1417456983,
+          "repo_name": "HeyPuter/everything",
+          "prob": 0.0293,
+          "gain_30d": 35,
+          "hit": false,
+          "label": false
+        },
+        {
+          "rank": 25,
+          "repo_id": 1323332140,
+          "repo_name": "AhmadHassan-BTed/MotionShot",
+          "prob": 0.0293,
+          "gain_30d": 880,
+          "hit": true,
+          "label": true
+        }
+      ],
+      "precision_at_10": 0.12,
+      "precision_at_25": 0.12,
+      "precision_at_50": 0.12,
+      "b1_precision_at_25": 0.039999999999999994
+    },
+    {
+      "snapshot_date": "2026-09-19",
+      "top25": [
+        {
+          "rank": 1,
+          "repo_id": 1407951147,
+          "repo_name": "some-org/an-extremely-long-repository-name-without-any-breaks-at-all",
+          "prob": 0.34,
+          "gain_30d": 12,
+          "hit": false,
+          "label": false
+        },
+        {
+          "rank": 2,
+          "repo_id": 1423101235,
+          "repo_name": "quiet-dev/no-description",
+          "prob": 0.004,
+          "gain_30d": 14,
+          "hit": false,
+          "label": false
+        },
+        {
+          "rank": 3,
+          "repo_id": 1396526702,
+          "repo_name": "wordy/four-hundred-characters",
+          "prob": 0.07,
+          "gain_30d": 16,
+          "hit": false,
+          "label": false
+        },
+        {
+          "rank": 4,
+          "repo_id": 1409246014,
+          "repo_name": "zhongwen/agent-tools",
+          "prob": 0.51,
+          "gain_30d": 460,
+          "hit": true,
+          "label": true
+        },
+        {
+          "rank": 5,
+          "repo_id": 1390273274,
+          "repo_name": "rtl-lab/arabic-notes",
+          "prob": 0.97,
+          "gain_30d": 20,
+          "hit": false,
+          "label": false
+        },
+        {
+          "rank": 6,
+          "repo_id": 1416386910,
+          "repo_name": "emoji-fan/sparkly",
+          "prob": 0.12,
+          "gain_30d": 22,
+          "hit": false,
+          "label": false
+        },
+        {
+          "rank": 7,
+          "repo_id": 1407727187,
+          "repo_name": "Supermedo/bloodborne_pc",
+          "prob": 0.0455,
+          "gain_30d": 24,
+          "hit": false,
+          "label": false
+        },
+        {
+          "rank": 8,
+          "repo_id": 1346870728,
+          "repo_name": "monid-ai/monid",
+          "prob": 0.04,
+          "gain_30d": 26,
+          "hit": false,
+          "label": false
+        },
+        {
+          "rank": 9,
+          "repo_id": 1333652151,
+          "repo_name": "PC2005-cloud/dsh-pet",
+          "prob": 0.0371,
+          "gain_30d": 28,
+          "hit": false,
+          "label": false
+        },
+        {
+          "rank": 10,
+          "repo_id": 1381093165,
+          "repo_name": "Saffsanity/sill",
+          "prob": 0.0371,
+          "gain_30d": 30,
+          "hit": false,
+          "label": false
+        },
+        {
+          "rank": 11,
+          "repo_id": 1406482535,
+          "repo_name": "obsidianmd/pele",
+          "prob": 0.0297,
+          "gain_30d": 32,
+          "hit": false,
+          "label": false
+        },
+        {
+          "rank": 12,
+          "repo_id": 1409013846,
+          "repo_name": "Fei2411/DeepSeek-Bot",
+          "prob": 0.0293,
+          "gain_30d": 34,
+          "hit": false,
+          "label": false
+        },
+        {
+          "rank": 13,
+          "repo_id": 1389011744,
+          "repo_name": "lemomo-ai/lemo-opuscar",
+          "prob": 0.0293,
+          "gain_30d": 640,
+          "hit": true,
+          "label": true
+        },
+        {
+          "rank": 14,
+          "repo_id": 1412045987,
+          "repo_name": "SubmitGame/awesome-decomp-games",
+          "prob": 0.0293,
+          "gain_30d": 38,
+          "hit": false,
+          "label": false
+        },
+        {
+          "rank": 15,
+          "repo_id": 1408289866,
+          "repo_name": "storytold/cadcraft",
+          "prob": 0.0293,
+          "gain_30d": 40,
+          "hit": false,
+          "label": false
+        },
+        {
+          "rank": 16,
+          "repo_id": 1424340323,
+          "repo_name": "alchaincyf/huashu-motion",
+          "prob": 0.0293,
+          "gain_30d": 42,
+          "hit": false,
+          "label": false
+        },
+        {
+          "rank": 17,
+          "repo_id": 1423689866,
+          "repo_name": "ly05010419/MacNativeGames",
+          "prob": 0.0293,
+          "gain_30d": 44,
+          "hit": false,
+          "label": false
+        },
+        {
+          "rank": 18,
+          "repo_id": 1400136506,
+          "repo_name": "storytold/effectcraft",
+          "prob": 0.0293,
+          "gain_30d": 46,
+          "hit": false,
+          "label": false
+        },
+        {
+          "rank": 19,
+          "repo_id": 1101146119,
+          "repo_name": "Fractal-Compute-Orchestrations/FractalAndroid",
+          "prob": 0.0293,
+          "gain_30d": 48,
+          "hit": false,
+          "label": false
+        },
+        {
+          "rank": 20,
+          "repo_id": 1398097510,
+          "repo_name": "storytold/vectorcraft",
+          "prob": 0.0293,
+          "gain_30d": 50,
+          "hit": false,
+          "label": false
+        },
+        {
+          "rank": 21,
+          "repo_id": 1324949198,
+          "repo_name": "ranxianglei/billion-context",
+          "prob": 0.0293,
+          "gain_30d": 52,
+          "hit": false,
+          "label": false
+        },
+        {
+          "rank": 22,
+          "repo_id": 1420305104,
+          "repo_name": "Leonxlnx/earshot",
+          "prob": 0.0293,
+          "gain_30d": 820,
+          "hit": true,
+          "label": true
+        },
+        {
+          "rank": 23,
+          "repo_id": 1289062062,
+          "repo_name": "AhmadHassan-BTed/FractalWorkspace",
+          "prob": 0.0293,
+          "gain_30d": 56,
+          "hit": false,
+          "label": false
+        },
+        {
+          "rank": 24,
+          "repo_id": 1417456983,
+          "repo_name": "HeyPuter/everything",
+          "prob": 0.0293,
+          "gain_30d": 58,
+          "hit": false,
+          "label": false
+        },
+        {
+          "rank": 25,
+          "repo_id": 1323332140,
+          "repo_name": "AhmadHassan-BTed/MotionShot",
+          "prob": 0.0293,
+          "gain_30d": 60,
+          "hit": false,
+          "label": false
+        }
+      ],
+      "precision_at_10": 0.12,
+      "precision_at_25": 0.12,
+      "precision_at_50": 0.12,
+      "b1_precision_at_25": 0.039999999999999994
+    }
+  ],
   "summary": {
-    "n_live_days": 1,
-    "n_matured_days": 0,
-    "top25_hit_rate": 0.0,
+    "n_live_days": 33,
+    "n_matured_days": 3,
+    "top25_hit_rate": 0.12,
     "base_rate": 0.0051,
     "b1_hit_rate": 0.0286,
-    "median_lead_time_days": 1.0
+    "median_lead_time_days": 1,
+    "headline": "Since Sep 17, 2026, 12% of our top-25 picks broke out within 30 days, against 0.5% for all candidates."
   },
   "calibration": [
     {
-      "bin_start": 0.0,
+      "bin_start": 0,
       "bin_end": 0.1,
       "predicted_avg": 0.05,
-      "realized_avg": 0.0,
-      "count": 0
+      "realized_avg": 0.05,
+      "count": 20
     },
     {
       "bin_start": 0.1,
       "bin_end": 0.2,
-      "predicted_avg": 0.15,
-      "realized_avg": 0.0,
-      "count": 0
+      "predicted_avg": 0.15000000000000002,
+      "realized_avg": 0.13000000000000003,
+      "count": 35
     },
     {
       "bin_start": 0.2,
       "bin_end": 0.3,
       "predicted_avg": 0.25,
-      "realized_avg": 0.0,
-      "count": 0
+      "realized_avg": 0.21,
+      "count": 50
     },
     {
       "bin_start": 0.3,
       "bin_end": 0.4,
       "predicted_avg": 0.35,
-      "realized_avg": 0.0,
-      "count": 0
+      "realized_avg": 0.35,
+      "count": 65
     },
     {
       "bin_start": 0.4,
       "bin_end": 0.5,
       "predicted_avg": 0.45,
-      "realized_avg": 0.0,
-      "count": 0
+      "realized_avg": 0.43,
+      "count": 80
     },
     {
       "bin_start": 0.5,
       "bin_end": 0.6,
       "predicted_avg": 0.55,
-      "realized_avg": 0.0,
-      "count": 0
+      "realized_avg": 0.51,
+      "count": 95
     },
     {
       "bin_start": 0.6,
       "bin_end": 0.7,
       "predicted_avg": 0.65,
-      "realized_avg": 0.0,
-      "count": 0
+      "realized_avg": 0.65,
+      "count": 110
     },
     {
       "bin_start": 0.7,
       "bin_end": 0.8,
       "predicted_avg": 0.75,
-      "realized_avg": 0.0,
-      "count": 0
+      "realized_avg": 0.73,
+      "count": 125
     },
     {
       "bin_start": 0.8,
       "bin_end": 0.9,
-      "predicted_avg": 0.85,
-      "realized_avg": 0.0,
-      "count": 0
+      "predicted_avg": 0.8500000000000001,
+      "realized_avg": 0.81,
+      "count": 140
     },
     {
       "bin_start": 0.9,
-      "bin_end": 1.0,
-      "predicted_avg": 0.95,
-      "realized_avg": 0.0,
-      "count": 0
+      "bin_end": 1,
+      "predicted_avg": 0.9500000000000001,
+      "realized_avg": 0.9500000000000001,
+      "count": 155
     }
   ],
   "ledger": {

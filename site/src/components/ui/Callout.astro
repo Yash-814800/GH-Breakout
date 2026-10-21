@@ -1,0 +1,61 @@
+---
+import Icon from './Icon.astro';
+
+interface Props {
+  variant?: 'info' | 'caution' | 'rise' | 'danger';
+  icon?: string;
+  class?: string;
+}
+const { variant = 'info', icon, class: cls } = Astro.props;
+const ic = icon ?? { info: 'info', caution: 'triangle-alert', rise: 'circle-check', danger: 'circle-alert' }[variant];
+---
+
+<div class:list={['callout', `callout-${variant}`, cls]} role={variant === 'caution' || variant === 'danger' ? 'status' : undefined}>
+  <Icon name={ic} size={16} class="callout-icon" />
+  <div class="callout-body"><slot /></div>
+</div>
+
+<style is:global>
+  .callout {
+    --c: var(--accent);
+    --c-soft: var(--accent-soft);
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    border: 1px solid color-mix(in srgb, var(--c) 30%, transparent);
+    background: var(--c-soft);
+    border-radius: var(--r-lg);
+    padding: 12px 16px;
+    font-size: 14px;
+    line-height: 1.5;
+    color: var(--ink);
+  }
+  .callout-caution {
+    --c: var(--caution);
+    --c-soft: var(--caution-soft);
+  }
+  .callout-rise {
+    --c: var(--rise);
+    --c-soft: var(--rise-soft);
+  }
+  .callout-danger {
+    --c: var(--danger);
+    --c-soft: var(--surface);
+  }
+  .callout-icon {
+    flex: none;
+    margin-top: 2px;
+    color: var(--c);
+  }
+  .callout-body {
+    min-width: 0;
+  }
+  .callout-body a {
+    color: var(--accent);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+  .callout-body :global(p + p) {
+    margin-top: 6px;
+  }
+</style>

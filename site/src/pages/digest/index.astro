@@ -1,0 +1,80 @@
+---
+import AppLayout from '../../layouts/AppLayout.astro';
+import PageHeader from '../../components/layout/PageHeader.astro';
+import EmptyState from '../../components/ui/EmptyState.astro';
+import { getDigestIndex } from '../../lib/data';
+import { dateRange, isoWeekLabel } from '../../lib/format';
+import { url } from '../../lib/url';
+
+const digests = getDigestIndex();
+---
+
+<AppLayout title="Digest" description="One short issue each week: new repos on the list, biggest movers, and which past predictions hit or missed.">
+  <PageHeader slot="header" title="Weekly digest" lead="One issue a week: who joined the list, who moved most, and which predictions from 30 days ago hit or missed." />
+  {
+    digests.length === 0 ? (
+      <div class="box"><EmptyState title="No digests yet" icon="newspaper">The first issue is published after the first full week of lists.</EmptyState></div>
+    ) : (
+      <ul class="issues">
+        {digests.map((d) => (
+          <li>
+            <a href={url(`/digest/${d.week}/`)}>
+              <span class="t-h3 title">{isoWeekLabel(d.start)}</span>
+              <span class="range t-caption faint">{dateRange(d.start, d.end)}</span>
+              <span class="sum t-body-sm muted">{d.summary}</span>
+            </a>
+          </li>
+        ))}
+      </ul>
+    )
+  }
+</AppLayout>
+
+<style>
+  .box {
+    border: 1px solid var(--line);
+    border-radius: var(--r-lg);
+    background: var(--raised);
+  }
+  .issues {
+    border: 1px solid var(--line);
+    border-radius: var(--r-lg);
+    background: var(--raised);
+    overflow: hidden;
+  }
+  .issues li + li {
+    border-top: 1px solid var(--line);
+  }
+  .issues a {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 4px;
+    padding: 20px;
+  }
+  .issues a:hover {
+    background: var(--row-hover);
+  }
+  .issues a:hover .title {
+    color: var(--accent);
+  }
+  .sum {
+    max-width: 72ch;
+  }
+  @media (min-width: 768px) {
+    .issues a {
+      grid-template-columns: 220px minmax(0, 1fr);
+      column-gap: 24px;
+    }
+    .range {
+      grid-column: 1;
+      grid-row: 2;
+    }
+    .title {
+      grid-column: 1;
+    }
+    .sum {
+      grid-column: 2;
+      grid-row: 1 / span 2;
+    }
+  }
+</style>

@@ -1,0 +1,434 @@
+---
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+import AppLayout from '../layouts/AppLayout.astro';
+import PageHeader from '../components/layout/PageHeader.astro';
+import Section from '../components/layout/Section.astro';
+import Button from '../components/ui/Button.astro';
+import Pill from '../components/ui/Pill.astro';
+import SegmentedControl from '../components/ui/SegmentedControl.astro';
+import Select from '../components/ui/Select.astro';
+import Tooltip from '../components/ui/Tooltip.astro';
+import Panel from '../components/ui/Panel.astro';
+import Callout from '../components/ui/Callout.astro';
+import Table from '../components/ui/Table.astro';
+import EmptyState from '../components/ui/EmptyState.astro';
+import Disclosure from '../components/ui/Disclosure.astro';
+import CopyButton from '../components/ui/CopyButton.astro';
+import Avatar from '../components/ui/Avatar.astro';
+import Kbd from '../components/ui/Kbd.astro';
+import Skeleton from '../components/ui/Skeleton.astro';
+import Icon from '../components/ui/Icon.astro';
+import ExternalLink from '../components/ui/ExternalLink.astro';
+import RepoRow from '../components/data/RepoRow.astro';
+import MomentumStrip from '../components/data/MomentumStrip.astro';
+import FactStrip from '../components/data/FactStrip.astro';
+import HitDots from '../components/data/HitDots.astro';
+import ShapBars from '../components/data/ShapBars.astro';
+import OutcomeBanner from '../components/data/OutcomeBanner.astro';
+import ChartFigure from '../components/data/ChartFigure.astro';
+import ThemeToggle from '../components/layout/ThemeToggle.astro';
+import { toRepo } from '../lib/data';
+import { LeaderboardRow } from '../lib/types';
+import { count, delta, pct, odds, date, shortDate, relTime, hours, age, cleanText, hash } from '../lib/format';
+
+// The style guide always renders the committed fixtures, whatever data the site is built with.
+const rows = JSON.parse(readFileSync(resolve('test-data/leaderboard.json'), 'utf8')).slice(0, 8).map((r: unknown) => toRepo(LeaderboardRow.parse(r)));
+const colors = ['bg', 'surface', 'raised', 'ink', 'ink-2', 'ink-3', 'line', 'line-strong', 'accent', 'accent-hover', 'accent-soft', 'on-accent', 'rise', 'rise-soft', 'caution', 'caution-soft', 'danger', 'star', 'row-hover'];
+const pairs: [string, string][] = [['ink', 'bg'], ['ink-2', 'bg'], ['ink-3', 'bg'], ['accent', 'bg'], ['on-accent', 'accent'], ['rise', 'bg'], ['caution', 'bg'], ['ink-2', 'accent-soft']];
+const types = [
+  ['t-display', 'display', 'Track record'],
+  ['t-h1', 'h1', 'Repos likely to break out'],
+  ['t-h2', 'h2', 'Why it is flagged'],
+  ['t-h3', 'h3', 'Star momentum'],
+  ['t-lead', 'lead', 'Young GitHub repositories most likely to break out in the next 30 days.'],
+  ['t-prose', 'prose', 'Long-form body text keeps a comfortable measure of about sixty-eight characters.'],
+  ['t-body', 'body', 'Default interface text and repo names.'],
+  ['t-body-sm', 'body-sm', 'Descriptions, explanations and table cells.'],
+  ['t-caption', 'caption', 'Meta rows, captions and the footer.'],
+  ['t-micro', 'micro', 'Pills, axis labels and helper text'],
+  ['t-num-lg', 'num-lg', '34%'],
+  ['t-num-xl', 'num-xl', '1,186'],
+];
+const spaces = [1, 2, 3, 4, 5, 6, 8, 10, 12, 16, 24];
+const radii = ['xs', 'sm', 'md', 'lg', 'xl', 'pill'];
+const ramp = Array.from({ length: 28 }, (_, i) => (i < 21 ? 2 + (i % 3) : 20 + (i - 21) * 25));
+const steady = Array.from({ length: 28 }, (_, i) => 3 + Math.round(i * 1.6));
+const spike = Array.from({ length: 28 }, (_, i) => (i === 24 ? 640 : i > 24 ? 12 : 0));
+const zero = Array(28).fill(0);
+const shap = [
+  { feature: 'stars_3d', contribution: 0.62, sentence: '182 stars in the last 3 days' },
+  { feature: 'actor_days_14d', contribution: 0.41, sentence: '72% of recent stars come from experienced accounts' },
+  { feature: 'issue_response', contribution: 0.2, sentence: 'Issues get a first response in about 3 hours' },
+  { feature: 'age', contribution: -0.12, sentence: 'The repo is 332 days old' },
+  { feature: 'pushes_14d', contribution: -0.34, sentence: 'Few recent pushes' },
+];
+---
+
+<AppLayout title="Style guide" noindex>
+  <PageHeader slot="header" title="Style guide" lead="Every token and component with its states, in light and dark. Not linked from the site.">
+    <Fragment slot="actions"><ThemeToggle /></Fragment>
+  </PageHeader>
+
+  <Section id="color" title="Color tokens">
+    <ul class="swatches" data-swatches>
+      {colors.map((c) => (
+        <li><span class="sw" style={`--c:var(--${c})`}></span><code>--{c}</code></li>
+      ))}
+    </ul>
+    <h3 class="t-h3 sub">Contrast (computed live)</h3>
+    <Table caption="WCAG contrast ratios of text tokens in the current theme">
+      <thead><tr><th>Text</th><th>On</th><th class="r">Ratio</th><th>Result</th></tr></thead>
+      <tbody data-contrast>
+        {pairs.map(([fg, bg]) => <tr data-fg={fg} data-bg={bg}><td>--{fg}</td><td>--{bg}</td><td class="r num" data-ratio>—</td><td data-pass>—</td></tr>)}
+      </tbody>
+    </Table>
+  </Section>
+
+  <Section id="type" title="Type scale">
+    <div class="types">
+      {types.map(([cls, name, sample]) => (
+        <div class="type-row"><span class="type-name">{name}</span><span class={cls}>{sample}</span></div>
+      ))}
+    </div>
+  </Section>
+
+  <Section id="space" title="Spacing and radii">
+    <div class="spaces">
+      {spaces.map((s) => <div class="space-row"><code>--space-{s}</code><span class="bar" style={`--w:var(--space-${s})`}></span></div>)}
+    </div>
+    <div class="radii">
+      {radii.map((r) => <div class="radius" style={`--r:var(--r-${r})`}><code>{r}</code></div>)}
+    </div>
+  </Section>
+
+  <Section id="buttons" title="Buttons">
+    <div class="btn-grid">
+      {(['primary', 'secondary', 'ghost'] as const).map((v) => (
+        <div class="btn-col">
+          <p class="t-caption faint">{v}</p>
+          {(['sm', 'md', 'lg'] as const).map((s) => (
+            <div class="btn-row">
+              <Button variant={v} size={s} icon="download">Default</Button>
+              <Button variant={v} size={s} disabled>Disabled</Button>
+              <Button variant={v} size={s} loading>Loading</Button>
+            </div>
+          ))}
+        </div>
+      ))}
+    </div>
+    <div class="btn-row">
+      <Button variant="icon" icon="copy" label="Copy" />
+      <Button variant="primary" size="lg" pill>Open on GitHub</Button>
+      <Button variant="secondary" href="https://github.com" external icon="github">Open on GitHub</Button>
+      <CopyButton text="hello" withLabel label="Copy badge" size="md" />
+      <ThemeToggle />
+    </div>
+  </Section>
+
+  <Section id="controls" title="Pills, segmented control, select, tooltip">
+    <div class="btn-row">
+      <Pill>Neutral</Pill><Pill variant="accent">New</Pill><Pill variant="rise" icon="check">Hit</Pill>
+      <Pill variant="caution">Unusual star pattern</Pill>
+      <Pill variant="rank-up"><span class="sr-only">Moved up</span></Pill><Pill variant="rank-down"><span class="sr-only">Moved down</span></Pill>
+    </div>
+    <div class="btn-row">
+      <SegmentedControl name="sg-demo" legend="Show" options={[{ value: 'all', label: 'All' }, { value: 'new', label: 'New today' }]} />
+      <Select name="sg-lang" label="Language" options={[{ value: '', label: 'All languages' }, { value: 'Rust', label: 'Rust' }, { value: 'Python', label: 'Python' }]} />
+      <Select name="sg-lab" label="Sort by" showLabel options={[{ value: 'prob', label: 'Breakout chance' }, { value: 'gain', label: 'Stars this week' }]} />
+      <Tooltip text="Breakout chance: 34% (About 1 in 3). Of repos we gave about this chance in the past, about 34% broke out."><span class="t-body-sm">Hover or focus for a tooltip</span></Tooltip>
+      <Kbd>⌘↵</Kbd> <Kbd>Ctrl↵</Kbd>
+    </div>
+  </Section>
+
+  <Section id="surfaces" title="Panel, callout, table, empty state, disclosure, avatar">
+    <div class="grid2">
+      <Panel title="Follow the list">
+        <p class="t-body-sm muted">Panels hold the grouped side content.</p>
+        <Fragment slot="action"><ExternalLink href="https://github.com">Source</ExternalLink></Fragment>
+      </Panel>
+      <div class="stackc">
+        <Callout variant="info">The list is simulated from back-testing.</Callout>
+        <Callout variant="caution">Today's update is late. Showing data through Oct 20, 2026.</Callout>
+        <Callout variant="rise">Broke out: +2,340 stars in 30 days.</Callout>
+        <Callout variant="danger">Binder Error: column "x" not found. Check the column names in the schema panel.</Callout>
+      </div>
+    </div>
+    <div class="stackc">
+      <Table caption="Example table with numeric columns" stickyFirst>
+        <thead><tr><th>Event type</th><th>Latest event</th><th class="r">Rows, 24 h</th><th class="r">Missing hours</th></tr></thead>
+        <tbody>
+          <tr><td>WatchEvent</td><td>{date('2026-10-20')}</td><td class="r">{count(8571)}</td><td class="r">0</td></tr>
+          <tr><td>PullRequestEvent</td><td>{date('2026-10-20')}</td><td class="r">{count(40445)}</td><td class="r">—</td></tr>
+        </tbody>
+      </Table>
+      <div class="bordered"><EmptyState title="No repos match these filters." icon="search"><Button slot="action" variant="secondary" size="sm">Clear filters</Button></EmptyState></div>
+      <Disclosure summary="Show the SQL"><pre class="code">select repo_id, count(*) from stars group by 1</pre></Disclosure>
+      <div class="btn-row">
+        <Avatar login="octocat" ownerId={583231} type="User" size={32} />
+        <Avatar login="github" ownerId={9919} type="Organization" size={32} />
+        <Avatar login="no-id" size={32} />
+        <Avatar login="xz" size={56} type="Organization" />
+        <Skeleton width="160px" height="16px" />
+      </div>
+    </div>
+  </Section>
+
+  <Section id="rows" title="Repo rows and edge cases">
+    <ul class="list">
+      {rows.map((r, i) => <RepoRow repo={r} eager={i < 3} endDate="2026-10-20" />)}
+    </ul>
+    <h3 class="t-h3 sub">Compact mode and outcome</h3>
+    <ul class="list">
+      <RepoRow repo={rows[1]!} mode="compact" outcome={{ hit: true, gain: 2340 }} />
+      <RepoRow repo={rows[2]!} mode="backtest" outcome={{ hit: false, gain: 180 }} />
+    </ul>
+  </Section>
+
+  <Section id="data" title="Momentum strip, fact strip, hit dots, SHAP bars, outcome">
+    <div class="strips">
+      <div><p class="t-caption faint">Ramp</p><MomentumStrip values={ramp} endDate="2026-10-20" /></div>
+      <div><p class="t-caption faint">Steady</p><MomentumStrip values={steady} endDate="2026-10-20" /></div>
+      <div><p class="t-caption faint">Single-day spike with flag marker</p><MomentumStrip values={spike} markerIndex={24} endDate="2026-10-20" /></div>
+      <div><p class="t-caption faint">All zero</p><MomentumStrip values={zero} /></div>
+      <div class="wide"><p class="t-caption faint">Full width, 24 px</p><MomentumStrip values={ramp} width="100%" height={24} /></div>
+    </div>
+    <FactStrip cells={[
+      { label: 'Breakout chance', value: pct(0.34), xl: true, hint: odds(0.34) },
+      { label: 'Rank today', value: '4 of 50' },
+      { label: 'Age', value: '23 days' },
+      { label: 'Stars, last 7 days', value: delta(412) },
+      { label: 'Stars observed', value: count(1186) },
+    ]} />
+    <div class="btn-row">
+      <HitDots results={[true, false, false, true, false, false, false, true, false, false, false, false, true, false, false, false, false, false, false, false, null, null, null, null, null]} />
+    </div>
+    <ShapBars rows={shap} />
+    <div class="stackc">
+      <OutcomeBanner hit gain={2340} threshold={410} />
+      <OutcomeBanner hit={false} gain={180} threshold={410} />
+    </div>
+  </Section>
+
+  <Section id="chart" title="Chart">
+    <ChartFigure id="sg-chart" title="Stars per day" caption="Last seven days are highlighted." summary="Stars per day for the last 28 days, rising from 2 to 170." legend={[{ label: 'Stars per day', kind: 'square', color: 'ink-3' }, { label: 'Last 7 days', kind: 'square', color: 'accent' }, { label: 'Baseline', kind: 'dash', color: 'ink-3' }]} />
+  </Section>
+
+  <Section id="format" title="Formatting examples">
+    <div data-no-content-check>
+    <Table caption="Formatter inputs and outputs" captionHidden>
+      <thead><tr><th>Function</th><th>Input</th><th>Output</th></tr></thead>
+      <tbody>
+        {[
+          ['count', '2912, compact', count(2912, { compact: true })],
+          ['count', '1250000, compact', count(1250000, { compact: true })],
+          ['delta', '-3', delta(-3)],
+          ['pct', '0.004', pct(0.004)],
+          ['odds', '0.07', odds(0.07)],
+          ['date', '2026-10-21', date('2026-10-21')],
+          ['shortDate', '2026-10-21', shortDate('2026-10-21', 2026)],
+          ['relTime', '3 hours before now', relTime('2026-10-21T03:00:00Z', '2026-10-21T06:00:00Z')],
+          ['hours', '70', hours(70)],
+          ['age', '23', age(23)],
+          ['cleanText', ':sparkles: [docs](x)', cleanText(':sparkles: A [docs](https://x.y) tool') ?? '—'],
+          ['hash', '28c2c179…', hash('28c2c179dd6afa14d37a6e7d5594af0491958bd1e789820e147966ecdf0f5c3c')],
+        ].map(([f, i, o]) => <tr><td>{f}</td><td>{i}</td><td class="num">{o}</td></tr>)}
+      </tbody>
+    </Table>
+    </div>
+  </Section>
+</AppLayout>
+
+<script>
+  import * as Plot from '@observablehq/plot';
+  import { baseOptions, observeWidth, resolveTokens, plot } from '../lib/plot-theme';
+
+  // contrast ratios, recomputed on every theme change
+  const toRgb = (c: string): [number, number, number] => {
+    const el = document.createElement('span');
+    el.style.color = c;
+    document.body.append(el);
+    const m = getComputedStyle(el).color.match(/[\d.]+/g)!.map(Number);
+    el.remove();
+    return [m[0]!, m[1]!, m[2]!];
+  };
+  const lum = ([r, g, b]: number[]) => {
+    const f = (v: number) => ((v /= 255) <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4);
+    return 0.2126 * f(r!) + 0.7152 * f(g!) + 0.0722 * f(b!);
+  };
+  const contrast = () => {
+    document.querySelectorAll<HTMLElement>('[data-contrast] tr').forEach((tr) => {
+      const cs = getComputedStyle(document.documentElement);
+      const fg = lum(toRgb(cs.getPropertyValue(`--${tr.dataset.fg}`)));
+      const bg = lum(toRgb(cs.getPropertyValue(`--${tr.dataset.bg}`)));
+      const ratio = (Math.max(fg, bg) + 0.05) / (Math.min(fg, bg) + 0.05);
+      tr.querySelector('[data-ratio]')!.textContent = ratio.toFixed(1);
+      tr.querySelector('[data-pass]')!.textContent = ratio >= 4.5 ? 'AA' : 'Below 4.5';
+    });
+  };
+  contrast();
+  document.addEventListener('themechange', contrast);
+  matchMedia('(prefers-color-scheme: dark)').addEventListener('change', contrast);
+
+  const host = document.getElementById('sg-chart')!;
+  const data = Array.from({ length: 28 }, (_, i) => ({ i, v: i < 21 ? 2 + (i % 3) : 20 + (i - 21) * 25 }));
+  observeWidth(host, (w) => {
+    const t = resolveTokens();
+    const o = baseOptions(t, w);
+    host.replaceChildren(
+      plot({
+        ...o,
+        marks: [
+          Plot.barY(data, { x: 'i', y: 'v', fill: (d: { i: number }) => (d.i >= 21 ? t.accent : t.ink3), fillOpacity: (d: { i: number }) => (d.i >= 21 ? 1 : 0.35), inset: 0.5, rx: 2 }),
+          Plot.ruleY([0], { stroke: t.line }),
+        ],
+        x: { ...o.x, tickFormat: (d: number) => (d % 7 === 0 ? `Day ${d + 1}` : ''), ticks: 28 },
+      }),
+    );
+  });
+</script>
+
+<style>
+  .sub {
+    margin-top: 24px;
+    margin-bottom: 12px;
+  }
+  .swatches {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 12px;
+  }
+  .swatches li {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--ink-2);
+  }
+  .sw {
+    height: 48px;
+    border-radius: var(--r-md);
+    border: 1px solid var(--line);
+    background: var(--c);
+  }
+  .types,
+  .spaces {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .type-row {
+    display: grid;
+    grid-template-columns: 72px minmax(0, 1fr);
+    align-items: baseline;
+    gap: 16px;
+  }
+  .type-name {
+    font-size: 12px;
+    color: var(--ink-3);
+  }
+  .space-row {
+    display: grid;
+    grid-template-columns: 120px 1fr;
+    align-items: center;
+    font-size: 12px;
+    color: var(--ink-3);
+  }
+  .bar {
+    display: block;
+    height: 12px;
+    width: var(--w);
+    background: var(--accent);
+    border-radius: var(--r-xs);
+  }
+  .radii {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-top: 24px;
+  }
+  .radius {
+    width: 80px;
+    height: 56px;
+    display: grid;
+    place-items: center;
+    background: var(--surface);
+    border: 1px solid var(--line-strong);
+    border-radius: var(--r);
+    font-size: 12px;
+  }
+  .btn-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 24px;
+    margin-bottom: 24px;
+  }
+  .btn-col,
+  .btn-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: center;
+  }
+  .btn-col {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .btn-col .btn-row {
+    flex-wrap: wrap;
+  }
+  .btn-row + .btn-row,
+  .stackc > * + * {
+    margin-top: 16px;
+  }
+  .grid2 {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+    align-items: start;
+  }
+  .stackc {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin-top: 0;
+  }
+  .stackc > * + * {
+    margin-top: 0;
+  }
+  .bordered {
+    border: 1px solid var(--line);
+    border-radius: var(--r-lg);
+  }
+  .list {
+    background: var(--raised);
+    border: 1px solid var(--line);
+    border-radius: var(--r-lg);
+    overflow: hidden;
+  }
+  .list > :global(li + li) {
+    border-top: 1px solid var(--line);
+  }
+  .strips {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 24px;
+    margin-bottom: 32px;
+  }
+  .strips .wide {
+    grid-column: 1 / -1;
+  }
+  .code {
+    background: var(--surface);
+    padding: 16px;
+    border-radius: var(--r-lg);
+    font-size: 14px;
+    overflow-x: auto;
+  }
+  :global(.stack-section > .stackc),
+  :global(.stack-section > .btn-row),
+  :global(.stack-section > figure) {
+    margin-top: 16px;
+  }
+</style>

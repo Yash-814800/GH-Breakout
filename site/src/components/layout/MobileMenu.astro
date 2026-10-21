@@ -1,0 +1,92 @@
+---
+import { NAV } from '../../lib/site';
+import { url } from '../../lib/url';
+import FreshnessPill from './FreshnessPill.astro';
+import ThemeToggle from './ThemeToggle.astro';
+import Icon from '../ui/Icon.astro';
+
+const path = Astro.url.pathname;
+const extra = [
+  { href: '/digest/', label: 'Digest' },
+  { href: '/status/', label: 'Status' },
+  { href: '/about/', label: 'About' },
+];
+const current = (href: string) => (href === '/' ? path === url('/') : path.startsWith(url(href)));
+---
+
+<dialog class="menu" id="mobile-menu" aria-label="Menu">
+  <div class="menu-top">
+    <span class="menu-title">Menu</span>
+    <button type="button" class="btn btn-icon btn-md" data-menu-close aria-label="Close menu"><Icon name="x" size={20} /></button>
+  </div>
+  <nav aria-label="Mobile">
+    {[...NAV, ...extra].map((l) => <a href={url(l.href)} aria-current={current(l.href) ? 'page' : undefined}>{l.label}</a>)}
+  </nav>
+  <div class="menu-foot">
+    <FreshnessPill />
+    <ThemeToggle />
+  </div>
+</dialog>
+
+<script>
+  const dlg = document.getElementById('mobile-menu') as HTMLDialogElement | null;
+  document.querySelectorAll('[data-menu-open]').forEach((b) => b.addEventListener('click', () => dlg?.showModal()));
+  document.querySelectorAll('[data-menu-close]').forEach((b) => b.addEventListener('click', () => dlg?.close()));
+  dlg?.querySelectorAll('nav a').forEach((a) => a.addEventListener('click', () => dlg.close()));
+  // A click on the backdrop (the dialog element itself) closes the sheet.
+  dlg?.addEventListener('click', (e) => e.target === dlg && dlg.close());
+  matchMedia('(min-width: 1024px)').addEventListener('change', (e) => e.matches && dlg?.close());
+</script>
+
+<style>
+  .menu {
+    position: fixed;
+    inset: 0 0 auto 0;
+    margin: 0;
+    width: 100%;
+    max-width: none;
+    max-height: 100dvh;
+    overflow-y: auto;
+    padding: 0 var(--gutter) 24px;
+    background: var(--bg);
+    color: var(--ink);
+    border: 0;
+    border-bottom: 1px solid var(--line);
+    z-index: var(--z-menu);
+  }
+  .menu::backdrop {
+    background: var(--scrim);
+  }
+  .menu-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: var(--nav-h);
+  }
+  .menu-title {
+    font-size: 16px;
+    font-weight: 600;
+  }
+  nav {
+    display: flex;
+    flex-direction: column;
+  }
+  nav a {
+    display: flex;
+    align-items: center;
+    min-height: 48px;
+    font-size: 17px;
+    font-weight: 500;
+    border-bottom: 1px solid var(--line);
+    color: var(--ink-2);
+  }
+  nav a[aria-current='page'] {
+    color: var(--ink);
+  }
+  .menu-foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 16px;
+  }
+</style>

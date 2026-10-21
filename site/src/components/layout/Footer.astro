@@ -1,0 +1,165 @@
+---
+import { existsSync } from 'node:fs';
+import { BRAND } from '../../lib/site';
+import { url, GITHUB_REPO, HF_EVENTS, HF_DERIVED, HF_SNAPSHOTS, HF_MODELS } from '../../lib/url';
+import { date, utcTime } from '../../lib/format';
+import { getMeta } from '../../lib/data';
+import Icon from '../ui/Icon.astro';
+
+const meta = getMeta();
+const built = new Date(meta.build_time);
+const hasFeed = existsSync('public/feed.xml');
+
+const cols = [
+  {
+    title: 'Product',
+    links: [
+      { href: url('/'), label: 'Today' },
+      { href: url('/track-record/'), label: 'Track record' },
+      { href: url('/backtest/'), label: 'Backtest' },
+      { href: url('/explore/'), label: 'Explore' },
+      { href: url('/insights/'), label: 'Insights' },
+      { href: url('/digest/'), label: 'Digest' },
+    ],
+  },
+  {
+    title: 'Data',
+    links: [
+      { href: HF_EVENTS, label: 'Events dataset', ext: true },
+      { href: HF_SNAPSHOTS, label: 'Daily snapshots', ext: true },
+      { href: `${GITHUB_REPO}/blob/main/ledger/predictions.csv`, label: 'Prediction ledger', ext: true },
+      { href: HF_MODELS, label: 'Model card', ext: true },
+      { href: HF_DERIVED, label: 'Derived tables', ext: true },
+    ],
+  },
+  {
+    title: 'Project',
+    links: [
+      { href: url('/methodology/'), label: 'Methodology' },
+      { href: url('/status/'), label: 'Status' },
+      { href: GITHUB_REPO, label: 'Source code', ext: true },
+      ...(hasFeed ? [{ href: url('/feed.xml'), label: 'RSS feed' }] : []),
+    ],
+  },
+  {
+    title: 'About',
+    links: [
+      { href: url('/about/'), label: 'About' },
+      { href: `${GITHUB_REPO}/issues/new?template=review-request.md`, label: 'Opt-out request', ext: true },
+    ],
+  },
+];
+---
+
+<footer class="foot">
+  <div class="foot-in">
+    <div class="cols">
+      {
+        cols.map((c) => (
+          <nav aria-label={c.title}>
+            <h2 class="col-title">{c.title}</h2>
+            <ul>
+              {c.links.map((l) => (
+                <li>
+                  <a href={l.href} {...('ext' in l && l.ext ? { target: '_blank', rel: 'noopener' } : {})}>
+                    {l.label}
+                    {'ext' in l && l.ext && <Icon name="arrow-up-right" size={12} />}
+                    {'ext' in l && l.ext && <span class="sr-only">(opens in new tab)</span>}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </nav>
+        ))
+      }
+    </div>
+    <div class="legal">
+      <p class="note">{BRAND} is not affiliated with GitHub, Inc. It uses public GH Archive data and the GitHub API.</p>
+      <ul class="facts">
+        <li>Data through {date(meta.data_through)}</li>
+        <li>Model {meta.model_version}</li>
+        <li>Built {date(built)}, {utcTime(built)}</li>
+      </ul>
+    </div>
+  </div>
+</footer>
+
+<style>
+  .foot {
+    margin-top: 96px;
+    background: var(--surface);
+    border-top: 1px solid var(--line);
+    padding-block: 48px 32px;
+  }
+  .foot-in {
+    max-width: calc(var(--container) + 2 * var(--gutter));
+    margin-inline: auto;
+    padding-inline: var(--gutter);
+  }
+  .cols {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 32px;
+  }
+  @media (min-width: 640px) {
+    .cols {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+  @media (min-width: 1024px) {
+    .cols {
+      grid-template-columns: repeat(4, 1fr);
+    }
+  }
+  .col-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--ink);
+  }
+  ul {
+    margin-top: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  li a {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    font-size: 13px;
+    color: var(--ink-2);
+    min-height: 24px;
+  }
+  li a:hover {
+    color: var(--ink);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+  .legal {
+    margin-top: 40px;
+    padding-top: 20px;
+    border-top: 1px solid var(--line);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .note {
+    font-size: 12px;
+    color: var(--ink-3);
+  }
+  .facts {
+    margin-top: 0;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 4px 16px;
+    font-size: 12px;
+    color: var(--ink-3);
+  }
+  @media (min-width: 768px) {
+    .legal {
+      flex-direction: row;
+      justify-content: space-between;
+      align-items: baseline;
+    }
+  }
+</style>

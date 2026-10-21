@@ -1,0 +1,42 @@
+---
+interface Props {
+  values: number[];
+  width?: number;
+  height?: number;
+  label: string;
+}
+const { values, width = 268, height = 64, label } = Astro.props;
+const max = Math.max(0.001, ...values);
+const pad = 4;
+const pts = values.map((v, i) => {
+  const x = pad + (i * (width - 2 * pad)) / Math.max(1, values.length - 1);
+  const y = height - pad - (v / max) * (height - 2 * pad);
+  return `${x.toFixed(1)},${y.toFixed(1)}`;
+});
+---
+
+<svg class="rl" viewBox={`0 0 ${width} ${height}`} role="img" aria-label={label} width="100%" preserveAspectRatio="none">
+  <line x1="0" x2={width} y1={height - pad} y2={height - pad} class="base" />
+  <polyline points={pts.join(' ')} class="ln" />
+</svg>
+
+<style>
+  .rl {
+    display: block;
+    height: 64px;
+    overflow: visible;
+  }
+  .base {
+    stroke: var(--line);
+    stroke-width: 1;
+    vector-effect: non-scaling-stroke;
+  }
+  .ln {
+    fill: none;
+    stroke: var(--accent);
+    stroke-width: 2;
+    stroke-linejoin: round;
+    stroke-linecap: round;
+    vector-effect: non-scaling-stroke;
+  }
+</style>

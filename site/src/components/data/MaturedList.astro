@@ -1,0 +1,134 @@
+---
+import { count, date, delta, plural } from '../../lib/format';
+import { repoUrl } from '../../lib/url';
+import Disclosure from '../ui/Disclosure.astro';
+import Pill from '../ui/Pill.astro';
+import Button from '../ui/Button.astro';
+import HitDots from './HitDots.astro';
+
+interface Pick {
+  rank: number;
+  repo_id: number;
+  repo_name: string;
+  gain_30d?: number | null;
+  hit: boolean;
+}
+interface Day {
+  snapshot_date: string;
+  top25: Pick[];
+}
+interface Props {
+  days: Day[];
+  /** Days shown before "Show older". */
+  visible?: number;
+}
+const { days, visible = 30 } = Astro.props;
+const sorted = [...days].sort((a, b) => b.snapshot_date.localeCompare(a.snapshot_date));
+---
+
+<div class="md">
+  <ul class="days" data-matured>
+    {
+      sorted.map((d, i) => {
+        const hits = d.top25.filter((p) => p.hit).length;
+        return (
+          <li class="day" data-older={i >= visible ? '1' : '0'} hidden={i >= visible}>
+            <div class="top">
+              <span class="d">{date(d.snapshot_date)}</span>
+              <HitDots results={d.top25.map((p) => p.hit)} />
+              <span class="n num">{hits} of {d.top25.length}</span>
+            </div>
+            <Disclosure summary={`Show all ${d.top25.length}`}>
+              <ol class="picks">
+                {d.top25.map((p) => (
+                  <li>
+                    <span class="rk num">{p.rank}</span>
+                    <a href={repoUrl(p.repo_id)} class="nm">{p.repo_name.includes('=') ? `Repo ${p.repo_id}` : p.repo_name}</a>
+                    <span class="gn num">{p.gain_30d != null ? `${delta(p.gain_30d)} stars` : ''}</span>
+                    {p.hit ? <Pill variant="rise" icon="check">Hit</Pill> : <Pill>Miss</Pill>}
+                  </li>
+                ))}
+              </ol>
+            </Disclosure>
+          </li>
+        );
+      })
+    }
+  </ul>
+  {
+    sorted.length > visible && (
+      <div class="more">
+        <Button variant="secondary" size="md" data-show-older>Show older ({count(sorted.length - visible)} more {sorted.length - visible === 1 ? 'day' : 'days'})</Button>
+      </div>
+    )
+  }
+</div>
+
+<script>
+  document.querySelector('[data-show-older]')?.addEventListener('click', (e) => {
+    document.querySelectorAll<HTMLElement>('[data-matured] [data-older="1"]').forEach((li) => (li.hidden = false));
+    (e.currentTarget as HTMLElement).hidden = true;
+  });
+</script>
+
+<style>
+  .days {
+    border-top: 1px solid var(--line);
+  }
+  .day {
+    padding: 16px 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .day[hidden] {
+    display: none;
+  }
+  .top {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 8px;
+    align-items: center;
+  }
+  .d {
+    font-size: 14px;
+    font-weight: 600;
+  }
+  .n {
+    font-size: 14px;
+    color: var(--ink-2);
+  }
+  @media (min-width: 640px) {
+    .top {
+      grid-template-columns: 120px minmax(0, 1fr) auto;
+      gap: 16px;
+    }
+  }
+  .picks {
+    display: flex;
+    flex-direction: column;
+  }
+  .picks li {
+    display: grid;
+    grid-template-columns: 28px minmax(0, 1fr) auto auto;
+    gap: 12px;
+    align-items: center;
+    padding: 8px 0;
+    border-top: 1px solid var(--line);
+    font-size: 14px;
+  }
+  .rk {
+    color: var(--ink-3);
+    text-align: right;
+  }
+  .nm {
+    overflow-wrap: anywhere;
+    font-weight: 500;
+  }
+  .gn {
+    font-size: 13px;
+    color: var(--ink-2);
+    white-space: nowrap;
+  }
+  .more {
+    margin-top: 16px;
+  }
+</style>

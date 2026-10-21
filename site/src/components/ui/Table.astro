@@ -1,0 +1,90 @@
+---
+interface Props {
+  caption?: string;
+  captionHidden?: boolean;
+  /** Stick the first column on narrow screens. */
+  stickyFirst?: boolean;
+  class?: string;
+  maxHeight?: string;
+}
+const { caption, captionHidden = false, stickyFirst = false, class: cls, maxHeight } = Astro.props;
+---
+
+<div class:list={['table-wrap', cls]} style={maxHeight ? `--max-h:${maxHeight}` : undefined} tabindex="0" role="region" aria-label={caption}>
+  <table class:list={['tbl', stickyFirst && 'sticky-first']}>
+    {caption && <caption class:list={[captionHidden && 'sr-only']}>{caption}</caption>}
+    <slot />
+  </table>
+</div>
+
+<style is:global>
+  .table-wrap {
+    overflow: auto;
+    max-width: 100%;
+    max-height: var(--max-h, none);
+    border: 1px solid var(--line);
+    border-radius: var(--r-lg);
+    background: var(--raised);
+    /* inset cue on the scrollable edges */
+    background-image:
+      linear-gradient(to right, var(--raised), var(--raised)),
+      linear-gradient(to right, var(--raised), var(--raised)),
+      linear-gradient(to right, var(--line), transparent),
+      linear-gradient(to left, var(--line), transparent);
+    background-position: left center, right center, left center, right center;
+    background-repeat: no-repeat;
+    background-size: 24px 100%, 24px 100%, 12px 100%, 12px 100%;
+    background-attachment: local, local, scroll, scroll;
+  }
+  .tbl {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    font-size: 14px;
+    line-height: 1.45;
+  }
+  .tbl caption {
+    text-align: left;
+    padding: 12px;
+    font-size: 13px;
+    color: var(--ink-3);
+  }
+  .tbl th {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    background: var(--raised);
+    padding: 10px 12px;
+    text-align: left;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--ink-3);
+    border-bottom: 1px solid var(--line);
+    white-space: nowrap;
+  }
+  .tbl td {
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--line);
+    vertical-align: top;
+  }
+  .tbl tbody tr:last-child td {
+    border-bottom: 0;
+  }
+  .tbl .r,
+  .tbl th.r {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+  .tbl td.nowrap {
+    white-space: nowrap;
+  }
+  @media (max-width: 767px) {
+    .tbl.sticky-first th:first-child,
+    .tbl.sticky-first td:first-child {
+      position: sticky;
+      left: 0;
+      background: var(--raised);
+      z-index: 2;
+    }
+  }
+</style>

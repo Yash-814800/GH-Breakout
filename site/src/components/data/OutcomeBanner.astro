@@ -1,0 +1,17 @@
+---
+import { count, delta } from '../../lib/format';
+import Callout from '../ui/Callout.astro';
+
+interface Props {
+  hit: boolean;
+  gain: number | null;
+  threshold?: number | null;
+}
+const { hit, gain, threshold } = Astro.props;
+const gainText = gain == null ? null : `${delta(gain)} stars in 30 days`;
+const thr = threshold != null ? ` (threshold ${delta(threshold)})` : '';
+---
+
+<Callout variant={hit ? 'rise' : 'info'} icon={hit ? 'circle-check' : 'info'}>
+  <strong>{hit ? 'Broke out' : 'Did not break out'}</strong>{gainText ? `: ${gainText}${thr}` : ''}.
+</Callout>

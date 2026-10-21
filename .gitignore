@@ -5,6 +5,7 @@
 
 # Local data lake & raw data (CLAUDE.md §7)
 data/
+!site/src/components/data/
 # on the dev machine data is a symlink to the external SSD; `data/` only matches directories
 /data
 /data.pre-ssd-move/
@@ -24,6 +25,7 @@ dbt/logs/
 site/.astro/
 site/node_modules/
 site/dist/
+site/dist-fx/
 site/public/data/
 
 # Python & virtual environment
@@ -40,3 +42,7 @@ __pycache__/
 Thumbs.db
 dbt/dbt_packages/
 dbt/.user.yml
+site/.lighthouseci/
+site/test-results/
+site/playwright-report/
+site/public/og/

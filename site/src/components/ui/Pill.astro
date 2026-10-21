@@ -1,0 +1,53 @@
+---
+import Icon from './Icon.astro';
+
+interface Props {
+  variant?: 'neutral' | 'accent' | 'rise' | 'caution' | 'rank-up' | 'rank-down';
+  icon?: string;
+  title?: string;
+  class?: string;
+}
+const { variant = 'neutral', icon, title, class: cls } = Astro.props;
+const auto = variant === 'rank-up' ? 'arrow-up' : variant === 'rank-down' ? 'arrow-down' : variant === 'caution' ? 'triangle-alert' : undefined;
+const ic = icon ?? auto;
+---
+
+<span class:list={['pill', `pill-${variant}`, cls]} title={title} data-qa="pill">
+  {ic && <Icon name={ic} size={12} />}<slot />
+</span>
+
+<style is:global>
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    height: 20px;
+    padding-inline: 8px;
+    border-radius: var(--r-pill);
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 1;
+    letter-spacing: 0.01em;
+    white-space: nowrap;
+    background: var(--surface);
+    color: var(--ink-2);
+    vertical-align: middle;
+  }
+  .pill-accent {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .pill-rise {
+    background: var(--rise-soft);
+    color: var(--rise);
+  }
+  .pill-caution {
+    background: var(--caution-soft);
+    color: var(--caution);
+  }
+  .pill-rank-up,
+  .pill-rank-down {
+    background: var(--surface);
+    color: var(--ink-2);
+  }
+</style>

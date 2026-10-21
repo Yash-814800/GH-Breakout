@@ -1,0 +1,39 @@
+---
+interface Props {
+  /** Alternate background (--surface) instead of --bg. */
+  alt?: boolean;
+  id?: string;
+  class?: string;
+}
+const { alt = false, id, class: cls } = Astro.props;
+---
+
+<section id={id} class:list={['band', alt && 'band-alt', cls]}>
+  <div class="container"><div class="band-in"><slot /></div></div>
+</section>
+
+<style>
+  .band {
+    padding-block: 64px;
+  }
+  @media (min-width: 768px) {
+    .band {
+      padding-block: 96px;
+    }
+  }
+  .band-alt {
+    background: var(--surface);
+    border-block: 1px solid var(--line);
+  }
+  .band-in {
+    max-width: var(--measure);
+    margin-inline: auto;
+    min-width: 0;
+  }
+  .band-in :global(.wide) {
+    width: min(880px, calc(100vw - 2 * var(--gutter)));
+    position: relative;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+</style>

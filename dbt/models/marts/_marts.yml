@@ -65,3 +65,35 @@ models:
         tests: [not_null]
       - name: trending_covered
         tests: [not_null]
+
+  - name: mart_suspicion
+    description: >
+      Grain (repo_id, snapshot_date) for candidates.
+      Robust z-score suspicion metric and 0-100 score (Phase 11, §11.1).
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments: {combination_of_columns: [repo_id, snapshot_date]}
+    columns:
+      - name: repo_id
+        tests: [not_null]
+      - name: snapshot_date
+        tests: [not_null]
+      - name: suspicion_score
+        tests: [not_null, {dbt_utils.accepted_range: {arguments: {min_value: 0.0, max_value: 100.0}}}]
+      - name: suspicion_level
+        tests: [not_null, {accepted_values: {values: ['low', 'medium', 'high']}}]
+
+  - name: mart_similar_repos
+    description: >
+      Grain (repo_id, similar_repo_id).
+      Co-starring cosine similarity between candidate repos and related projects (Phase 11, §11.2).
+    columns:
+      - name: repo_id
+        tests: [not_null]
+      - name: similar_repo_id
+        tests: [not_null]
+      - name: overlap
+        tests: [not_null, {dbt_utils.accepted_range: {arguments: {min_value: 5}}}]
+      - name: cosine
+        tests: [not_null, {dbt_utils.accepted_range: {arguments: {min_value: 0.0, max_value: 1.0}}}]
+

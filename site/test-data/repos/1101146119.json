@@ -2,8 +2,12 @@
   "repo_id": 1101146119,
   "repo_name": "Fractal-Compute-Orchestrations/FractalAndroid",
   "html_url": "https://github.com/Fractal-Compute-Orchestrations/FractalAndroid",
-  "description": null,
-  "metadata": {},
+  "description": "A human-centric, resource-aware Android node for edge computing and federated learning. Orchestrates distributed intelligence with privacy-first localization and empathetic hardware management.",
+  "metadata": {
+    "name_with_owner": "Fractal-Compute-Orchestrations/FractalAndroid",
+    "description": "A human-centric, resource-aware Android node for edge computing and federated learning. Orchestrates distributed intelligence with privacy-first localization and empathetic hardware management.",
+    "primary_language": "Kotlin"
+  },
   "daily_stars": [
     {
       "date": "2026-09-29",
@@ -16,6 +20,14 @@
     {
       "date": "2026-10-12",
       "stars": 1
+    }
+  ],
+  "stars_total": 2355,
+  "stars_total_source": "github_api",
+  "star_count_history": [
+    {
+      "date": "2026-10-20",
+      "stars": 2355
     }
   ],
   "prediction_history": [
@@ -32,7 +44,28 @@
   "realized_outcome": null,
   "trending_appearances": [],
   "hn_stories": [],
-  "cohort_retention": null,
-  "similar_repos": null,
-  "suspicion_breakdown": null
+  "cohort_retention": {
+    "cohorts": [],
+    "reference_comparison": null
+  },
+  "similar_repos": [],
+  "suspicion_breakdown": {
+    "score": null,
+    "level": "low",
+    "reasons": [],
+    "signals": {
+      "s_new_accounts": 0.0,
+      "s_inactive": 0.0,
+      "s_bulk": 0.0,
+      "s_burst": 0.0,
+      "s_no_engagement": 0.0
+    },
+    "medians": {
+      "s_new_accounts": 0.15,
+      "s_inactive": 0.2,
+      "s_bulk": 0.0,
+      "s_burst": 0.35,
+      "s_no_engagement": 0.5
+    }
+  }
 }

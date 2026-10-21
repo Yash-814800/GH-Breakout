@@ -64,6 +64,9 @@ jobs:
           HF_USER: ${{ vars.HF_USER }}
         run: uv run breakout ops drift --upload
 
+      - name: Build similarity reference index
+        run: uv run breakout detect similarity-reference
+
       - name: Commit retraining reports and model updates
         run: |
           git config user.name "github-actions[bot]"

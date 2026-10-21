@@ -1,0 +1,89 @@
+---
+import { count, date } from '../../lib/format';
+
+interface Props {
+  /** Daily star counts, oldest to newest. */
+  values: number[];
+  highlight?: number;
+  /** Index of the day the repo was first flagged. */
+  markerIndex?: number;
+  width?: number | '100%';
+  height?: number;
+  /** Date of the last value (UTC) for the accessible label. */
+  endDate?: string;
+  class?: string;
+}
+const { values, highlight = 7, markerIndex, width = 120, height = 28, endDate, class: cls } = Astro.props;
+const n = values.length;
+const max = Math.max(1, ...values);
+const total = values.reduce((a, b) => a + b, 0);
+const peak = Math.max(0, ...values);
+const peakIdx = values.indexOf(peak);
+let peakDay = '';
+if (endDate && peak > 0) {
+  const d = new Date(`${endDate}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() - (n - 1 - peakIdx));
+  peakDay = ` on ${date(d)}`;
+}
+const aria =
+  total > 0
+    ? `Stars per day, last ${n} days: ${count(total)} total, peak ${count(peak)}${peakDay}.`
+    : `No stars recorded in the last ${n} days.`;
+
+// Geometry is in a fixed 280-unit viewBox and scaled, so "100%" widths stretch cleanly.
+const VBW = 280;
+const gap = 1.5;
+const bw = (VBW - gap * (n - 1)) / Math.max(1, n);
+const bars = values.map((v, i) => {
+  const h = v > 0 ? Math.max(1, Math.round((height * v) / max)) : 0;
+  return { x: i * (bw + gap), h, hot: i >= n - highlight, zero: v <= 0 };
+});
+const mk = markerIndex != null && markerIndex >= 0 && markerIndex < n ? markerIndex * (bw + gap) + bw / 2 : null;
+---
+
+<svg
+  class:list={['mstrip', cls]}
+  role="img"
+  aria-label={aria}
+  viewBox={`0 0 ${VBW} ${height}`}
+  preserveAspectRatio="none"
+  width={width === '100%' ? undefined : width}
+  height={height}
+  style={`--w:${width === '100%' ? '100%' : `${width}px`};--h:${height}px`}
+  data-qa="strip"
+>
+  {
+    bars.map((b) =>
+      b.zero ? (
+        <rect x={b.x} y={height - 1} width={bw} height="1" class="tick" />
+      ) : (
+        <rect x={b.x} y={height - b.h} width={bw} height={b.h} class={b.hot ? 'hot' : 'cold'} />
+      ),
+    )
+  }
+  {mk != null && <line x1={mk} x2={mk} y1="3" y2={height} class="mark" />}
+</svg>
+
+<style>
+  .mstrip {
+    display: block;
+    width: var(--w);
+    height: var(--h);
+    overflow: visible;
+  }
+  .cold {
+    fill: var(--ink-3);
+    opacity: 0.35;
+  }
+  .hot {
+    fill: var(--accent);
+  }
+  .tick {
+    fill: var(--line);
+  }
+  .mark {
+    stroke: var(--ink-2);
+    stroke-width: 1;
+    vector-effect: non-scaling-stroke;
+  }
+</style>

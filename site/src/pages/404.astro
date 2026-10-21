@@ -1,0 +1,33 @@
+---
+import AppLayout from '../layouts/AppLayout.astro';
+import Button from '../components/ui/Button.astro';
+import Icon from '../components/ui/Icon.astro';
+import { url } from '../lib/url';
+---
+
+<AppLayout title="Page not found" noindex>
+  <div class="nf">
+    <Icon name="search" size={40} stroke={1.5} class="ic" />
+    <h1 class="t-h2">This page doesn't exist.</h1>
+    <p class="t-body-sm muted">Repo pages stay up for 90 days after a repo leaves the list.</p>
+    <Button variant="primary" size="md" href={url('/')}>Go to today's list</Button>
+  </div>
+</AppLayout>
+
+<style>
+  .nf {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 12px;
+    padding-block: 96px;
+  }
+  .nf :global(.ic) {
+    color: var(--ink-3);
+  }
+  .nf p {
+    max-width: 44ch;
+    margin-bottom: 8px;
+  }
+</style>

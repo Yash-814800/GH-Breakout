@@ -1,344 +1,377 @@
 ---
-import Layout from '../layouts/Layout.astro';
+import AppLayout from '../layouts/AppLayout.astro';
+import PageHeader from '../components/layout/PageHeader.astro';
+import Button from '../components/ui/Button.astro';
+import Callout from '../components/ui/Callout.astro';
+import Kbd from '../components/ui/Kbd.astro';
+import Skeleton from '../components/ui/Skeleton.astro';
+import Table from '../components/ui/Table.astro';
 
-const base = import.meta.env.BASE_URL.replace(/\/+$/, '');
-
-const exampleQueries = [
-  {
-    name: "1. Today's Top Breakout Candidates",
-    sql: "SELECT rank, repo_name, round(prob * 100, 1) as prob_pct, prob_label, explanation\nFROM live_predictions\nORDER BY rank ASC\nLIMIT 10;",
-  },
-  {
-    name: "2. Historical Precision by Probability Bucket",
-    sql: "SELECT\n  floor(prob * 10) / 10 as bucket_start,\n  count(*) as n_predictions,\n  sum(case when label then 1 else 0 end) as n_breakouts,\n  round(avg(case when label then 1.0 else 0.0 end) * 100, 2) as empirical_hit_pct\nFROM backtest_top100\nGROUP BY 1\nORDER BY 1 DESC;",
-  },
-  {
-    name: "3. Top 15 Highest 30-Day Star Gainers (Backtest)",
-    sql: "SELECT snapshot_date, rank, repo_name, round(prob * 100, 1) as prob_pct, round(gain_30d) as gain_30d\nFROM backtest_top100\nWHERE gain_30d IS NOT NULL\nORDER BY gain_30d DESC\nLIMIT 15;",
-  },
-  {
-    name: "4. Out-of-Fold Hits: Model vs Baseline Rank",
-    sql: "SELECT\n  count(*) as total_evaluated,\n  sum(case when label then 1 else 0 end) as total_hits,\n  round(avg(case when label then 1.0 else 0.0 end) * 100, 2) as top100_hit_rate_pct\nFROM backtest_top100;",
-  },
-  {
-    name: "5. Repositories Flagged Most Frequently in Backtest",
-    sql: "SELECT repo_id, repo_name, count(distinct snapshot_date) as times_flagged, max(gain_30d) as max_30d_gain\nFROM backtest_top100\nGROUP BY repo_id, repo_name\nHAVING count(distinct snapshot_date) >= 3\nORDER BY times_flagged DESC\nLIMIT 15;",
-  },
+const examples = [
+  { name: "Today's top candidates", sql: 'SELECT rank, repo_name, round(prob * 100, 1) AS chance_pct, explanation\nFROM live_predictions\nORDER BY rank ASC\nLIMIT 10;' },
+  { name: 'Hit rate by chance bucket', sql: 'SELECT\n  floor(prob * 10) / 10 AS bucket_start,\n  count(*) AS n_predictions,\n  sum(CASE WHEN label THEN 1 ELSE 0 END) AS n_breakouts,\n  round(avg(CASE WHEN label THEN 1.0 ELSE 0.0 END) * 100, 2) AS hit_pct\nFROM backtest_top100\nGROUP BY 1\nORDER BY 1 DESC;' },
+  { name: 'Biggest 30-day gainers', sql: 'SELECT snapshot_date, rank, repo_name, round(prob * 100, 1) AS chance_pct, round(gain_30d) AS gain_30d\nFROM backtest_top100\nWHERE gain_30d IS NOT NULL\nORDER BY gain_30d DESC\nLIMIT 15;' },
+  { name: 'Back-test hit totals', sql: 'SELECT\n  count(*) AS total_evaluated,\n  sum(CASE WHEN label THEN 1 ELSE 0 END) AS total_hits,\n  round(avg(CASE WHEN label THEN 1.0 ELSE 0.0 END) * 100, 2) AS top100_hit_rate_pct\nFROM backtest_top100;' },
+  { name: 'Most often flagged repos', sql: 'SELECT repo_id, repo_name, count(DISTINCT snapshot_date) AS times_flagged, max(gain_30d) AS max_30d_gain\nFROM backtest_top100\nGROUP BY repo_id, repo_name\nHAVING count(DISTINCT snapshot_date) >= 3\nORDER BY times_flagged DESC\nLIMIT 15;' },
 ];
 ---
 
-<Layout title="SQL Explorer (DuckDB-WASM) · gh-breakout">
-  <div class="container">
-    <div class="page-header">
-      <div>
-        <h1>In-Browser DuckDB SQL Explorer</h1>
-        <p class="subtitle">
-          Run SQL queries directly against our public Parquet datasets in your browser with zero server roundtrips.
-        </p>
-      </div>
-      <div>
-        <span id="wasm-status" class="badge badge-neutral">DuckDB-WASM: Initializing...</span>
-      </div>
-    </div>
+<AppLayout title="Explore" description="Run SQL against the public prediction tables in your browser. Nothing is sent to a server.">
+  <PageHeader slot="header" title="Explore the data" lead="Run SQL against today's list and the back-test, in your browser. Queries never leave your device." />
 
-    <!-- Preloaded Tables & Examples -->
-    <div class="card" style="margin-bottom: 1.5rem;">
-      <h2>Pre-registered Views</h2>
-      <div class="meta-pills" style="margin-bottom: 1rem;">
-        <span class="badge badge-accent">view: live_predictions</span>
-        <span class="badge badge-accent">view: backtest_top100</span>
+  <div class="explore">
+    <aside class="side" aria-label="Tables and examples">
+      <h2 class="side-title">Tables</h2>
+      <div id="schema" class="schema">
+        <Skeleton height="14px" width="70%" />
+        <Skeleton height="14px" width="55%" />
+        <Skeleton height="14px" width="62%" />
       </div>
-
-      <h3>Example Queries</h3>
-      <div class="example-buttons">
-        {exampleQueries.map((ex, idx) => (
-          <button type="button" class="btn btn-example" data-sql={ex.sql}>
-            {ex.name}
-          </button>
-        ))}
+      <h2 class="side-title examples-title">Examples</h2>
+      <div class="chips">
+        {examples.map((e) => <button type="button" class="chip" data-sql={e.sql}>{e.name}</button>)}
       </div>
-    </div>
+    </aside>
 
-    <!-- SQL Editor -->
-    <div class="card" style="margin-bottom: 1.5rem;">
-      <div class="editor-header">
-        <label for="sql-input" style="font-weight: 600;">SQL Query Editor:</label>
-        <button id="run-btn" type="button" class="btn btn-primary">
-          ▶ Run Query (Ctrl+Enter)
-        </button>
+    <section class="work" aria-label="Query">
+      <div class="editor-bar">
+        <label for="editor-host" class="sr-only">SQL query</label>
+        <div class="run">
+          <Button id="run" variant="primary" size="md" icon="play" disabled>Run query</Button>
+          <span class="hint t-caption faint"><Kbd>⌘↵</Kbd> or <Kbd>Ctrl↵</Kbd></span>
+        </div>
       </div>
+      <div id="editor-host" class="editor" data-initial={examples[0]!.sql}></div>
 
-      <textarea
-        id="sql-input"
-        class="sql-textarea mono"
-        rows="6"
-        spellcheck="false"
-      >{exampleQueries[0].sql}</textarea>
-    </div>
-
-    <!-- Query Results -->
-    <div class="card">
-      <div class="results-header">
-        <h2>Query Results <span id="row-count" class="badge badge-neutral">0 rows</span></h2>
-        <span id="exec-time" class="num text-muted" style="font-size: 0.8125rem;">—</span>
+      <p id="status" class="status" aria-live="polite">Loading DuckDB…</p>
+      <div id="error" class="err" hidden>
+        <Callout variant="danger"><span id="error-msg" class="mono"></span><span id="error-hint" class="hint-line"></span></Callout>
       </div>
-
-      <div id="error-box" class="error-box" style="display: none;"></div>
-
-      <div class="table-wrapper" style="margin-bottom: 0;">
-        <table id="results-table">
-          <thead id="results-thead">
-            <tr><th>Status</th></tr>
-          </thead>
-          <tbody id="results-tbody">
-            <tr><td style="text-align: center; padding: 2rem;">Click "Run Query" or pick an example above to execute.</td></tr>
-          </tbody>
-        </table>
+      <div id="results" class="results" hidden>
+        <div class="results-bar"><Button id="csv" variant="ghost" size="sm" icon="download">Download CSV</Button></div>
+        <Table caption="Query results" captionHidden maxHeight="480px" stickyFirst>
+          <thead id="thead"></thead>
+          <tbody id="tbody"></tbody>
+        </Table>
       </div>
-    </div>
+    </section>
   </div>
-</Layout>
+</AppLayout>
 
-<script define:vars={{ base }}>
-  let db = null;
-  let conn = null;
+<script>
+  import { EditorView, keymap, placeholder } from '@codemirror/view';
+  import { EditorState } from '@codemirror/state';
+  import { defaultKeymap, history, historyKeymap } from '@codemirror/commands';
+  import { sql } from '@codemirror/lang-sql';
+  import { HighlightStyle, syntaxHighlighting } from '@codemirror/language';
+  import { tags as t } from '@lezer/highlight';
+  import { openDuck } from '../lib/duck';
+  import { formatCell } from '../lib/cells';
+  import { count } from '../lib/format';
 
-  const wasmStatus = document.getElementById('wasm-status');
-  const runBtn = document.getElementById('run-btn');
-  const sqlInput = document.getElementById('sql-input');
-  const thead = document.getElementById('results-thead');
-  const tbody = document.getElementById('results-tbody');
-  const errorBox = document.getElementById('error-box');
-  const rowCount = document.getElementById('row-count');
-  const execTime = document.getElementById('exec-time');
+  const host = document.getElementById('editor-host')!;
+  const runBtn = document.getElementById('run') as HTMLButtonElement;
+  const statusEl = document.getElementById('status')!;
+  const errBox = document.getElementById('error')!;
+  const errMsg = document.getElementById('error-msg')!;
+  const errHint = document.getElementById('error-hint')!;
+  const resBox = document.getElementById('results')!;
+  const thead = document.getElementById('thead')!;
+  const tbody = document.getElementById('tbody')!;
+  const MAX_ROWS = 500;
 
-  async function initDuckDB() {
-    try {
-      if (wasmStatus) wasmStatus.textContent = 'Loading DuckDB-WASM...';
-      const duckdb = await import('https://cdn.jsdelivr.net/npm/@duckdb/duckdb-wasm@1.29.0/+esm');
-      const JSDELIVR_BUNDLES = duckdb.getJsDelivrBundles();
-      const bundle = await duckdb.selectBundle(JSDELIVR_BUNDLES);
+  // Editor colors come straight from the CSS tokens, so light and dark need no extra work.
+  const theme = EditorView.theme({
+    '&': { backgroundColor: 'var(--surface)', color: 'var(--ink)', fontSize: '14px', borderRadius: 'var(--r-lg)' },
+    '.cm-content': { fontFamily: 'var(--font-mono)', padding: '12px 0', caretColor: 'var(--accent)' },
+    '.cm-line': { padding: '0 16px' },
+    '&.cm-focused': { outline: '2px solid var(--accent)', outlineOffset: '2px' },
+    '.cm-scroller': { minHeight: '160px', maxHeight: '360px', lineHeight: '1.6' },
+    '.cm-selectionBackground, &.cm-focused .cm-selectionBackground': { backgroundColor: 'var(--accent-soft)' },
+    '.cm-cursor': { borderLeftColor: 'var(--accent)' },
+  });
+  const highlight = HighlightStyle.define([
+    { tag: [t.keyword, t.operatorKeyword], color: 'var(--accent)', fontWeight: '600' },
+    { tag: [t.string], color: 'var(--rise)' },
+    { tag: [t.number, t.bool, t.null], color: 'var(--caution)' },
+    { tag: [t.comment], color: 'var(--ink-3)' },
+    { tag: [t.typeName, t.standard(t.name)], color: 'var(--ink)' },
+  ]);
 
-      const worker_url = URL.createObjectURL(
-        new Blob([`importScripts("${bundle.mainWorker}");`], { type: 'text/javascript' })
-      );
-      const worker = new Worker(worker_url);
-      const logger = new duckdb.VoidLogger();
-      db = new duckdb.AsyncDuckDB(logger, worker);
-      await db.instantiate(bundle.mainModule, bundle.pthreadWorker);
-      URL.revokeObjectURL(worker_url);
+  let view: EditorView;
+  const run = () => void execute();
+  view = new EditorView({
+    parent: host,
+    state: EditorState.create({
+      doc: host.dataset.initial ?? '',
+      extensions: [
+        history(),
+        sql(),
+        syntaxHighlighting(highlight),
+        theme,
+        placeholder('SELECT * FROM live_predictions LIMIT 10'),
+        EditorView.lineWrapping,
+        keymap.of([{ key: 'Mod-Enter', run: () => (run(), true) }, ...defaultKeymap, ...historyKeymap]),
+        EditorView.contentAttributes.of({ 'aria-label': 'SQL query' }),
+      ],
+    }),
+  });
+  const setSql = (text: string) => view.dispatch({ changes: { from: 0, to: view.state.doc.length, insert: text } });
 
-      conn = await db.connect();
+  let conn: Awaited<ReturnType<typeof openDuck>>['conn'] | null = null;
+  let lastCsv = '';
 
-      // Register live_predictions
-      const liveUrl = `${base}/data/explorer/live_predictions.parquet`;
-      const oofUrl = `${base}/data/explorer/oof_top100.parquet`;
-
-      // Test range requests, fallback to buffer registration if not supported
-      try {
-        await conn.query(`CREATE VIEW live_predictions AS SELECT * FROM read_parquet('${liveUrl}');`);
-      } catch (e) {
-        console.log('Falling back to buffer register for live_predictions');
-        const res = await fetch(liveUrl);
-        const buf = await res.arrayBuffer();
-        await db.registerFileBuffer('live.parquet', new Uint8Array(buf));
-        await conn.query(`CREATE VIEW live_predictions AS SELECT * FROM read_parquet('live.parquet');`);
-      }
-
-      // Register backtest_top100
-      try {
-        await conn.query(`CREATE VIEW backtest_top100 AS SELECT * FROM read_parquet('${oofUrl}');`);
-      } catch (e) {
-        console.log('Falling back to buffer register for backtest_top100');
-        const res = await fetch(oofUrl);
-        const buf = await res.arrayBuffer();
-        await db.registerFileBuffer('oof.parquet', new Uint8Array(buf));
-        await conn.query(`CREATE VIEW backtest_top100 AS SELECT * FROM read_parquet('oof.parquet');`);
-      }
-
-      if (wasmStatus) {
-        wasmStatus.textContent = 'DuckDB-WASM: Ready';
-        wasmStatus.className = 'badge badge-success';
-      }
-    } catch (err) {
-      console.error('Failed initializing DuckDB-WASM', err);
-      if (wasmStatus) {
-        wasmStatus.textContent = 'DuckDB-WASM: Load Error';
-        wasmStatus.className = 'badge badge-warning';
-      }
-      showError(String(err));
-    }
+  function hintFor(msg: string) {
+    if (/Table with name|Catalog Error/i.test(msg)) return 'Use the table names listed under Tables.';
+    if (/column|Binder Error/i.test(msg)) return 'Check the column names in the schema panel.';
+    if (/Parser Error|syntax/i.test(msg)) return 'Check the SQL syntax near the position in the message.';
+    return 'Try one of the examples to see a working query.';
+  }
+  function showError(e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e);
+    errMsg.textContent = msg.split('\n')[0] ?? msg;
+    errHint.textContent = hintFor(msg);
+    errBox.hidden = false;
+    resBox.hidden = true;
   }
 
-  function showError(msg) {
-    if (errorBox) {
-      errorBox.textContent = msg;
-      errorBox.style.display = 'block';
-    }
-  }
-
-  function hideError() {
-    if (errorBox) {
-      errorBox.textContent = '';
-      errorBox.style.display = 'none';
-    }
-  }
-
-  async function executeQuery() {
-    if (!conn) {
-      showError('DuckDB is still loading, please wait a moment...');
-      return;
-    }
-    const sql = sqlInput?.value.trim();
-    if (!sql) return;
-
-    hideError();
+  async function execute() {
+    if (!conn) return;
+    errBox.hidden = true;
+    runBtn.disabled = true;
+    statusEl.textContent = 'Running…';
     const t0 = performance.now();
-
     try {
-      const result = await conn.query(sql);
-      const t1 = performance.now();
-      const elapsed = (t1 - t0).toFixed(1);
-      if (execTime) execTime.textContent = `${elapsed} ms`;
-
-      const rows = result.toArray();
-      if (rowCount) rowCount.textContent = `${rows.length} rows`;
-
-      if (rows.length === 0) {
-        if (thead) thead.innerHTML = '<tr><th>Result</th></tr>';
-        if (tbody) tbody.innerHTML = '<tr><td style="text-align: center; padding: 1.5rem;">Query executed successfully. 0 rows returned.</td></tr>';
-        return;
-      }
-
-      const columns = Object.keys(rows[0]);
-      let thHtml = '<tr>';
-      columns.forEach((c) => {
-        thHtml += `<th>${c}</th>`;
+      const res = await conn.query(view.state.doc.toString());
+      const ms = Math.round(performance.now() - t0);
+      const fields = res.schema.fields;
+      const kinds = fields.map((f) => (/Timestamp|Date/.test(String(f.type)) ? 'time' : 'other') as 'time' | 'other');
+      const rows = res.toArray();
+      thead.replaceChildren();
+      const hr = document.createElement('tr');
+      fields.forEach((f, i) => {
+        const th = document.createElement('th');
+        th.textContent = f.name;
+        hr.append(th);
+        void i;
       });
-      thHtml += '</tr>';
-      if (thead) thead.innerHTML = thHtml;
-
-      let tbHtml = '';
-      const cap = Math.min(rows.length, 100);
-      for (let i = 0; i < cap; i++) {
-        const row = rows[i];
-        tbHtml += '<tr>';
-        columns.forEach((c) => {
-          const val = row[c];
-          const display = val === null || val === undefined ? '—' : String(val);
-          const isNum = typeof val === 'number';
-          tbHtml += `<td class="${isNum ? 'num' : ''}">${display}</td>`;
+      thead.append(hr);
+      tbody.replaceChildren();
+      const shown = rows.slice(0, MAX_ROWS);
+      const csv: string[] = [fields.map((f) => JSON.stringify(f.name)).join(',')];
+      shown.forEach((row) => {
+        const tr = document.createElement('tr');
+        const vals: string[] = [];
+        fields.forEach((f, i) => {
+          const raw = (row as Record<string, unknown>)[f.name];
+          const { text, numeric } = formatCell(raw, kinds[i]);
+          const td = document.createElement('td');
+          td.textContent = text;
+          if (numeric) td.className = 'r num';
+          tr.append(td);
+          vals.push(JSON.stringify(raw == null ? '' : typeof raw === 'bigint' ? raw.toString() : String(raw)));
         });
-        tbHtml += '</tr>';
-      }
-      if (tbody) tbody.innerHTML = tbHtml;
-    } catch (err) {
-      showError(String(err));
+        tbody.append(tr);
+        csv.push(vals.join(','));
+      });
+      lastCsv = csv.join('\n');
+      resBox.hidden = false;
+      statusEl.textContent = `${count(rows.length)} ${rows.length === 1 ? 'row' : 'rows'} in ${count(ms)} ms${rows.length > MAX_ROWS ? ` (showing first ${count(MAX_ROWS)})` : ''}`;
+    } catch (e) {
+      showError(e);
+      statusEl.textContent = '';
+    } finally {
+      runBtn.disabled = false;
     }
   }
 
-  runBtn?.addEventListener('click', executeQuery);
-  sqlInput?.addEventListener('keydown', (e) => {
-    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
-      executeQuery();
-    }
+  document.querySelectorAll<HTMLElement>('[data-sql]').forEach((b) =>
+    b.addEventListener('click', () => {
+      setSql(b.dataset.sql!);
+      if (conn) void execute();
+    }),
+  );
+  runBtn.addEventListener('click', run);
+  document.getElementById('csv')?.addEventListener('click', () => {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([lastCsv], { type: 'text/csv' }));
+    a.download = 'query-results.csv';
+    a.click();
+    URL.revokeObjectURL(a.href);
   });
 
-  document.querySelectorAll('.btn-example').forEach((btn) => {
-    btn.addEventListener('click', (e) => {
-      const sql = (e.currentTarget as HTMLElement).getAttribute('data-sql');
-      if (sql && sqlInput) {
-        sqlInput.value = sql;
-        executeQuery();
+  const schema = document.getElementById('schema')!;
+  openDuck()
+    .then(async ({ conn: c }) => {
+      conn = c;
+      schema.replaceChildren();
+      for (const table of ['live_predictions', 'backtest_top100']) {
+        const cols = (await c.query(`DESCRIBE ${table}`)).toArray() as { column_name: string; column_type: string }[];
+        const wrap = document.createElement('div');
+        wrap.className = 'tbl-block';
+        const h = document.createElement('button');
+        h.type = 'button';
+        h.className = 'tbl-name';
+        h.textContent = table;
+        h.addEventListener('click', () => view.dispatch(view.state.replaceSelection(table)));
+        wrap.append(h);
+        const ul = document.createElement('ul');
+        cols.forEach((col) => {
+          const li = document.createElement('li');
+          const b = document.createElement('button');
+          b.type = 'button';
+          b.className = 'col';
+          b.innerHTML = '';
+          const n = document.createElement('span');
+          n.textContent = col.column_name;
+          const ty = document.createElement('span');
+          ty.className = 'ty';
+          ty.textContent = col.column_type.toLowerCase();
+          b.append(n, ty);
+          b.addEventListener('click', () => view.dispatch(view.state.replaceSelection(col.column_name)));
+          li.append(b);
+          ul.append(li);
+        });
+        wrap.append(ul);
+        schema.append(wrap);
       }
+      runBtn.disabled = false;
+      statusEl.textContent = 'Ready. Run a query or pick an example.';
+    })
+    .catch((e) => {
+      showError(e);
+      statusEl.textContent = '';
     });
-  });
-
-  // Lazy init on page load
-  window.addEventListener('DOMContentLoaded', () => {
-    initDuckDB();
-  });
 </script>
 
 <style>
-  .editor-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 0.75rem;
+  .explore {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 24px;
   }
-
-  .sql-textarea {
-    width: 100%;
-    padding: 0.75rem 1rem;
-    font-size: 0.875rem;
-    line-height: 1.5;
-    background: var(--bg-subtle);
-    border: 1px solid var(--border-color);
-    border-radius: var(--radius-sm);
-    color: var(--text-primary);
-    resize: vertical;
+  @media (min-width: 1024px) {
+    .explore {
+      grid-template-columns: 280px minmax(0, 1fr);
+      gap: 32px;
+      align-items: start;
+    }
   }
-
-  .sql-textarea:focus {
-    outline: 2px solid var(--accent);
-    border-color: transparent;
-  }
-
-  .btn-primary {
-    background: var(--accent);
-    color: #ffffff;
-    border: none;
-    padding: 0.5rem 1rem;
-    border-radius: var(--radius-sm);
+  .side-title {
+    font-size: 13px;
     font-weight: 600;
-    cursor: pointer;
+    color: var(--ink);
+    margin-bottom: 8px;
   }
-
-  .btn-primary:hover {
-    background: var(--accent-hover);
+  .examples-title {
+    margin-top: 24px;
   }
-
-  .example-buttons {
+  .schema {
     display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
+    flex-direction: column;
+    gap: 16px;
+    min-height: 60px;
   }
-
-  .btn-example {
-    background: var(--bg-subtle);
-    color: var(--text-secondary);
-    border: 1px solid var(--border-color);
-    padding: 0.4rem 0.75rem;
-    border-radius: var(--radius-sm);
-    font-size: 0.8125rem;
-    cursor: pointer;
-    text-align: left;
-    transition: all 0.15s ease;
+  .schema :global(.tbl-name) {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--ink);
+    padding: 2px 0;
   }
-
-  .btn-example:hover {
-    background: var(--accent-light);
-    color: var(--accent);
-    border-color: var(--accent);
+  .schema :global(ul) {
+    margin-top: 4px;
+    border-left: 1px solid var(--line);
   }
-
-  .results-header {
+  .schema :global(.col) {
     display: flex;
     justify-content: space-between;
-    align-items: center;
-    margin-bottom: 1rem;
-  }
-
-  .error-box {
-    padding: 0.75rem 1rem;
-    background: var(--danger-bg);
-    color: var(--danger);
-    border: 1px solid var(--danger);
-    border-radius: var(--radius-sm);
-    margin-bottom: 1rem;
+    gap: 12px;
+    width: 100%;
+    padding: 3px 0 3px 12px;
     font-family: var(--font-mono);
-    font-size: 0.8125rem;
-    white-space: pre-wrap;
+    font-size: 13px;
+    color: var(--ink-2);
+    text-align: left;
+  }
+  .schema :global(.col:hover) {
+    color: var(--accent);
+  }
+  .schema :global(.ty) {
+    color: var(--ink-3);
+  }
+  .chips {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding-bottom: 4px;
+  }
+  .chip {
+    flex: none;
+    padding: 6px 12px;
+    min-height: 40px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--r-pill);
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--ink-2);
+    white-space: nowrap;
+  }
+  .chip:hover {
+    color: var(--ink);
+    border-color: var(--line-strong);
+  }
+  @media (min-width: 1024px) {
+    .chips {
+      flex-direction: column;
+      overflow: visible;
+      align-items: stretch;
+    }
+    .chip {
+      border-radius: var(--r-md);
+      text-align: left;
+      white-space: normal;
+    }
+  }
+  .work {
+    min-width: 0;
+  }
+  .editor-bar {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 8px;
+  }
+  .run {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .status {
+    margin-top: 12px;
+    min-height: 20px;
+    font-size: 13px;
+    color: var(--ink-3);
+  }
+  .err {
+    margin-top: 12px;
+  }
+  .mono {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    overflow-wrap: anywhere;
+  }
+  .hint-line {
+    display: block;
+    margin-top: 4px;
+    color: var(--ink-2);
+  }
+  .results {
+    margin-top: 12px;
+  }
+  .results-bar {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 8px;
   }
 </style>

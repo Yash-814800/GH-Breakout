@@ -1,0 +1,81 @@
+---
+interface Props {
+  ownerId?: number | null;
+  login: string;
+  type?: 'User' | 'Organization' | null;
+  size?: number;
+  eager?: boolean;
+  class?: string;
+}
+const { ownerId, login, type, size = 32, eager = false, class: cls } = Astro.props;
+const org = type === 'Organization';
+const initials = (login || '?').replace(/[^a-zA-Z0-9]/g, '').slice(0, 2).toUpperCase() || '?';
+const src = ownerId ? `https://avatars.githubusercontent.com/u/${ownerId}?s=${size * 2}&v=4` : null;
+---
+
+<span class:list={['av', org ? 'av-org' : 'av-user', cls]} style={`--s:${size}px`} data-qa="avatar">
+  <span class="av-fallback" aria-hidden="true">{initials}</span>
+  {
+    src && (
+      <img
+        src={src}
+        alt={login}
+        width={size}
+        height={size}
+        loading={eager ? 'eager' : 'lazy'}
+        fetchpriority={eager ? 'low' : undefined}
+        decoding="async"
+        referrerpolicy="no-referrer"
+        data-avatar
+      />
+    )
+  }
+</span>
+
+<script>
+  // Images stay transparent until they load, so the initials show for lazy, slow or failed images.
+  document.querySelectorAll<HTMLImageElement>('img[data-avatar]').forEach((img) => {
+    const ok = () => img.setAttribute('data-ok', '');
+    if (img.complete && img.naturalWidth > 0) ok();
+    img.addEventListener('load', ok);
+  });
+</script>
+
+<style>
+  .av {
+    position: relative;
+    display: inline-block;
+    flex: none;
+    width: var(--s);
+    height: var(--s);
+    overflow: hidden;
+    background: var(--surface);
+    box-shadow: inset 0 0 0 1px var(--line);
+  }
+  .av-user {
+    border-radius: var(--r-pill);
+  }
+  .av-org {
+    border-radius: var(--r-sm);
+  }
+  .av-fallback {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    font-size: calc(var(--s) * 0.38);
+    font-weight: 600;
+    color: var(--ink-2);
+  }
+  img {
+    position: relative;
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    opacity: 0;
+  }
+  img[data-ok] {
+    opacity: 1;
+  }
+</style>

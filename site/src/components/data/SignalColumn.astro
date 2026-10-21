@@ -1,0 +1,64 @@
+---
+import { pct, odds, delta, plural } from '../../lib/format';
+import Tooltip from '../ui/Tooltip.astro';
+import MomentumStrip from './MomentumStrip.astro';
+
+interface Props {
+  prob: number;
+  spark: number[];
+  weekGain: number | null;
+  gainDays: number | null;
+  endDate?: string;
+  /** Mobile layout puts the strip under the row instead of in this column. */
+  stripInline?: boolean;
+}
+const { prob, spark, weekGain, gainDays, endDate, stripInline = true } = Astro.props;
+const p = pct(prob);
+const o = odds(prob);
+const tip = `Breakout chance: ${p} (${o}). Of repos we gave about this chance in the past, about ${p} broke out.`;
+const gainText =
+  weekGain == null
+    ? null
+    : gainDays && gainDays !== 7
+      ? `${delta(weekGain)} in ${plural(gainDays, 'day')}`
+      : `${delta(weekGain)} this week`;
+---
+
+<div class="sig" data-qa="signal">
+  <Tooltip text={tip} label={`Breakout chance ${p}. ${o}.`}>
+    <span class="t-num-lg prob">{p}</span>
+  </Tooltip>
+  <span class="odds">{o}</span>
+  {stripInline && <div class="sig-strip"><MomentumStrip values={spark} endDate={endDate} /></div>}
+  {gainText && <span class="gain num">{gainText}</span>}
+</div>
+
+<style>
+  .sig {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    text-align: right;
+    min-width: 0;
+  }
+  .prob {
+    color: var(--ink);
+  }
+  .odds {
+    margin-top: 4px;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--ink-3);
+    white-space: nowrap;
+  }
+  .sig-strip {
+    margin-top: 12px;
+  }
+  .gain {
+    margin-top: 6px;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--ink-2);
+    white-space: nowrap;
+  }
+</style>

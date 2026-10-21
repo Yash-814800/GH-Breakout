@@ -1,0 +1,180 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import PageHeader from '../components/layout/PageHeader.astro';
+import Band from '../components/layout/Band.astro';
+import ChartFigure from '../components/data/ChartFigure.astro';
+import Disclosure from '../components/ui/Disclosure.astro';
+import CopyButton from '../components/ui/CopyButton.astro';
+import Callout from '../components/ui/Callout.astro';
+import { getInsights } from '../lib/data';
+
+const ins = getInsights();
+const stories = ins?.stories ?? [];
+const legends: Record<string, { label: string; kind: 'line' | 'dash' | 'square'; color: 'accent' | 'ink-3' }[]> = {
+  retention_comparison: [{ label: 'Repos that broke out', kind: 'line', color: 'accent' }, { label: 'Other candidates', kind: 'dash', color: 'ink-3' }],
+  ai_share_trend: [{ label: 'Share of breakouts with AI-related names', kind: 'line', color: 'accent' }],
+  lead_time_distribution: [{ label: 'Flagged before Trending', kind: 'square', color: 'accent' }, { label: 'Flagged on or after Trending', kind: 'square', color: 'ink-3' }],
+  suspicion_prevalence: [{ label: 'All candidates', kind: 'line', color: 'accent' }, { label: 'Repos that broke out', kind: 'dash', color: 'ink-3' }],
+};
+const chartTitles: Record<string, string> = {
+  retention_comparison: 'Follow-up activity by horizon',
+  ai_share_trend: 'AI-related share of breakouts by year',
+  lead_time_distribution: 'Days between our first flag and GitHub Trending',
+  suspicion_prevalence: 'Share of candidates with a high unusual-pattern signal',
+};
+const captions: Record<string, string> = {
+  retention_comparison: 'Share of stargazers who forked, opened an issue, sent a pull request or commented within 30, 60 and 90 days.',
+  ai_share_trend: 'AI-related is a rough match on repo names (such as "ai", "gpt", "llm" or "agent"), so it over- and under-counts.',
+  lead_time_distribution: 'Days from our first flag of a repo to its first appearance on GitHub Trending, for repos that later trended. Positive means we were first.',
+  suspicion_prevalence: 'Share of candidates with a high unusual-star-pattern signal. The signal is statistical and says nothing about intent.',
+};
+const summaries: Record<string, string> = {
+  retention_comparison: 'Follow-up activity by horizon for breakout and other repos.',
+  ai_share_trend: 'Share of breakouts with AI-related names by year.',
+  lead_time_distribution: 'Number of repos by days between our first flag and GitHub Trending.',
+  suspicion_prevalence: 'Share of candidates with a high unusual-star-pattern signal, by year.',
+};
+---
+
+<BaseLayout title="Insights" description="Four data stories from ten years of GitHub star history, each with the SQL behind it.">
+  <div class="container">
+    <PageHeader size="display" center title="Insights" lead={ins?.description ?? 'Data stories from ten years of GitHub star history.'} />
+  </div>
+
+  {
+    stories.length === 0 && (
+      <Band><Callout variant="info">Insights are published once the first analysis has run.</Callout></Band>
+    )
+  }
+
+  {
+    stories.map((s, i) => (
+      <Band alt={i % 2 === 1} id={s.id}>
+        <h2 class="t-h2 story-title">{s.title.replace(/:.*$/, '')}</h2>
+        <p class="t-prose story-text">{s.summary}</p>
+        <div class="wide">
+          <ChartFigure id={`chart-${s.id}`} title={chartTitles[s.chart_type] ?? 'Chart'} level="h3" legend={legends[s.chart_type]} caption={captions[s.chart_type]} summary={summaries[s.chart_type] ?? s.title} height={300} />
+        </div>
+        <div class="sql">
+          <Disclosure summary="Show the SQL">
+            <div class="code-wrap">
+              <pre class="code"><code>{s.sql}</code></pre>
+              <span class="copy"><CopyButton text={s.sql} label="Copy SQL" /></span>
+            </div>
+          </Disclosure>
+        </div>
+      </Band>
+    ))
+  }
+
+  <script type="application/json" id="ins-data" set:html={JSON.stringify(stories.map((s) => ({ id: s.id, type: s.chart_type, data: s.chart_data })))} />
+</BaseLayout>
+
+<script>
+  import * as Plot from '@observablehq/plot';
+  import { baseOptions, observeWidth, resolveTokens, type Tokens, plot } from '../lib/plot-theme';
+  import { count, pctAxis } from '../lib/format';
+
+  type Story = { id: string; type: string; data: Record<string, number>[] };
+  const stories = JSON.parse(document.getElementById('ins-data')!.textContent!) as Story[];
+  const pctNum = (v: number) => `${v.toLocaleString('en-US', { maximumFractionDigits: 1 })}%`;
+
+  function build(s: Story, w: number, t: Tokens) {
+    const o = baseOptions(t, w, 300);
+    const tip = (rows: unknown[], x: string, y: string, fmt: (v: number) => string) =>
+      Plot.tip(rows, Plot.pointerX({ x, y, fill: t.raised, stroke: t.line, format: { y: fmt } }));
+    switch (s.type) {
+      case 'retention_comparison': {
+        const rows = s.data.flatMap((d) => [
+          { x: d.horizon_days!, y: d.breakouts!, g: 'a' },
+          { x: d.horizon_days!, y: d.non_breakouts!, g: 'b' },
+        ]);
+        return plot({
+          ...o,
+          x: { ...o.x, ticks: s.data.map((d) => d.horizon_days!), tickFormat: (d: number) => `${d} days` },
+          y: { ...o.y, tickFormat: pctNum, zero: true },
+          marks: [
+            Plot.lineY(rows.filter((r) => r.g === 'b'), { x: 'x', y: 'y', stroke: t.ink3, strokeWidth: 2, strokeDasharray: '4 4' }),
+            Plot.lineY(rows.filter((r) => r.g === 'a'), { x: 'x', y: 'y', stroke: t.accent, strokeWidth: 2 }),
+            Plot.dot(rows.filter((r) => r.g === 'a'), { x: 'x', y: 'y', fill: t.accent, r: 3.5 }),
+            Plot.dot(rows.filter((r) => r.g === 'b'), { x: 'x', y: 'y', fill: t.ink3, r: 3.5 }),
+          ],
+        });
+      }
+      case 'ai_share_trend': {
+        const rows = s.data.map((d) => ({ x: d.year!, y: d.ai_breakout_pct! }));
+        return plot({
+          ...o,
+          x: { ...o.x, tickFormat: (d: number) => String(d), ticks: Math.min(10, rows.length) },
+          y: { ...o.y, tickFormat: pctNum, zero: true },
+          marks: [Plot.lineY(rows, { x: 'x', y: 'y', stroke: t.accent, strokeWidth: 2 }), Plot.dot(rows, { x: 'x', y: 'y', fill: t.accent, r: 3 }), tip(rows, 'x', 'y', pctNum)],
+        });
+      }
+      case 'lead_time_distribution': {
+        const rows = s.data.map((d) => ({ x: d.lead_days!, y: d.count!, early: d.lead_days! > 0 }));
+        return plot({
+          ...o,
+          x: { ...o.x, tickFormat: (d: number) => (d > 0 ? `+${d}` : String(d)), ticks: 8 },
+          y: { ...o.y, tickFormat: (v: number) => count(v, { compact: true }) },
+          marks: [
+            Plot.rectY(rows, { x1: (d: { x: number }) => d.x - 0.5, x2: (d: { x: number }) => d.x + 0.5, y: 'y', fill: (d: { early: boolean }) => (d.early ? t.accent : t.ink3), fillOpacity: (d: { early: boolean }) => (d.early ? 1 : 0.35), inset: 0.5 }),
+            Plot.ruleX([0], { stroke: t.lineStrong }),
+          ],
+        });
+      }
+      default: {
+        const all = s.data.map((d) => ({ x: d.year!, y: d.high_suspicion_pct! }));
+        const br = s.data.map((d) => ({ x: d.year!, y: d.breakout_high_suspicion_pct! }));
+        return plot({
+          ...o,
+          x: { ...o.x, tickFormat: (d: number) => String(d), ticks: Math.min(10, all.length) },
+          y: { ...o.y, tickFormat: pctNum, zero: true },
+          marks: [
+            Plot.lineY(br, { x: 'x', y: 'y', stroke: t.ink3, strokeWidth: 2, strokeDasharray: '4 4' }),
+            Plot.lineY(all, { x: 'x', y: 'y', stroke: t.accent, strokeWidth: 2 }),
+            tip(all, 'x', 'y', pctNum),
+          ],
+        });
+      }
+    }
+  }
+  for (const s of stories) {
+    const host = document.getElementById(`chart-${s.id}`);
+    if (host) observeWidth(host, (w) => host.replaceChildren(build(s, w, resolveTokens())));
+  }
+  void pctAxis;
+</script>
+
+<style>
+  .story-title {
+    margin-bottom: 16px;
+  }
+  .story-text {
+    color: var(--ink);
+    margin-bottom: 40px;
+  }
+  .sql {
+    margin-top: 24px;
+  }
+  .code-wrap {
+    position: relative;
+  }
+  .code {
+    padding: 16px 48px 16px 16px;
+    background: var(--bg);
+    border: 1px solid var(--line);
+    border-radius: var(--r-lg);
+    font-size: 13px;
+    line-height: 1.6;
+    overflow-x: auto;
+    tab-size: 2;
+  }
+  :global(.band:not(.band-alt)) .code {
+    background: var(--surface);
+  }
+  .copy {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+  }
+</style>

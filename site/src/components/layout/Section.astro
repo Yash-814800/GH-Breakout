@@ -1,0 +1,32 @@
+---
+interface Props {
+  title?: string;
+  id?: string;
+  level?: 'h2' | 'h3';
+  class?: string;
+}
+const { title, id, level = 'h2', class: cls } = Astro.props;
+const H = level;
+---
+
+<section id={id} class:list={['stack-section', 'sec', cls]} aria-labelledby={title && id ? `${id}-h` : undefined}>
+  {
+    title && (
+      <div class="sec-head">
+        <H id={id ? `${id}-h` : undefined} class="t-h2">{title}</H>
+        <slot name="action" />
+      </div>
+    )
+  }
+  <slot />
+</section>
+
+<style>
+  .sec-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+</style>

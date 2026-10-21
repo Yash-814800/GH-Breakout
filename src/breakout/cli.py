@@ -49,6 +49,11 @@ app.add_typer(ops_app, name="ops")
 publish_app = typer.Typer(help="Publish and deployment commands (Phase 9+).", no_args_is_help=True)
 app.add_typer(publish_app, name="publish")
 
+detect_app = typer.Typer(
+    help="Fake-star detection, similarity, and cohorts (Phase 11).", no_args_is_help=True
+)
+app.add_typer(detect_app, name="detect")
+
 ml_app = typer.Typer(help="Modelling and evaluation (Phase 6+).", no_args_is_help=True)
 app.add_typer(ml_app, name="ml")
 
@@ -1279,6 +1284,122 @@ def publish_site_data_cmd(
     d = date.fromisoformat(date_) if date_ else None
     p1, p2 = site_data.publish_site_data(cfg, d, upload=upload)
     typer.echo(f"Wrote site data:\n  {p1}\n  {p2}")
+
+
+@publish_app.command("insights")
+def publish_insights_cmd(
+    ctx: typer.Context,
+) -> None:
+    """Export historical data stories to site/public/data/insights.json (Phase 11, §11.4)."""
+    from breakout.publish import insights
+
+    p = insights.export_insights_data()
+    typer.echo(f"Wrote insights stories to {p}")
+
+
+# ---- Detect (Phase 11) -------------------------------------------------------
+
+
+@detect_app.command("suspicion")
+def detect_suspicion_cmd(
+    ctx: typer.Context,
+    date_: Annotated[
+        str | None, typer.Option("--date", help="snapshot date (default: latest)")
+    ] = None,
+    limit: Annotated[int, typer.Option("--limit", help="number of top suspicious to display")] = 20,
+) -> None:
+    """Compute suspicious-growth scores and display top flagged candidates."""
+    from datetime import date
+
+    from breakout.detect import scoring, signals
+    from breakout.duck import connect
+
+    wh = P.DATA_DIR / "warehouse.duckdb"
+    if not wh.exists():
+        typer.echo(f"Warehouse not found at {wh}")
+        raise typer.Exit(1)
+
+    con = connect(wh, read_only=True)
+    try:
+        snap_d = date.fromisoformat(date_) if date_ else None
+        if snap_d is None:
+            row = con.execute("select max(snapshot_date) from mart_candidates").fetchone()
+            snap_d = row[0] if (row and row[0]) else date.today()
+
+        df = signals.extract_candidate_signals(con, target_date=snap_d)
+        if df.empty:
+            typer.echo(f"No candidates found for snapshot date {snap_d}")
+            return
+
+        z_df = scoring.compute_signals_zscores(df)
+        raw = scoring.compute_weighted_raw_score(z_df)
+        cdf = scoring.map_empirical_cdf(raw)
+        z_df["suspicion_score"] = cdf
+        z_df["suspicion_level"] = [scoring.classify_suspicion_level(s) for s in cdf]
+
+        top = z_df.sort_values("suspicion_score", ascending=False).head(limit)
+        typer.echo(
+            f"Top {len(top)} suspicious candidates on {snap_d} (total candidates: {len(df)}):"
+        )
+        for _, r in top.iterrows():
+            reasons = scoring.format_reason_codes(r)
+            r_str = f" - {'; '.join(reasons)}" if reasons else ""
+            lvl = r["suspicion_level"].upper()
+            name = r.get("repo_name", r["repo_id"])
+            typer.echo(f"  [{lvl}] {name} (score: {r['suspicion_score']:.1f}){r_str}")
+    finally:
+        con.close()
+
+
+@detect_app.command("similarity-reference")
+def detect_similarity_ref_cmd(
+    ctx: typer.Context,
+    as_of: Annotated[
+        str | None, typer.Option("--as-of", help="as-of date (default: latest)")
+    ] = None,
+    window_days: Annotated[int, typer.Option("--window-days", help="lookback window days")] = 365,
+    min_stars: Annotated[int, typer.Option("--min-stars", help="min stars in window")] = 50,
+) -> None:
+    """Build similarity reference index from recent WatchEvents (weekly job)."""
+    from datetime import date
+
+    from breakout.detect import similarity
+
+    cfg = get_config(ctx.obj["config"])
+    as_of_date = date.fromisoformat(as_of) if as_of else None
+    p1, p2, stats = similarity.build_similarity_reference(
+        cfg, as_of=as_of_date, window_days=window_days, min_stars=min_stars
+    )
+    typer.echo("Similarity reference built:")
+    typer.echo(f"  Stargazers: {p1} ({stats['stargazers_parquet_mb']:.2f} MB)")
+    typer.echo(f"  Repo sizes: {p2} ({stats['sizes_parquet_mb']:.2f} MB)")
+    n_repos = stats["n_reference_repos"]
+    n_pairs = stats["n_reference_stargazer_pairs"]
+    duration = stats["duration_seconds"]
+    typer.echo(f"  Indexed {n_repos} repos ({n_pairs} pairs) in {duration}s")
+
+
+@detect_app.command("cohorts-reference")
+def detect_cohorts_ref_cmd(
+    ctx: typer.Context,
+) -> None:
+    """Precompute historical retention reference band for breakout_rel positives."""
+    from breakout.detect import cohorts
+
+    p = cohorts.compute_retention_reference()
+    typer.echo(f"Wrote retention reference band to {p}")
+
+
+@detect_app.command("validate")
+def detect_validate_cmd(
+    ctx: typer.Context,
+    output: Annotated[Path | None, typer.Option("--output", help="output report path")] = None,
+) -> None:
+    """Run StarScout validation, spotcheck, and ablation; write reports/suspicion.md."""
+    from breakout.detect import validate
+
+    p = validate.generate_suspicion_report(output_path=output)
+    typer.echo(f"Generated suspicion validation report at {p}")
 
 
 @app.callback()

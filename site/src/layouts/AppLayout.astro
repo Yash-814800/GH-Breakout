@@ -1,0 +1,69 @@
+---
+import BaseLayout from './BaseLayout.astro';
+
+interface Props {
+  title?: string;
+  description?: string;
+  ogImage?: string;
+  noindex?: boolean;
+  /** Keep the right column in view while the main column scrolls (repo page). */
+  stickyRail?: boolean;
+}
+const { stickyRail, ...props } = Astro.props;
+const hasRail = Astro.slots.has('rail');
+---
+
+<BaseLayout {...props}>
+  <slot name="head" slot="head" />
+  <div class="container">
+    <slot name="header" />
+    <div class:list={['app-grid', hasRail && 'with-rail']}>
+      <div class="app-main"><slot /></div>
+      {hasRail && <aside class:list={['app-rail', stickyRail && 'sticky']} aria-label="Sidebar"><slot name="rail" /></aside>}
+    </div>
+  </div>
+</BaseLayout>
+
+<style>
+  .app-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 32px;
+  }
+  .app-main {
+    min-width: 0;
+  }
+  .app-rail {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 16px;
+    align-content: start;
+    min-width: 0;
+  }
+  @media (min-width: 768px) {
+    .app-rail {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+  @media (min-width: 1024px) {
+    .with-rail {
+      grid-template-columns: minmax(0, 1fr) var(--rail);
+      column-gap: 32px;
+    }
+    .app-rail {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+  @media (min-width: 1024px) {
+    .app-rail.sticky {
+      position: sticky;
+      top: calc(var(--nav-h) + 24px);
+      align-self: start;
+    }
+  }
+  @media (min-width: 1280px) {
+    .with-rail {
+      column-gap: 40px;
+    }
+  }
+</style>

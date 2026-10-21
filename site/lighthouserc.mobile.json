@@ -1,0 +1,26 @@
+{
+  "ci": {
+    "collect": {
+      "startServerCommand": "OUT_DIR=dist-fx npx astro preview --port 4402 --host 127.0.0.1",
+      "startServerReadyPattern": "astro",
+      "url": [
+        "http://127.0.0.1:4402/GH-Breakout/",
+        "http://127.0.0.1:4402/GH-Breakout/repo/1407951147/",
+        "http://127.0.0.1:4402/GH-Breakout/track-record/"
+      ],
+      "numberOfRuns": 3,
+      "settings": { "formFactor": "mobile", "chromeFlags": "--no-sandbox --headless=new" }
+    },
+    "assert": {
+      "assertions": {
+        "categories:performance": ["error", { "minScore": 0.9 }],
+        "categories:accessibility": ["error", { "minScore": 0.98 }],
+        "categories:best-practices": ["error", { "minScore": 0.95 }],
+        "categories:seo": ["error", { "minScore": 0.95 }],
+        "cumulative-layout-shift": ["error", { "maxNumericValue": 0.02 }],
+        "largest-contentful-paint": ["error", { "maxNumericValue": 4000 }]
+      }
+    },
+    "upload": { "target": "filesystem", "outputDir": ".lighthouseci/mobile" }
+  }
+}

@@ -1,0 +1,51 @@
+---
+import { relTime } from '../../lib/format';
+import { isStale, getStatus, getMeta } from '../../lib/data';
+
+const status = getStatus();
+const meta = getMeta();
+const last = status.heartbeat?.last_success_at ?? meta.build_time;
+const now = new Date();
+const stale = isStale(last, now);
+---
+
+<span class="fresh" data-fresh={last} data-stale={stale ? '1' : '0'} title="Time of the last successful daily run">
+  <span class="dot" aria-hidden="true"></span>
+  <span class="fresh-text">Updated <span data-fresh-rel>{relTime(last, now)}</span></span>
+</span>
+
+<script>
+  import { relTime } from '../../lib/format';
+  document.querySelectorAll<HTMLElement>('[data-fresh]').forEach((el) => {
+    const ts = el.dataset.fresh!;
+    const update = () => {
+      const now = new Date();
+      const hours = (now.getTime() - new Date(ts).getTime()) / 3.6e6;
+      el.dataset.stale = hours > 30 ? '1' : '0';
+      const rel = el.querySelector('[data-fresh-rel]');
+      if (rel) rel.textContent = relTime(ts, now);
+    };
+    update();
+  });
+</script>
+
+<style>
+  .fresh {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--ink-2);
+    white-space: nowrap;
+  }
+  .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: var(--r-pill);
+    background: var(--rise);
+  }
+  .fresh[data-stale='1'] .dot {
+    background: var(--caution);
+  }
+</style>

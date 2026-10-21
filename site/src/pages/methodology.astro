@@ -1,170 +1,181 @@
 ---
-import Layout from '../layouts/Layout.astro';
+import LongformLayout from '../layouts/LongformLayout.astro';
+import PageHeader from '../components/layout/PageHeader.astro';
+import Table from '../components/ui/Table.astro';
+import ExternalLink from '../components/ui/ExternalLink.astro';
+import { modelRows } from '../lib/model-metrics';
+import sharp from 'sharp';
+import { url, HF_MODELS, GITHUB_REPO } from '../lib/url';
 
-const base = import.meta.env.BASE_URL.replace(/\/+$/, '');
+const rows = modelRows();
+const f3 = (n: number) => n.toFixed(3);
+const f4 = (n: number) => n.toFixed(4);
+const toc = [
+  { id: 'definitions', label: 'Definitions' },
+  { id: 'evaluation', label: 'How we test' },
+  { id: 'calibration', label: 'Calibration' },
+  { id: 'features', label: 'What the model sees' },
+  { id: 'limits', label: 'Known limits' },
+];
+const fig = (name: string) => url(`/figures/${name}`);
+// Real pixel sizes, so each image reserves its space before it loads (no layout shift).
+const size: Record<string, { w: number; h: number }> = {};
+for (const n of ['cv_pr_curve', 'cv_precision_by_year', 'cv_reliability', 'shap_importance', 'shap_beeswarm']) {
+  const m = await sharp(`public/figures/${n}.png`).metadata();
+  size[n] = { w: m.width ?? 900, h: m.height ?? 600 };
+}
 ---
 
-<Layout title="Methodology & Model Card · gh-breakout">
-  <div class="container">
-    <div class="page-header">
-      <div>
-        <h1>Methodology & Model Card</h1>
-        <p class="subtitle">
-          Mathematical formulation, candidate constraints, rolling-origin evaluation, and known limitations.
-        </p>
-      </div>
-      <div>
-        <span class="badge badge-accent">Champion: 20261019-b5ff585</span>
-      </div>
-    </div>
+<LongformLayout title="Methodology" description="How Breakout Radar defines a breakout, picks candidates, tests the model against simple baselines and checks its probabilities." toc={toc}>
+  <PageHeader slot="header" size="display" center title="Methodology" lead="What a breakout is, how candidates are chosen, and how we check the model against simple rules.">
+    <Fragment slot="meta"><ExternalLink href={HF_MODELS}>Model card</ExternalLink></Fragment>
+  </PageHeader>
 
-    <!-- Overview Grid -->
-    <div class="grid-2" style="margin-bottom: 2rem;">
-      <div class="card">
-        <h2>Candidate Definition</h2>
-        <p>The candidate universe is computed with the exact same SQL for historical training and daily live scoring:</p>
-        <ul style="margin-left: 1.5rem; color: var(--text-secondary); line-height: 1.6;">
-          <li><strong>Age:</strong> Repository age ≤ 90 days since first observed activity in GH Archive.</li>
-          <li><strong>Star volume:</strong> Total cumulative stars observed before snapshot date <em>D</em> &lt; 200.</li>
-          <li><strong>Recent momentum:</strong> At least 5 stars gained in the 14-day window <code>[D-14, D)</code>.</li>
-          <li><strong>Exclusions:</strong> No forks (<code>is_fork = false</code>), mirrors, or bot-owned repositories.</li>
-          <li><strong>Point-in-time correctness:</strong> Snapshot <em>D</em> represents the world as known at 00:00:00 UTC. Features read strictly <code>created_at &lt; D</code>.</li>
-        </ul>
-      </div>
+  <div class="prose measure">
+    <h2 id="definitions">Definitions</h2>
+    <p>
+      A <strong>breakout</strong> is a repo gaining stars faster than 99.5% of similar young repos over the next 30 days, and at least 100 stars. The
+      <strong>breakout chance</strong> on each repo is the model's calibrated probability of that outcome.
+    </p>
+    <dl class="defs">
+      <dt>Candidate</dt>
+      <dd>A repo that is at most 90 days old, has fewer than 200 stars before the snapshot date, gained at least 5 stars in the 14 days before it, and is not a fork, mirror or bot-owned.</dd>
+      <dt>Snapshot date</dt>
+      <dd>The world as known at 00:00 UTC on that day. Features use only events before it.</dd>
+      <dt>Label</dt>
+      <dd>Stars gained from the snapshot date to 30 days later, compared with other candidates of the same day. A second label counts 500 or more stars.</dd>
+      <dt>Matured</dt>
+      <dd>A prediction is judged only after its 30 days have fully passed and been ingested.</dd>
+      <dt>Flagged</dt>
+      <dd>Entered the top 50 of a daily list.</dd>
+    </dl>
+    <p class="note">The strip on each repo scales to that repo's own peak, so the shape of the curve is the signal, not the height.</p>
+  </div>
 
-      <div class="card">
-        <h2>Label Definition</h2>
-        <p>What constitutes a breakout?</p>
-        <ul style="margin-left: 1.5rem; color: var(--text-secondary); line-height: 1.6;">
-          <li><strong>Primary Label (<code>breakout_rel</code>):</strong> A candidate repo is positive if its forward 30-day star gain in <code>[D, D+30)</code> meets or exceeds the 99.5th percentile (top 0.5%) among all candidates on the same snapshot <em>D</em>, subject to a minimum floor of 100 stars.</li>
-          <li><strong>Secondary Label (<code>breakout_abs</code>):</strong> Gaining at least 500 stars in the forward 30-day window.</li>
-          <li><strong>Maturity:</strong> A snapshot's labels are matured only when <code>D + 30 days &le; latest fully ingested date + 1</code>.</li>
-        </ul>
-      </div>
-    </div>
-
-    <!-- Evaluation Results & Benchmark -->
-    <div class="card" style="margin-bottom: 2rem;">
-      <h2>Rolling-Origin Cross-Validation & Benchmark</h2>
+  <div class="measure">
+    <div class="prose">
+      <h2 id="evaluation">How we test</h2>
       <p>
-        Evaluated across 29 rolling folds from 2018 to 2025 with an expanding training window and a strict 30-day horizon embargo. Random train/test splits are strictly forbidden.
-        Every model candidate is pitted against <strong>Baseline 1 (B1)</strong>, which ranks candidates by their 7-day star velocity.
+        We test the model on weeks it never saw. Training uses data up to a cut-off, a 30-day gap follows so no label overlaps training, and the test weeks come after. This repeats over 29 steps from 2018 to 2025. Random splits are never used, because they would let the model see the future.
       </p>
-
-      <div class="table-wrapper">
-        <table>
-          <thead>
-            <tr>
-              <th>Model Variant</th>
-              <th>Pooled PR-AUC [95% CI]</th>
-              <th>ROC-AUC</th>
-              <th>Precision @ 25 [95% CI]</th>
-              <th>Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td><strong>gh-breakout Champion (LightGBM)</strong></td>
-              <td class="num"><strong>0.1081</strong> [0.1016, 0.1142]</td>
-              <td class="num"><strong>0.883</strong></td>
-              <td class="num"><strong>0.241</strong> [0.228, 0.255]</td>
-              <td><span class="badge badge-success">Champion Promoted</span></td>
-            </tr>
-            <tr>
-              <td>Baseline 1 (7-day star velocity)</td>
-              <td class="num">0.0286 [0.0246, 0.0345]</td>
-              <td class="num">0.816</td>
-              <td class="num">0.109 [0.100, 0.118]</td>
-              <td><span class="badge badge-neutral">Heuristic Baseline</span></td>
-            </tr>
-            <tr>
-              <td>Baseline 2 (14-day star velocity)</td>
-              <td class="num">0.0197</td>
-              <td class="num">0.782</td>
-              <td class="num">0.098</td>
-              <td><span class="badge badge-neutral">Heuristic Baseline</span></td>
-            </tr>
-            <tr>
-              <td>Baseline 3 (Star acceleration)</td>
-              <td class="num">0.0227</td>
-              <td class="num">0.795</td>
-              <td class="num">0.105</td>
-              <td><span class="badge badge-neutral">Heuristic Baseline</span></td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
-      <div class="grid-2" style="margin-top: 1.5rem;">
-        <div>
-          <h3>Precision-Recall Curve (CV)</h3>
-          <img src={`${base}/figures/cv_pr_curve.png`} alt="Precision-Recall Curve" class="figure-img" />
-        </div>
-        <div>
-          <h3>Precision @ 25 by Year</h3>
-          <img src={`${base}/figures/cv_precision_by_year.png`} alt="Precision @ 25 by Year" class="figure-img" />
-        </div>
-      </div>
-    </div>
-
-    <!-- Calibration & Reliability -->
-    <div class="card" style="margin-bottom: 2rem;">
-      <h2>Probability Calibration & Reliability</h2>
-      <p>
-        Raw boosting margins are transformed via isotonic regression fit exclusively on out-of-training validation windows.
-        The holdout expected calibration error (ECE) is 0.00088 and Brier score is 0.00461.
-      </p>
-      <div class="grid-2" style="margin-top: 1rem;">
-        <div>
-          <img src={`${base}/figures/cv_reliability.png`} alt="Calibration Reliability Diagram" class="figure-img" />
-        </div>
-        <div>
-          <h3>Why Calibration Matters</h3>
-          <p>
-            Because the base rate of true breakout repositories is only ~0.5% (1 in 200), uncalibrated models output scores that look like probabilities but cannot be interpreted as odds.
-            Our calibrated probabilities reflect true empirical frequencies: if 100 repositories are assigned ~20% probability, ~20 of them will break out.
-          </p>
-        </div>
-      </div>
-    </div>
-
-    <!-- Feature Importance & SHAP -->
-    <div class="card" style="margin-bottom: 2rem;">
-      <h2>Global Feature Importance (TreeSHAP)</h2>
-      <p>
-        Features span 68 live-available variables across star dynamics, contributor activity, account age distributions, tastemaker networks, and external Hacker News signals.
-      </p>
-      <div class="grid-2" style="margin-top: 1.5rem;">
-        <div>
-          <h3>Top Feature Importance</h3>
-          <img src={`${base}/figures/shap_importance.png`} alt="SHAP Feature Importance" class="figure-img" />
-        </div>
-        <div>
-          <h3>SHAP Beeswarm Distribution</h3>
-          <img src={`${base}/figures/shap_beeswarm.png`} alt="SHAP Beeswarm Plot" class="figure-img" />
-        </div>
-      </div>
-    </div>
-
-    <!-- Known Limitations -->
-    <div class="card">
-      <h2>Known Limitations & Data Integrity Audits</h2>
-      <ul style="margin-left: 1.5rem; color: var(--text-secondary); line-height: 1.6;">
-        <li><strong>External Virality:</strong> Attention outside GitHub and Hacker News (e.g. X/Twitter, Reddit, YouTube, TikTok) is invisible to the model until star events begin arriving.</li>
-        <li><strong>Events API Payload Trimming (2025-10-07):</strong> GitHub removed PR authors, commit lists, and merge flags from public events. The live champion uses only features verified to survive this trim.</li>
-        <li><strong>GH Archive Star Capture Collapse (May 2025):</strong> From 2025-05-24 onward, star events in GH Archive experienced an upstream capture drop. In response, historical training is strictly capped to the trusted era (ending 2025-05-23).</li>
-        <li><strong>Star Manipulation (Bots):</strong> Automated star farms are not yet filtered out in Phase 10. Phase 11 introduces our dedicated fake-star detector and network anomaly scoring.</li>
-      </ul>
+      <p>Every model has to beat a simple baseline that ranks repos by stars gained in the last 7 days, on both PR-AUC and precision at 25, before it is used.</p>
     </div>
   </div>
-</Layout>
+
+  {
+    rows && (
+      <div class="wide fig">
+        <Table caption="Pooled results over 29 test periods, 2018 to 2025 (95% confidence interval in brackets)" stickyFirst>
+          <thead><tr><th>Model</th><th class="r">PR-AUC</th><th class="r">ROC-AUC</th><th class="r">Precision at 25</th></tr></thead>
+          <tbody>
+            {
+              rows.map((r) => (
+                <tr>
+                  <td>{r.key === 'model' ? <strong>{r.name}</strong> : r.name}</td>
+                  <td class="r">{f4(r.prAuc)} <span class="ci">[{f4(r.prCi[0])}, {f4(r.prCi[1])}]</span></td>
+                  <td class="r">{f3(r.roc)}</td>
+                  <td class="r">{r.p25 != null ? f3(r.p25) : '—'} {r.p25Ci && <span class="ci">[{f3(r.p25Ci[0])}, {f3(r.p25Ci[1])}]</span>}</td>
+                </tr>
+              ))
+            }
+          </tbody>
+        </Table>
+      </div>
+    )
+  }
+
+  <div class="wide figs">
+    <figure><img src={fig('cv_pr_curve.png')} alt="Precision-recall curve of the model and baselines over all test periods" width={size.cv_pr_curve!.w} height={size.cv_pr_curve!.h} loading="lazy" /><figcaption>Precision against recall, all test periods.</figcaption></figure>
+    <figure><img src={fig('cv_precision_by_year.png')} alt="Precision at 25 per year for the model and the baseline" width={size.cv_precision_by_year!.w} height={size.cv_precision_by_year!.h} loading="lazy" /><figcaption>Precision at 25 for each year.</figcaption></figure>
+  </div>
+
+  <div class="measure">
+    <div class="prose">
+      <h2 id="calibration">Calibration</h2>
+      <p>
+        A model can rank well and still give misleading percentages. Only about 1 in 200 candidates breaks out, so raw scores do not read as odds. We map them to probabilities with isotonic regression fitted on weeks the model did not train on. Across all test periods the calibration error is 0.0002 and the Brier score 0.0047.
+      </p>
+      <p>If 100 repos get a 20% chance, about 20 of them should break out. The live <a href={url('/track-record/')}>track record</a> checks this on real predictions as they mature.</p>
+    </div>
+  </div>
+  <div class="wide figs one">
+    <figure><img src={fig('cv_reliability.png')} alt="Reliability diagram: predicted chance against the share that broke out" width={size.cv_reliability!.w} height={size.cv_reliability!.h} loading="lazy" /><figcaption>Reliability diagram for the test periods.</figcaption></figure>
+  </div>
+
+  <div class="measure">
+    <div class="prose">
+      <h2 id="features">What the model sees</h2>
+      <p>
+        68 signals available every day: star growth, who is starring and how experienced their accounts are, contributor activity, issue response times, and Hacker News mentions. Each signal uses only data from before the snapshot date. The explanation on each repo comes from SHAP values, which say how much each signal moved that repo's chance up or down.
+      </p>
+    </div>
+  </div>
+  <div class="wide figs">
+    <figure><img src={fig('shap_importance.png')} alt="Average impact of the most important features on the model output" width={size.shap_importance!.w} height={size.shap_importance!.h} loading="lazy" /><figcaption>Average impact of the top features.</figcaption></figure>
+    <figure><img src={fig('shap_beeswarm.png')} alt="Distribution of feature impacts across repos" width={size.shap_beeswarm!.w} height={size.shap_beeswarm!.h} loading="lazy" /><figcaption>How high and low feature values push the chance.</figcaption></figure>
+  </div>
+
+  <div class="measure">
+    <div class="prose">
+      <h2 id="limits">Known limits</h2>
+      <ul>
+        <li><strong>Attention outside GitHub.</strong> Posts on X, Reddit or YouTube are invisible to the model until the stars start to arrive.</li>
+        <li><strong>GH Archive star capture dropped in May 2025.</strong> From May 24, 2025, GH Archive records far fewer stars. Training stops at May 23, 2025, and star totals on the site come from GitHub directly. The momentum strip still shows only the stars GH Archive captured.</li>
+        <li><strong>GitHub trimmed event data on October 7, 2025.</strong> Pull request authors and commit lists were removed from public events. The live model uses only signals that survive this change.</li>
+        <li><strong>Star manipulation.</strong> A neutral "Unusual star pattern" label marks repos whose recent stars look different from other young repos. It is a statistical signal, not an accusation, and it never changes the model's score.</li>
+        <li><strong>Back-tests are simulations.</strong> The back-test uses out-of-sample predictions, not lists published at the time. Only the <a href={url('/track-record/')}>track record</a> counts as live.</li>
+      </ul>
+      <p>Code, data and the full model card are public on <a href={GITHUB_REPO}>GitHub</a> and Hugging Face.</p>
+    </div>
+  </div>
+</LongformLayout>
 
 <style>
-  .figure-img {
+  .measure + .measure,
+  .fig,
+  .figs {
+    margin-top: 24px;
+  }
+  .fig .ci {
+    color: var(--ink-3);
+    font-size: 12px;
+    white-space: nowrap;
+  }
+  .figs {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 16px;
+  }
+  @media (min-width: 768px) {
+    .figs {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    .figs.one {
+      grid-template-columns: minmax(0, 520px);
+      justify-content: center;
+    }
+  }
+  .figs figure {
+    margin: 0;
+    padding: 12px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: var(--r-xl);
+  }
+  .figs img {
+    display: block;
     width: 100%;
     height: auto;
-    border-radius: var(--radius-md);
-    border: 1px solid var(--border-color);
-    background: var(--bg-card);
+    border-radius: var(--r-lg);
+  }
+  .figs figcaption {
+    margin-top: 8px;
+    font-size: 13px;
+    color: var(--paper-ink);
+  }
+  :global(.prose.measure .note),
+  .note {
+    font-size: 14px;
+    color: var(--ink-2);
   }
 </style>

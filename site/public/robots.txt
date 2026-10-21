@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://yash-814800.github.io/GH-Breakout/sitemap-index.xml

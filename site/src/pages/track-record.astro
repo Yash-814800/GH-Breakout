@@ -1,208 +1,221 @@
 ---
-import Layout from '../layouts/Layout.astro';
-import fs from 'node:fs';
-import path from 'node:path';
+import LongformLayout from '../layouts/LongformLayout.astro';
+import PageHeader from '../components/layout/PageHeader.astro';
+import Section from '../components/layout/Section.astro';
+import FactStrip from '../components/data/FactStrip.astro';
+import ChartFigure from '../components/data/ChartFigure.astro';
+import MaturedList from '../components/data/MaturedList.astro';
+import Callout from '../components/ui/Callout.astro';
+import Panel from '../components/ui/Panel.astro';
+import CopyButton from '../components/ui/CopyButton.astro';
+import ExternalLink from '../components/ui/ExternalLink.astro';
+import Pill from '../components/ui/Pill.astro';
+import { getTrackRecord } from '../lib/data';
+import { date, hash, pct, pctAxis, plural } from '../lib/format';
+import { GITHUB_REPO, HF_SNAPSHOTS } from '../lib/url';
 
-const base = import.meta.env.BASE_URL.replace(/\/+$/, '');
-
-let trData = {
-  matured_snapshots: [],
-  summary: {
-    n_live_days: 0,
-    n_matured_days: 0,
-    top25_hit_rate: 0.0,
-    base_rate: 0.0051,
-    b1_hit_rate: 0.0286,
-    median_lead_time_days: 1.0,
-  },
-  calibration: [],
-  ledger: {
-    first_date: null,
-    last_date: null,
-    total_rows: 0,
-    last_hash: '0000000000000000000000000000000000000000000000000000000000000000',
-    genesis_hash: '0000000000000000000000000000000000000000000000000000000000000000',
-    verified: true,
-  },
-};
-
-const trPath = path.resolve('public/data/track_record.json');
-if (fs.existsSync(trPath)) {
-  try {
-    trData = JSON.parse(fs.readFileSync(trPath, 'utf-8'));
-  } catch (e) {
-    console.error('Error reading track_record.json', e);
-  }
-}
-
-const summary = trData.summary;
-const ledger = trData.ledger;
-const matured = trData.matured_snapshots || [];
+const t = getTrackRecord();
+const s = t.summary;
+const headline = (s as Record<string, unknown>).headline as string | undefined;
+const n = s.n_matured_days;
+const matured = [...t.matured_snapshots].sort((a, b) => a.snapshot_date.localeCompare(b.snapshot_date));
+const calibration = t.calibration.filter((c) => c.count > 0);
+const lead = n < 1 ? 'Every list is frozen the day it is published, then judged 30 days later.' : headline ?? '';
+const cells = [
+  { label: 'Top-25 hit rate', value: n > 0 ? pct(s.top25_hit_rate) : '—', xl: true, hint: n > 0 ? 'Share of our top-25 picks that broke out within 30 days.' : 'Shown once the first list has matured.' },
+  { label: 'Baseline hit rate', value: pct(s.b1_hit_rate), xl: true, hint: 'The same measure for a simple rule: rank by stars gained in the last 7 days.' },
+  { label: 'Median lead over GitHub Trending', value: s.median_lead_time_days != null ? plural(Math.round(s.median_lead_time_days), 'day') : '—', xl: true, hint: 'How much earlier than Trending we flagged repos that later trended (back-test).' },
+];
+const chartData = { points: matured.map((m) => ({ date: m.snapshot_date, p25: m.precision_at_25, b1: m.b1_precision_at_25 ?? null })), calibration };
 ---
 
-<Layout title="Live Track Record · gh-breakout">
-  <div class="container">
-    <div class="page-header">
-      <div>
-        <h1>Public Live Track Record</h1>
-        <p class="subtitle">
-          Transparent, tamper-evident record of daily predictions compared against real 30-day GitHub star outcomes.
-        </p>
-      </div>
-      <div>
-        {ledger.verified ? (
-          <span class="badge badge-success">✓ Ledger Hash Chain Verified</span>
-        ) : (
-          <span class="badge badge-warning">Ledger Verification Pending</span>
-        )}
-      </div>
-    </div>
+<LongformLayout title="Track record" description={n < 1 ? 'Every daily list is frozen when published and judged 30 days later. No predictions have matured yet.' : (headline ?? '').slice(0, 155)} wide>
+  <PageHeader slot="header" size="display" center title="Track record" lead={lead}>
+    <Fragment slot="meta">
+      {t.ledger.verified && <Pill variant="rise" icon="shield-check">Ledger verified</Pill>}
+      <span>{plural(s.n_live_days, 'list')} published, {plural(n, 'list')} judged</span>
+    </Fragment>
+  </PageHeader>
 
-    <!-- Headline Stats Grid -->
-    <div class="grid-4" style="margin-bottom: 2rem;">
-      <div class="stat-box">
-        <div class="stat-label">Days Ingested & Scored</div>
-        <div class="stat-value">{summary.n_live_days}</div>
-        <div class="stat-sub">{summary.n_matured_days} matured (30d elapsed)</div>
-      </div>
+  <FactStrip cells={cells} />
 
-      <div class="stat-box">
-        <div class="stat-label">Model Top-25 Hit Rate</div>
-        <div class="stat-value">{(summary.top25_hit_rate * 100).toFixed(1)}%</div>
-        <div class="stat-sub">Precision @ 25 on live stream</div>
-      </div>
+  {
+    n < 30 && (
+      <Section>
+        <Callout variant="info">History is short: {n} matured {n === 1 ? 'day' : 'days'} so far. Charts appear once 30 days have matured, so a few lucky days cannot look like a trend.</Callout>
+      </Section>
+    )
+  }
 
-      <div class="stat-box">
-        <div class="stat-label">Baseline (B1) Velocity</div>
-        <div class="stat-value">{(summary.b1_hit_rate * 100).toFixed(1)}%</div>
-        <div class="stat-sub">7-day star momentum rank</div>
-      </div>
+  {
+    n >= 30 && (
+      <Section id="precision" title="Hit rate over time">
+        <ChartFigure id="chart-p25" title="Share of top-25 picks that broke out" summary={`Daily top-25 hit rate over ${n} matured days, compared with the baseline.`} legend={[{ label: 'Our top 25', kind: 'line', color: 'accent' }, { label: 'Baseline: 7-day star velocity', kind: 'dash', color: 'ink-3' }]} />
+      </Section>
+    )
+  }
 
-      <div class="stat-box">
-        <div class="stat-label">Base Rate (All Repos)</div>
-        <div class="stat-value">{(summary.base_rate * 100).toFixed(2)}%</div>
-        <div class="stat-sub">~1 in 200 young repos break out</div>
-      </div>
-    </div>
+  {
+    n >= 30 && calibration.length > 0 && (
+      <Section id="calibration" title="Do the percentages mean what they say?">
+        <p class="t-body-sm muted measure lead-in">Repos are grouped by the chance we gave them. If the dots sit on the diagonal, that share really broke out.</p>
+        <ChartFigure id="chart-cal" title="Predicted chance against what happened" level="h3" height={380} summary="Reliability diagram: predicted chance on the x axis, share that broke out on the y axis." />
+      </Section>
+    )
+  }
 
-    <!-- Immutability Guarantee Box -->
-    <div class="card" style="margin-bottom: 2rem; border-left: 4px solid var(--success);">
-      <h2>Tamper-Evident Immutability Guarantee</h2>
-      <p>
-        Every single day at 03:17 UTC, predictions are generated and frozen into three permanent public audit locations before any future data can exist:
-      </p>
-      <ol style="margin-left: 1.5rem; margin-bottom: 1rem; color: var(--text-secondary); line-height: 1.6;">
+  {
+    matured.length > 0 && (
+      <Section id="matured" title="Matured predictions">
+        <MaturedList days={matured} />
+      </Section>
+    )
+  }
+
+  <Section id="verify" title="Verify this record">
+    <Panel>
+      <ol class="steps">
         <li>
-          <strong>Hugging Face Immutable Snapshots:</strong> Raw Parquet files pushed to <a href="https://huggingface.co/datasets/Yasshh814/gh-breakout-snapshots" target="_blank" rel="noopener noreferrer">gh-breakout-snapshots</a>. Deletion or overwriting of snapshot days is disallowed by CI automation.
+          <span class="step-n">1</span>
+          <div>
+            <p><strong>Every list is hashed into a public chain.</strong> Each row of the ledger contains the hash of the row before it, so an edit to the past breaks every later hash.</p>
+            <div class="hash">
+              <span class="t-caption faint">Latest hash</span>
+              <code title={t.ledger.last_hash}>{hash(t.ledger.last_hash)}</code>
+              <CopyButton text={t.ledger.last_hash} label="Copy hash" />
+            </div>
+          </div>
         </li>
         <li>
-          <strong>Cryptographic Hash Chain:</strong> Each prediction snapshot SHA-256 and top-50 repository set hash is appended to <a href="https://github.com/Yash-814800/GH-Breakout/blob/main/ledger/predictions.csv" target="_blank" rel="noopener noreferrer"><code>ledger/predictions.csv</code></a> with SHA-256 hash chaining back to the genesis block.
+          <span class="step-n">2</span>
+          <div><p><strong>Check the chain yourself.</strong> Clone the repository and run <code>uv run breakout ops verify-ledger</code>. It recomputes every hash.</p></div>
         </li>
         <li>
-          <strong>Independent Verification:</strong> Anyone can clone this repository and verify the entire ledger chain independently:
-          <pre class="mono" style="background: var(--bg-subtle); padding: 0.5rem 1rem; border-radius: var(--radius-sm); margin-top: 0.5rem;">uv run breakout ops verify-ledger</pre>
+          <span class="step-n">3</span>
+          <div>
+            <p><strong>Compare with the raw files.</strong> The daily prediction files are on Hugging Face and the ledger is a CSV in the repository.</p>
+            <p class="links"><ExternalLink href={HF_SNAPSHOTS}>Snapshots dataset</ExternalLink> <ExternalLink href={`${GITHUB_REPO}/blob/main/ledger/predictions.csv`}>ledger/predictions.csv</ExternalLink></p>
+          </div>
         </li>
       </ol>
-      <div class="meta-pills">
-        <span class="badge badge-neutral">First ledger entry: {ledger.first_date || '2026-10-20'}</span>
-        <span class="badge badge-neutral">Head hash: {ledger.last_hash.slice(0, 16)}...</span>
-        <span class="badge badge-neutral">Total logged entries: {ledger.total_rows}</span>
-      </div>
-    </div>
-
-    <!-- Matured Snapshots Table -->
-    <div class="card" style="margin-bottom: 2rem;">
-      <h2>Matured Snapshot Evaluations (30-Day Forward Outcomes)</h2>
-      <p>
-        Snapshots mature exactly 30 days after prediction date, when forward star growth in GH Archive is fully observed.
+      <p class="t-caption faint ledger">
+        {plural(t.ledger.total_rows, 'ledger row')}{t.ledger.first_date ? `, from ${date(t.ledger.first_date)}` : ''}{t.ledger.last_date ? ` to ${date(t.ledger.last_date)}` : ''}.
       </p>
+    </Panel>
+  </Section>
 
-      {matured.length === 0 ? (
-        <div style="padding: 2rem; text-align: center; background: var(--bg-subtle); border-radius: var(--radius-md);">
-          <p style="margin-bottom: 0.5rem;"><strong>No matured live snapshots yet.</strong></p>
-          <p class="text-muted" style="margin-bottom: 0;">
-            Live daily runs began on 2026-10-20. The first live snapshot will mature on 2026-11-19 when the 30-day observation window closes.
-            Historical backtest evaluations across 2018–2025 can be explored on the <a href={`${base}/backtest/`}>Time Machine</a> page.
-          </p>
-        </div>
-      ) : (
-        <div class="table-wrapper">
-          <table>
-            <thead>
-              <tr>
-                <th>Snapshot Date</th>
-                <th>Model P@10</th>
-                <th>Model P@25</th>
-                <th>Model P@50</th>
-                <th>B1 P@25</th>
-                <th>Details</th>
-              </tr>
-            </thead>
-            <tbody>
-              {matured.map((m: any) => (
-                <tr>
-                  <td class="num">{m.snapshot_date}</td>
-                  <td class="num">{(m.precision_at_10 * 100).toFixed(1)}%</td>
-                  <td class="num"><strong>{(m.precision_at_25 * 100).toFixed(1)}%</strong></td>
-                  <td class="num">{(m.precision_at_50 * 100).toFixed(1)}%</td>
-                  <td class="num">{(m.b1_precision_at_25 != null ? (m.b1_precision_at_25 * 100).toFixed(1) + '%' : '—')}</td>
-                  <td>
-                    <details>
-                      <summary style="cursor: pointer; color: var(--accent);">View Top 25</summary>
-                      <div style="margin-top: 0.5rem;">
-                        <ul style="list-style: none; padding-left: 0;">
-                          {m.top25.map((r: any) => (
-                            <li style="display: flex; justify-content: space-between; padding: 0.25rem 0; border-bottom: 1px dotted var(--border-color);">
-                              <span>#{r.rank} {r.repo_name}</span>
-                              <span class={r.hit ? 'text-success' : 'text-muted'}>
-                                {r.hit ? '✓ Breakout (+ ' + r.gain_30d + ')' : '✗ Not hit (+ ' + (r.gain_30d || 0) + ')'}
-                              </span>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    </details>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-    </div>
+  <script type="application/json" id="tr-data" set:html={JSON.stringify(chartData)} />
+</LongformLayout>
 
-    <!-- Calibration Diagram Section -->
-    <div class="card">
-      <h2>Calibration Curve (Predicted vs Observed)</h2>
-      <p>
-        A well-calibrated model predicts probabilities that reflect empirical frequencies. When our model predicts a 20% breakout probability, approximately 20 out of 100 candidates should break out.
-      </p>
-      <div id="calibration-plot-container" style="min-height: 220px; display: flex; align-items: center; justify-content: center; background: var(--bg-subtle); border-radius: var(--radius-md);">
-        <p class="text-muted">Live calibration curve updates automatically as daily snapshots mature.</p>
-      </div>
-    </div>
-  </div>
-</Layout>
+<script>
+  import * as Plot from '@observablehq/plot';
+  import { baseOptions, observeWidth, resolveTokens, plot } from '../lib/plot-theme';
+  import { date, pct, pctAxis, shortDate } from '../lib/format';
+
+  const data = JSON.parse(document.getElementById('tr-data')!.textContent!) as {
+    points: { date: string; p25: number; b1: number | null }[];
+    calibration: { bin_start: number; bin_end: number; predicted_avg: number; realized_avg: number; count: number }[];
+  };
+  const day = (s: string) => new Date(`${s}T00:00:00Z`);
+
+  const p = document.getElementById('chart-p25');
+  if (p) {
+    observeWidth(p, (w) => {
+      const t = resolveTokens();
+      const o = baseOptions(t, w);
+      const ours = data.points.map((d) => ({ x: day(d.date), y: d.p25 }));
+      const base = data.points.filter((d) => d.b1 != null).map((d) => ({ x: day(d.date), y: d.b1! }));
+      p.replaceChildren(
+        plot({
+          ...o,
+          x: { ...o.x, type: 'utc', tickFormat: (d: Date) => shortDate(d) },
+          y: { ...o.y, tickFormat: (v: number) => pctAxis(v), zero: true, nice: true },
+          marks: [
+            Plot.lineY(base, { x: 'x', y: 'y', stroke: t.ink3, strokeWidth: 2, strokeDasharray: '4 4' }),
+            Plot.lineY(ours, { x: 'x', y: 'y', stroke: t.accent, strokeWidth: 2 }),
+            Plot.tip(ours, Plot.pointerX({ x: 'x', y: 'y', fill: t.raised, stroke: t.line, format: { x: (d: Date) => date(d), y: (v: number) => pct(v) } })),
+          ],
+        }),
+      );
+    });
+  }
+
+  const c = document.getElementById('chart-cal');
+  if (c) {
+    observeWidth(c, (w) => {
+      const t = resolveTokens();
+      const size = Math.min(420, w);
+      const o = baseOptions(t, size, size);
+      c.replaceChildren(
+        plot({
+          ...o,
+          marginBottom: 44,
+          marginLeft: 64,
+          x: { ...o.x, domain: [0, 1], tickFormat: (v: number) => pctAxis(v), label: 'Predicted chance', labelAnchor: 'center' },
+          y: { ...o.y, domain: [0, 1], tickFormat: (v: number) => pctAxis(v), label: 'Share that broke out', labelAnchor: 'center' },
+          marks: [
+            Plot.line([[0, 0], [1, 1]], { stroke: t.lineStrong, strokeDasharray: '4 4' }),
+            Plot.dot(data.calibration, { x: 'predicted_avg', y: 'realized_avg', r: (d: { count: number }) => 3 + Math.sqrt(d.count), fill: t.accent, fillOpacity: 0.8 }),
+          ],
+        }),
+      );
+    });
+  }
+</script>
 
 <style>
-  .page-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    flex-wrap: wrap;
-    gap: 1rem;
-    margin-bottom: 2rem;
+  .lead-in {
+    margin-bottom: 12px;
   }
-
-  .meta-pills {
+  .steps {
     display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-    margin-top: 1rem;
+    flex-direction: column;
+    gap: 20px;
+    font-size: 15px;
+    line-height: 1.5;
   }
-
-  .text-success {
-    color: var(--success);
+  .steps li {
+    display: grid;
+    grid-template-columns: 28px minmax(0, 1fr);
+    gap: 12px;
+  }
+  .step-n {
+    display: grid;
+    place-items: center;
+    width: 24px;
+    height: 24px;
+    border-radius: var(--r-pill);
+    background: var(--accent-soft);
+    color: var(--accent);
+    font-size: 13px;
     font-weight: 600;
+  }
+  .hash {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .hash code {
+    padding: 2px 6px;
+    background: var(--bg);
+    border-radius: var(--r-xs);
+    font-size: 13px;
+  }
+  .steps code {
+    font-size: 0.9em;
+    overflow-wrap: anywhere;
+  }
+  .links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 16px;
+    margin-top: 6px;
+  }
+  .ledger {
+    margin-top: 16px;
+    padding-top: 12px;
+    border-top: 1px solid var(--line);
   }
 </style>

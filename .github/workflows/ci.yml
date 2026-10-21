@@ -45,3 +45,56 @@ jobs:
           cd site
           npm ci
           npm run build
+
+  site-qa:
+    # Builds the site on fixture data and runs the whole front-end suite in the pinned Playwright image,
+    # so fonts render the same here as where the visual snapshots were made (Phase 14).
+    runs-on: ubuntu-latest
+    container:
+      image: mcr.microsoft.com/playwright:v1.64.1-noble
+      options: --ipc=host
+    defaults:
+      run:
+        working-directory: site
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: site/package-lock.json
+      - name: Fixture data (served as static files) and figures
+        working-directory: .
+        run: |
+          mkdir -p site/public/data site/public/figures
+          cp -r site/test-data/* site/public/data/
+          cp reports/figures/*.png site/public/figures/ || true
+      - run: npm ci
+      - name: Unit tests (formatters, chart theme)
+        run: npm test
+      - name: Token lint
+        run: npm run lint:tokens
+      - name: Build with fixture data and check base paths
+        run: npm run build:fx
+      - name: Playwright (layout, content, a11y, visual)
+        run: npx playwright test
+        env:
+          CI: "1"
+      - name: Internal link check
+        run: npm run check:links
+      - name: Lighthouse CI
+        run: |
+          export CHROME_PATH=$(node -e "console.log(require('@playwright/test').chromium.executablePath())")
+          npx lhci autorun --config=lighthouserc.desktop.json
+          npx lhci autorun --config=lighthouserc.mobile.json
+          node scripts/lh-summary.mjs | tee "$GITHUB_STEP_SUMMARY"
+      - name: Upload reports on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: site-qa-report
+          path: |
+            site/playwright-report
+            site/test-results
+            site/.lighthouseci
+          retention-days: 7

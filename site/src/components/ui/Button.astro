@@ -1,0 +1,162 @@
+---
+import Icon from './Icon.astro';
+
+interface Props {
+  variant?: 'primary' | 'secondary' | 'ghost' | 'icon';
+  size?: 'sm' | 'md' | 'lg';
+  href?: string;
+  external?: boolean;
+  icon?: string;
+  pill?: boolean;
+  disabled?: boolean;
+  loading?: boolean;
+  type?: 'button' | 'submit';
+  label?: string;
+  class?: string;
+  [key: string]: unknown;
+}
+const {
+  variant = 'secondary',
+  size = 'md',
+  href,
+  external = false,
+  icon,
+  pill = false,
+  disabled = false,
+  loading = false,
+  type = 'button',
+  label,
+  class: cls,
+  ...rest
+} = Astro.props;
+const iconSize = size === 'lg' ? 20 : 16;
+const classes = ['btn', `btn-${variant}`, `btn-${size}`, pill && 'btn-pill', loading && 'is-loading', cls];
+const isLink = !!href && !disabled;
+---
+
+{
+  isLink ? (
+    <a class:list={classes} href={href} aria-label={label} {...(external ? { target: '_blank', rel: 'noopener' } : {})} {...rest}>
+      {loading ? <span class="spin" aria-hidden="true" /> : icon && <Icon name={icon} size={iconSize} />}
+      {variant !== 'icon' && <span class="btn-label"><slot /></span>}
+      {external && <Icon name="arrow-up-right" size={14} />}
+      {external && <span class="sr-only">(opens in new tab)</span>}
+    </a>
+  ) : (
+    <button class:list={classes} type={type} disabled={disabled} aria-label={label} aria-busy={loading || undefined} {...rest}>
+      {loading ? <span class="spin" aria-hidden="true" /> : icon && <Icon name={icon} size={iconSize} />}
+      {variant !== 'icon' && <span class="btn-label"><slot /></span>}
+    </button>
+  )
+}
+
+<style is:global>
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    border: 1px solid transparent;
+    border-radius: var(--r-md);
+    font-weight: 500;
+    white-space: nowrap;
+    cursor: pointer;
+    transition:
+      background-color var(--dur-1) var(--ease),
+      border-color var(--dur-1) var(--ease),
+      color var(--dur-1) var(--ease);
+    -webkit-tap-highlight-color: transparent;
+  }
+  .btn-sm {
+    height: 32px;
+    padding-inline: 12px;
+    font-size: 13px;
+  }
+  .btn-md {
+    height: 36px;
+    padding-inline: 14px;
+    font-size: 14px;
+  }
+  .btn-lg {
+    height: 44px;
+    padding-inline: 20px;
+    font-size: 16px;
+  }
+  @media (max-width: 639px) {
+    .btn-sm,
+    .btn-md {
+      min-height: 40px;
+    }
+  }
+  .btn-pill {
+    border-radius: var(--r-pill);
+  }
+  .btn-primary {
+    background: var(--accent);
+    color: var(--on-accent);
+  }
+  .btn-primary:hover {
+    background: var(--accent-hover);
+  }
+  .btn-secondary {
+    background: var(--raised);
+    border-color: var(--line-strong);
+    color: var(--ink);
+  }
+  .btn-secondary:hover {
+    background: var(--surface);
+  }
+  .btn-ghost {
+    color: var(--ink-2);
+  }
+  .btn-ghost:hover {
+    background: var(--surface);
+    color: var(--ink);
+  }
+  .btn-icon {
+    color: var(--ink-2);
+    padding: 0;
+  }
+  .btn-icon.btn-sm {
+    width: 32px;
+  }
+  .btn-icon.btn-md {
+    width: 36px;
+  }
+  .btn-icon.btn-lg {
+    width: 44px;
+  }
+  @media (max-width: 639px) {
+    .btn-icon {
+      min-width: 40px;
+    }
+  }
+  .btn-icon:hover {
+    background: var(--surface);
+    color: var(--ink);
+  }
+  .btn:active:not(:disabled) {
+    transform: translateY(0.5px);
+  }
+  .btn-primary:active:not(:disabled) {
+    background: var(--accent-hover);
+  }
+  .btn:disabled,
+  .btn[aria-disabled='true'] {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  .btn .spin {
+    width: 14px;
+    height: 14px;
+    border-radius: var(--r-pill);
+    border: 2px solid currentColor;
+    border-right-color: transparent;
+    animation: btn-spin 700ms linear infinite;
+  }
+  @keyframes btn-spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+</style>
