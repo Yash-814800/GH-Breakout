@@ -37,7 +37,7 @@
     "@observablehq/plot": "^0.6.16",
     "@resvg/resvg-js": "^2.6.2",
     "@tailwindcss/vite": "^4.3.3",
-    "apache-arrow": "^18.1.0",
+    "apache-arrow": "^21.2.0",
     "astro": "^5.4.2",
     "lucide-static": "^1.61.0",
     "marked": "^18.1.1",
