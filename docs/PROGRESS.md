@@ -58,6 +58,8 @@ measured (row counts, sizes, runtimes, metrics). Future sessions rely on it.
   Before and after contact sheets: `reports/design/before/contact_sheet_{light,dark}.jpg` and `reports/design/after/contact_sheet_{light,dark}.jpg`.
 - **CI:** `ci.yml` job `site-qa` (Vitest, token lint, fixture build, Playwright, link check, Lighthouse CI) in the pinned container; workflow
   `update-visual-snapshots.yml` (manual, opens a PR); `daily.yml` runs the content check on real data and skips the deploy, keeping yesterday's site, when it fails.
+  PR #2: `site-build`, `site-qa` (150 Playwright tests including the 16 visual snapshots, Vitest 34, token lint, link check, Lighthouse CI; 10 min) and `test` are green. The daily
+  content gate and the snapshot-update workflow are written and YAML-valid but have **not been run** yet; the site is **not deployed** from this branch until the PR is merged.
 - **Found while building (not fixed here, owners are earlier phases):**
   - `export_track_record` writes `realized_avg = predicted_avg` with `count = 0` once any list has matured. The page hides the diagram without counts, but the exporter should write
     real calibration bins.
