@@ -218,3 +218,19 @@ Everything below is built from frozen prediction snapshots and needs no extra se
 - **Mastodon variant (not implemented).** Post the same short text with `POST /api/v1/statuses` and a bearer token of a dedicated bot account. Only do this on an instance whose rules explicitly allow bots,
   mark the account as a bot, post at most a few statuses a day, and keep the same de-duplication rule (a repo at most once in 60 days, never a high-suspicion one).
 - **A feed looks wrong.** Check `site/public/data/feed_items.json` first; if it is empty run `breakout publish feeds` (it restores the frozen snapshots from the snapshots repo, read only).
+
+## Portfolio polish (Phase 13)
+
+| Task | Command |
+|---|---|
+| dbt lineage and column docs for the site | `uv run breakout publish dbt-docs` (writes `site/public/dbt-docs/`; no warehouse needed) |
+| Refresh the column types of the docs after a model change | `uv run breakout publish dbt-docs --refresh-catalog` (reads the local warehouse, rewrites `reports/dbt/catalog.json`, commit it) |
+| Data dictionary | `uv run breakout publish data-dictionary` (CI fails when `docs/data_dictionary.md` is stale) |
+| DuckDB vs ClickHouse benchmark | see `benchmarks/README.md` |
+| Blog posts | Markdown in `docs/blog/` (front matter: title, date, description; images in `docs/blog/img/` referenced as `img/<file>`) |
+
+- Every column of every dbt model needs a description (`tests/test_dbt_project.py` fails otherwise).
+- `dbt docs generate` locally lists thousands of lake files unless pointed at an empty lake; `publish dbt-docs` does that for you.
+- A same-day re-run of `daily.yml` regenerates predictions that are not byte-identical with the frozen snapshot, so the run reports
+  `freeze_conflict` and the heartbeat says `unhealthy` until the next regular run succeeds (the alert issue closes itself). Do not re-run
+  the daily workflow for a date that already has a ledger row unless you mean to publish the site data only.

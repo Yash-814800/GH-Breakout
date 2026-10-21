@@ -49,3 +49,7 @@ site/public/og/
 
 # Generated badges (Phase 12)
 site/public/badges/
+
+# Blog images copied from docs/blog/img at build time
+site/public/blog/
+site/public/dbt-docs/

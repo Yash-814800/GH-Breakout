@@ -24,7 +24,8 @@ function findFiles(dir, ext) {
   return results;
 }
 
-const htmlFiles = findFiles(distDir, '.html');
+// dbt-docs/ is the generated dbt documentation app (its own router), not site pages.
+const htmlFiles = findFiles(distDir, '.html').filter((f) => !f.includes(`${path.sep}dbt-docs${path.sep}`));
 const cssFiles = findFiles(distDir, '.css');
 let violations = 0;
 

@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Security vulnerability
+    url: https://github.com/Yash-814800/GH-Breakout/security/advisories/new
+    about: Report a vulnerability privately.

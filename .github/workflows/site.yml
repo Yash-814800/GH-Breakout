@@ -6,6 +6,8 @@ on:
     paths:
       - "site/**"
       - "docs/model_card.md"
+      - "dbt/**"
+      - "reports/dbt/**"
   workflow_dispatch:
 
 permissions:
@@ -25,10 +27,10 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
       - name: Setup uv
-        uses: astral-sh/setup-uv@v10.3.0
+        uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
         with:
           enable-cache: true
 
@@ -70,13 +72,18 @@ jobs:
           HF_USER: ${{ vars.HF_USER }}
         run: uv run breakout publish badges || echo "::warning::badges not built"
 
+      # Phase 13: lineage and column docs of the dbt project (no warehouse needed; column types come
+      # from the committed reports/dbt/catalog.json). Failure keeps the site without the docs link target.
+      - name: dbt docs
+        run: uv run breakout publish dbt-docs || echo "::warning::dbt docs not built"
+
       - name: Copy figures to site
         run: |
           mkdir -p site/public/figures
           cp reports/figures/*.png site/public/figures/ || true
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: 22
           cache: npm
@@ -89,10 +96,10 @@ jobs:
           npm run build
 
       - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa # v3
         with:
           path: site/dist
 
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e # v4

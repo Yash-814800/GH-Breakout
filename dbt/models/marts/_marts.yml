@@ -7,9 +7,13 @@ models:
       training.first_snapshot; single = var snapshot_date. is_label_matured = D + horizon <= latest ingested day + 1.
     columns:
       - name: snapshot_date
+        description: 'Snapshot date D: the world as known at D 00:00 UTC. Only events before D are used.'
         tests: [not_null, unique]
       - name: is_label_matured
+        description: 'True when D + horizon_days <= latest ingested day + 1, so labels can be trusted.'
         tests: [not_null]
+      - name: latest_ingested_day
+        description: Latest fully ingested day at build time.
 
   - name: mart_candidates
     description: >
@@ -20,28 +24,44 @@ models:
           arguments: {combination_of_columns: [repo_id, snapshot_date]}
     columns:
       - name: repo_id
+        description: GitHub repository id. The only key used to join repositories; names are display-only.
         tests: [not_null]
       - name: snapshot_date
+        description: 'Snapshot date D: the world as known at D 00:00 UTC. Only events before D are used.'
         tests: [not_null]
       - name: age_days
+        description: Whole days between birth and D.
         tests:
           - not_null
           - dbt_utils.accepted_range: {arguments: {min_value: 0, max_value: "{{ var('max_age_days') }}"}}
       - name: stars_total_before
+        description: Stars received before D.
         tests:
           - not_null
           - dbt_utils.accepted_range:
               arguments: {min_value: 0, max_value: "{{ var('max_stars_total') }}", inclusive: false}
       - name: stars_14d
+        description: Stars in the 14 days before D.
         tests:
           - not_null
           - dbt_utils.accepted_range: {arguments: {min_value: "{{ var('min_stars_14d') }}"}}
       - name: stars_7d
+        description: Stars in the 7 days before D.
         tests: [not_null, {dbt_utils.accepted_range: {arguments: {min_value: 0}}}]
       - name: stars_prev_7d
+        description: Stars in the 7 days before the last 7 (days D-14 to D-7).
         tests: [not_null, {dbt_utils.accepted_range: {arguments: {min_value: 0}}}]
       - name: stars_1d
+        description: Stars in the day before D.
         tests: [not_null, {dbt_utils.accepted_range: {arguments: {min_value: 0}}}]
+      - name: bucket
+        description: Hash bucket of repo_id (or actor_id) used to build the model in bounded memory (ADR-020); not meaningful downstream.
+      - name: birth_at
+        description: Estimated creation time of the repository (see int_repo_birth).
+      - name: birth_source
+        description: 'Where birth_at came from (api, create_event, public_event or first_event).'
+      - name: repo_name_at_D
+        description: Repository name last seen before D. Display only.
 
   - name: mart_labels
     description: >
@@ -52,19 +72,30 @@ models:
           arguments: {combination_of_columns: [repo_id, snapshot_date]}
     columns:
       - name: repo_id
+        description: GitHub repository id. The only key used to join repositories; names are display-only.
         tests: [not_null]
       - name: snapshot_date
+        description: 'Snapshot date D: the world as known at D 00:00 UTC. Only events before D are used.'
         tests: [not_null]
       - name: gain_30d
+        description: 'First stars gained in [D, D + horizon_days).'
         tests: [not_null, {dbt_utils.accepted_range: {arguments: {min_value: 0}}}]
       - name: threshold_rel
+        description: 'Relative breakout threshold of the snapshot: the relative_quantile of gain_30d over its candidates, at least relative_floor_gain.'
         tests: [not_null, {dbt_utils.accepted_range: {arguments: {min_value: "{{ var('relative_floor_gain') }}"}}}]
       - name: breakout_rel
+        description: 'True when gain_30d is at or above the relative threshold: the positive label.'
         tests: [not_null]
       - name: breakout_abs
+        description: True when gain_30d is at least absolute_min_gain.
         tests: [not_null]
       - name: trending_covered
+        description: 'True when Trending history covers the whole horizon, so a missing Trending date is meaningful.'
         tests: [not_null]
+      - name: days_to_threshold
+        description: Days from D until the cumulative gain first reached the threshold; NULL when it never did.
+      - name: first_trending_date
+        description: 'First day within the horizon the repository was on GitHub Trending, if any.'
 
   - name: mart_suspicion
     description: >
@@ -75,13 +106,33 @@ models:
           arguments: {combination_of_columns: [repo_id, snapshot_date]}
     columns:
       - name: repo_id
+        description: GitHub repository id. The only key used to join repositories; names are display-only.
         tests: [not_null]
       - name: snapshot_date
+        description: 'Snapshot date D: the world as known at D 00:00 UTC. Only events before D are used.'
         tests: [not_null]
       - name: suspicion_score
+        description: 'Percentile rank of raw_score on a 0-100 scale. Display only, never a model input.'
         tests: [not_null, {dbt_utils.accepted_range: {arguments: {min_value: 0.0, max_value: 100.0}}}]
       - name: suspicion_level
+        description: 'low (score below 90), medium (90 to 98) or high (98 and above). Describes the pattern, not intent.'
         tests: [not_null, {accepted_values: {values: ['low', 'medium', 'high']}}]
+      - name: bucket
+        description: Hash bucket of repo_id (or actor_id) used to build the model in bounded memory (ADR-020); not meaningful downstream.
+      - name: s_new_accounts
+        description: 'Signal: share of the recent stargazers whose account was under 30 days old at the star (sg_share_account_lt_30d).'
+      - name: s_inactive
+        description: 'Signal: share of the recent stargazers with no GitHub activity in the 90 days before the star (sg_share_zero_prior_activity).'
+      - name: s_bulk
+        description: 'Signal: share of the recent stargazers who starred many repositories on the same day (sg_share_bulk_starrers).'
+      - name: s_burst
+        description: 'Signal: largest share of the last 7 days of stars that arrived in a single hour (star_max_hour_share_7d).'
+      - name: s_lockstep
+        description: Reserved signal for ring detection. Constant 0 in this model; it is not part of raw_score.
+      - name: s_no_engagement
+        description: 'Signal: 1 minus the activity (forks, issue, comment and pull request events in 14 days) relative to 5% of the 14-day stars, capped at 0.'
+      - name: raw_score
+        description: 'Mean of the five robust z-scores (each clipped to [0, 6] per snapshot date) of s_new_accounts, s_inactive, s_bulk, s_burst and s_no_engagement.'
 
   - name: mart_similar_repos
     description: >
@@ -89,11 +140,19 @@ models:
       Co-starring cosine similarity between candidate repos and related projects (Phase 11, §11.2).
     columns:
       - name: repo_id
+        description: GitHub repository id. The only key used to join repositories; names are display-only.
         tests: [not_null]
       - name: similar_repo_id
+        description: Id of the related repository.
         tests: [not_null]
       - name: overlap
+        description: Number of stargazers both repositories share (at least 5).
         tests: [not_null, {dbt_utils.accepted_range: {arguments: {min_value: 5}}}]
       - name: cosine
+        description: 'Co-starring cosine similarity between the two repositories, in (0, 1].'
         tests: [not_null, {dbt_utils.accepted_range: {arguments: {min_value: 0.0, max_value: 1.0}}}]
+      - name: similar_repo_name
+        description: Name of the related repository. Display only.
+      - name: similar_language
+        description: Primary language of the related repository.
 

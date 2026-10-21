@@ -1,0 +1,3785 @@
+{
+ "errors": null,
+ "metadata": {
+  "dbt_schema_version": "https://schemas.getdbt.com/dbt/catalog/v1.json",
+  "env": {},
+  "generated_at": "2026-10-21T12:35:04.636995Z"
+ },
+ "nodes": {
+  "model.breakout.feat_activity": {
+   "columns": {
+    "_max_input_ts": {
+     "comment": null,
+     "index": 24,
+     "name": "_max_input_ts",
+     "type": "TIMESTAMP"
+    },
+    "actor_days_14d": {
+     "comment": null,
+     "index": 7,
+     "name": "actor_days_14d",
+     "type": "INTEGER"
+    },
+    "bucket": {
+     "comment": null,
+     "index": 1,
+     "name": "bucket",
+     "type": "SMALLINT"
+    },
+    "comment_events_14d": {
+     "comment": null,
+     "index": 9,
+     "name": "comment_events_14d",
+     "type": "INTEGER"
+    },
+    "days_since_last_release": {
+     "comment": null,
+     "index": 13,
+     "name": "days_since_last_release",
+     "type": "BIGINT"
+    },
+    "distinct_contributors_28d": {
+     "comment": null,
+     "index": 17,
+     "name": "distinct_contributors_28d",
+     "type": "INTEGER"
+    },
+    "distinct_pushers_28d": {
+     "comment": null,
+     "index": 15,
+     "name": "distinct_pushers_28d",
+     "type": "INTEGER"
+    },
+    "distinct_session_actors_28d": {
+     "comment": null,
+     "index": 23,
+     "name": "distinct_session_actors_28d",
+     "type": "INTEGER"
+    },
+    "event_type_entropy_14d": {
+     "comment": null,
+     "index": 16,
+     "name": "event_type_entropy_14d",
+     "type": "DOUBLE"
+    },
+    "first_time_contributor_rate_28d": {
+     "comment": null,
+     "index": 19,
+     "name": "first_time_contributor_rate_28d",
+     "type": "DOUBLE"
+    },
+    "fork_star_ratio_14d": {
+     "comment": null,
+     "index": 6,
+     "name": "fork_star_ratio_14d",
+     "type": "DOUBLE"
+    },
+    "forks_14d": {
+     "comment": null,
+     "index": 5,
+     "name": "forks_14d",
+     "type": "INTEGER"
+    },
+    "forks_7d": {
+     "comment": null,
+     "index": 4,
+     "name": "forks_7d",
+     "type": "INTEGER"
+    },
+    "issue_events_14d": {
+     "comment": null,
+     "index": 8,
+     "name": "issue_events_14d",
+     "type": "INTEGER"
+    },
+    "median_session_minutes_28d": {
+     "comment": null,
+     "index": 22,
+     "name": "median_session_minutes_28d",
+     "type": "DOUBLE"
+    },
+    "new_contributors_28d": {
+     "comment": null,
+     "index": 18,
+     "name": "new_contributors_28d",
+     "type": "INTEGER"
+    },
+    "pr_events_14d": {
+     "comment": null,
+     "index": 10,
+     "name": "pr_events_14d",
+     "type": "INTEGER"
+    },
+    "push_active_days_14d": {
+     "comment": null,
+     "index": 14,
+     "name": "push_active_days_14d",
+     "type": "INTEGER"
+    },
+    "releases_total_before": {
+     "comment": null,
+     "index": 12,
+     "name": "releases_total_before",
+     "type": "INTEGER"
+    },
+    "repo_id": {
+     "comment": null,
+     "index": 2,
+     "name": "repo_id",
+     "type": "BIGINT"
+    },
+    "reviews_14d": {
+     "comment": null,
+     "index": 11,
+     "name": "reviews_14d",
+     "type": "INTEGER"
+    },
+    "sessions_28d": {
+     "comment": null,
+     "index": 21,
+     "name": "sessions_28d",
+     "type": "INTEGER"
+    },
+    "snapshot_date": {
+     "comment": null,
+     "index": 3,
+     "name": "snapshot_date",
+     "type": "DATE"
+    },
+    "top_actor_share_28d": {
+     "comment": null,
+     "index": 20,
+     "name": "top_actor_share_28d",
+     "type": "DOUBLE"
+    }
+   },
+   "metadata": {
+    "comment": null,
+    "database": "warehouse",
+    "name": "feat_activity",
+    "owner": null,
+    "schema": "main",
+    "type": "BASE TABLE"
+   },
+   "stats": {},
+   "unique_id": "model.breakout.feat_activity"
+  },
+  "model.breakout.feat_detail": {
+   "columns": {
+    "_max_input_ts": {
+     "comment": null,
+     "index": 17,
+     "name": "_max_input_ts",
+     "type": "TIMESTAMP"
+    },
+    "bucket": {
+     "comment": null,
+     "index": 1,
+     "name": "bucket",
+     "type": "SMALLINT"
+    },
+    "core_actor_count_90d": {
+     "comment": null,
+     "index": 13,
+     "name": "core_actor_count_90d",
+     "type": "INTEGER"
+    },
+    "detail_coverage_28d": {
+     "comment": null,
+     "index": 4,
+     "name": "detail_coverage_28d",
+     "type": "DOUBLE"
+    },
+    "era_post_2025_10": {
+     "comment": null,
+     "index": 16,
+     "name": "era_post_2025_10",
+     "type": "INTEGER"
+    },
+    "external_pr_authors_28d": {
+     "comment": null,
+     "index": 14,
+     "name": "external_pr_authors_28d",
+     "type": "INTEGER"
+    },
+    "issue_close_ratio_28d": {
+     "comment": null,
+     "index": 7,
+     "name": "issue_close_ratio_28d",
+     "type": "DOUBLE"
+    },
+    "issues_closed_28d": {
+     "comment": null,
+     "index": 6,
+     "name": "issues_closed_28d",
+     "type": "HUGEINT"
+    },
+    "issues_opened_28d": {
+     "comment": null,
+     "index": 5,
+     "name": "issues_opened_28d",
+     "type": "HUGEINT"
+    },
+    "median_first_response_hours_28d": {
+     "comment": null,
+     "index": 8,
+     "name": "median_first_response_hours_28d",
+     "type": "DOUBLE"
+    },
+    "median_merge_hours_28d": {
+     "comment": null,
+     "index": 12,
+     "name": "median_merge_hours_28d",
+     "type": "DOUBLE"
+    },
+    "prs_merged_28d": {
+     "comment": null,
+     "index": 11,
+     "name": "prs_merged_28d",
+     "type": "HUGEINT"
+    },
+    "prs_opened_28d": {
+     "comment": null,
+     "index": 10,
+     "name": "prs_opened_28d",
+     "type": "HUGEINT"
+    },
+    "repo_id": {
+     "comment": null,
+     "index": 2,
+     "name": "repo_id",
+     "type": "BIGINT"
+    },
+    "share_issues_responded_48h": {
+     "comment": null,
+     "index": 9,
+     "name": "share_issues_responded_48h",
+     "type": "DOUBLE"
+    },
+    "snapshot_date": {
+     "comment": null,
+     "index": 3,
+     "name": "snapshot_date",
+     "type": "DATE"
+    },
+    "tags_created_total_before": {
+     "comment": null,
+     "index": 15,
+     "name": "tags_created_total_before",
+     "type": "HUGEINT"
+    }
+   },
+   "metadata": {
+    "comment": null,
+    "database": "warehouse",
+    "name": "feat_detail",
+    "owner": null,
+    "schema": "main",
+    "type": "BASE TABLE"
+   },
+   "stats": {},
+   "unique_id": "model.breakout.feat_detail"
+  },
+  "model.breakout.feat_enrich": {
+   "columns": {
+    "_max_input_ts": {
+     "comment": null,
+     "index": 12,
+     "name": "_max_input_ts",
+     "type": "TIMESTAMP"
+    },
+    "birth_from_public_event": {
+     "comment": null,
+     "index": 6,
+     "name": "birth_from_public_event",
+     "type": "INTEGER"
+    },
+    "bucket": {
+     "comment": null,
+     "index": 1,
+     "name": "bucket",
+     "type": "SMALLINT"
+    },
+    "days_api_created_to_birth": {
+     "comment": null,
+     "index": 7,
+     "name": "days_api_created_to_birth",
+     "type": "INTEGER"
+    },
+    "hn_any_before": {
+     "comment": null,
+     "index": 11,
+     "name": "hn_any_before",
+     "type": "INTEGER"
+    },
+    "hn_max_points_aged": {
+     "comment": null,
+     "index": 10,
+     "name": "hn_max_points_aged",
+     "type": "INTEGER"
+    },
+    "hn_stories_before_14d": {
+     "comment": null,
+     "index": 8,
+     "name": "hn_stories_before_14d",
+     "type": "INTEGER"
+    },
+    "hn_stories_before_3d": {
+     "comment": null,
+     "index": 9,
+     "name": "hn_stories_before_3d",
+     "type": "INTEGER"
+    },
+    "owner_type": {
+     "comment": null,
+     "index": 5,
+     "name": "owner_type",
+     "type": "VARCHAR"
+    },
+    "primary_language": {
+     "comment": null,
+     "index": 4,
+     "name": "primary_language",
+     "type": "VARCHAR"
+    },
+    "repo_id": {
+     "comment": null,
+     "index": 2,
+     "name": "repo_id",
+     "type": "BIGINT"
+    },
+    "snapshot_date": {
+     "comment": null,
+     "index": 3,
+     "name": "snapshot_date",
+     "type": "DATE"
+    }
+   },
+   "metadata": {
+    "comment": null,
+    "database": "warehouse",
+    "name": "feat_enrich",
+    "owner": null,
+    "schema": "main",
+    "type": "BASE TABLE"
+   },
+   "stats": {},
+   "unique_id": "model.breakout.feat_enrich"
+  },
+  "model.breakout.feat_owner": {
+   "columns": {
+    "_max_input_ts": {
+     "comment": null,
+     "index": 6,
+     "name": "_max_input_ts",
+     "type": "TIMESTAMP"
+    },
+    "bucket": {
+     "comment": null,
+     "index": 1,
+     "name": "bucket",
+     "type": "SMALLINT"
+    },
+    "owner_prior_breakouts": {
+     "comment": null,
+     "index": 5,
+     "name": "owner_prior_breakouts",
+     "type": "INTEGER"
+    },
+    "owner_prior_repos_seen": {
+     "comment": null,
+     "index": 4,
+     "name": "owner_prior_repos_seen",
+     "type": "INTEGER"
+    },
+    "repo_id": {
+     "comment": null,
+     "index": 2,
+     "name": "repo_id",
+     "type": "BIGINT"
+    },
+    "snapshot_date": {
+     "comment": null,
+     "index": 3,
+     "name": "snapshot_date",
+     "type": "DATE"
+    }
+   },
+   "metadata": {
+    "comment": null,
+    "database": "warehouse",
+    "name": "feat_owner",
+    "owner": null,
+    "schema": "main",
+    "type": "BASE TABLE"
+   },
+   "stats": {},
+   "unique_id": "model.breakout.feat_owner"
+  },
+  "model.breakout.feat_star_dynamics": {
+   "columns": {
+    "_max_input_ts": {
+     "comment": null,
+     "index": 18,
+     "name": "_max_input_ts",
+     "type": "TIMESTAMP"
+    },
+    "age_days": {
+     "comment": null,
+     "index": 13,
+     "name": "age_days",
+     "type": "INTEGER"
+    },
+    "bucket": {
+     "comment": null,
+     "index": 1,
+     "name": "bucket",
+     "type": "SMALLINT"
+    },
+    "days_since_first_star": {
+     "comment": null,
+     "index": 12,
+     "name": "days_since_first_star",
+     "type": "BIGINT"
+    },
+    "repo_id": {
+     "comment": null,
+     "index": 2,
+     "name": "repo_id",
+     "type": "BIGINT"
+    },
+    "snapshot_date": {
+     "comment": null,
+     "index": 3,
+     "name": "snapshot_date",
+     "type": "DATE"
+    },
+    "star_accel_7d": {
+     "comment": null,
+     "index": 10,
+     "name": "star_accel_7d",
+     "type": "INTEGER"
+    },
+    "star_active_days_14d": {
+     "comment": null,
+     "index": 14,
+     "name": "star_active_days_14d",
+     "type": "INTEGER"
+    },
+    "star_gini_14d": {
+     "comment": null,
+     "index": 15,
+     "name": "star_gini_14d",
+     "type": "DOUBLE"
+    },
+    "star_max_day_share_14d": {
+     "comment": null,
+     "index": 16,
+     "name": "star_max_day_share_14d",
+     "type": "DOUBLE"
+    },
+    "star_max_hour_share_7d": {
+     "comment": null,
+     "index": 17,
+     "name": "star_max_hour_share_7d",
+     "type": "DOUBLE"
+    },
+    "star_ratio_7d": {
+     "comment": null,
+     "index": 11,
+     "name": "star_ratio_7d",
+     "type": "DOUBLE"
+    },
+    "stars_14d": {
+     "comment": null,
+     "index": 7,
+     "name": "stars_14d",
+     "type": "INTEGER"
+    },
+    "stars_1d": {
+     "comment": null,
+     "index": 4,
+     "name": "stars_1d",
+     "type": "INTEGER"
+    },
+    "stars_28d": {
+     "comment": null,
+     "index": 8,
+     "name": "stars_28d",
+     "type": "INTEGER"
+    },
+    "stars_3d": {
+     "comment": null,
+     "index": 5,
+     "name": "stars_3d",
+     "type": "INTEGER"
+    },
+    "stars_7d": {
+     "comment": null,
+     "index": 6,
+     "name": "stars_7d",
+     "type": "INTEGER"
+    },
+    "stars_total_before": {
+     "comment": null,
+     "index": 9,
+     "name": "stars_total_before",
+     "type": "INTEGER"
+    }
+   },
+   "metadata": {
+    "comment": null,
+    "database": "warehouse",
+    "name": "feat_star_dynamics",
+    "owner": null,
+    "schema": "main",
+    "type": "BASE TABLE"
+   },
+   "stats": {},
+   "unique_id": "model.breakout.feat_star_dynamics"
+  },
+  "model.breakout.feat_stargazers": {
+   "columns": {
+    "_max_input_ts": {
+     "comment": null,
+     "index": 14,
+     "name": "_max_input_ts",
+     "type": "TIMESTAMP"
+    },
+    "bucket": {
+     "comment": null,
+     "index": 1,
+     "name": "bucket",
+     "type": "SMALLINT"
+    },
+    "repo_id": {
+     "comment": null,
+     "index": 2,
+     "name": "repo_id",
+     "type": "BIGINT"
+    },
+    "sg_median_account_age_days": {
+     "comment": null,
+     "index": 6,
+     "name": "sg_median_account_age_days",
+     "type": "DOUBLE"
+    },
+    "sg_median_stars_same_day": {
+     "comment": null,
+     "index": 9,
+     "name": "sg_median_stars_same_day",
+     "type": "DOUBLE"
+    },
+    "sg_n": {
+     "comment": null,
+     "index": 4,
+     "name": "sg_n",
+     "type": "INTEGER"
+    },
+    "sg_retention_any_28d": {
+     "comment": null,
+     "index": 11,
+     "name": "sg_retention_any_28d",
+     "type": "DOUBLE"
+    },
+    "sg_retention_fork_28d": {
+     "comment": null,
+     "index": 12,
+     "name": "sg_retention_fork_28d",
+     "type": "DOUBLE"
+    },
+    "sg_retention_issue_or_pr_28d": {
+     "comment": null,
+     "index": 13,
+     "name": "sg_retention_issue_or_pr_28d",
+     "type": "DOUBLE"
+    },
+    "sg_share_account_lt_30d": {
+     "comment": null,
+     "index": 7,
+     "name": "sg_share_account_lt_30d",
+     "type": "DOUBLE"
+    },
+    "sg_share_bulk_starrers": {
+     "comment": null,
+     "index": 10,
+     "name": "sg_share_bulk_starrers",
+     "type": "DOUBLE"
+    },
+    "sg_share_experienced": {
+     "comment": null,
+     "index": 5,
+     "name": "sg_share_experienced",
+     "type": "DOUBLE"
+    },
+    "sg_share_zero_prior_activity": {
+     "comment": null,
+     "index": 8,
+     "name": "sg_share_zero_prior_activity",
+     "type": "DOUBLE"
+    },
+    "snapshot_date": {
+     "comment": null,
+     "index": 3,
+     "name": "snapshot_date",
+     "type": "DATE"
+    }
+   },
+   "metadata": {
+    "comment": null,
+    "database": "warehouse",
+    "name": "feat_stargazers",
+    "owner": null,
+    "schema": "main",
+    "type": "BASE TABLE"
+   },
+   "stats": {},
+   "unique_id": "model.breakout.feat_stargazers"
+  },
+  "model.breakout.feat_tastemaker": {
+   "columns": {
+    "_max_input_ts": {
+     "comment": null,
+     "index": 8,
+     "name": "_max_input_ts",
+     "type": "TIMESTAMP"
+    },
+    "bucket": {
+     "comment": null,
+     "index": 1,
+     "name": "bucket",
+     "type": "SMALLINT"
+    },
+    "repo_id": {
+     "comment": null,
+     "index": 2,
+     "name": "repo_id",
+     "type": "BIGINT"
+    },
+    "sg_tm_known_share_14d": {
+     "comment": null,
+     "index": 7,
+     "name": "sg_tm_known_share_14d",
+     "type": "DOUBLE"
+    },
+    "sg_tm_max_14d": {
+     "comment": null,
+     "index": 5,
+     "name": "sg_tm_max_14d",
+     "type": "DOUBLE"
+    },
+    "sg_tm_mean_14d": {
+     "comment": null,
+     "index": 4,
+     "name": "sg_tm_mean_14d",
+     "type": "DOUBLE"
+    },
+    "sg_tm_top_count_14d": {
+     "comment": null,
+     "index": 6,
+     "name": "sg_tm_top_count_14d",
+     "type": "INTEGER"
+    },
+    "snapshot_date": {
+     "comment": null,
+     "index": 3,
+     "name": "snapshot_date",
+     "type": "DATE"
+    }
+   },
+   "metadata": {
+    "comment": null,
+    "database": "warehouse",
+    "name": "feat_tastemaker",
+    "owner": null,
+    "schema": "main",
+    "type": "BASE TABLE"
+   },
+   "stats": {},
+   "unique_id": "model.breakout.feat_tastemaker"
+  },
+  "model.breakout.int_active_repo_event_days": {
+   "columns": {
+    "day": {
+     "comment": null,
+     "index": 2,
+     "name": "day",
+     "type": "DATE"
+    },
+    "first_at": {
+     "comment": null,
+     "index": 3,
+     "name": "first_at",
+     "type": "TIMESTAMP"
+    },
+    "n_events": {
+     "comment": null,
+     "index": 4,
+     "name": "n_events",
+     "type": "INTEGER"
+    },
+    "repo_id": {
+     "comment": null,
+     "index": 1,
+     "name": "repo_id",
+     "type": "BIGINT"
+    }
+   },
+   "metadata": {
+    "comment": null,
+    "database": "warehouse",
+    "name": "int_active_repo_event_days",
+    "owner": null,
+    "schema": "main",
+    "type": "BASE TABLE"
+   },
+   "stats": {},
+   "unique_id": "model.breakout.int_active_repo_event_days"
+  },
+  "model.breakout.int_actor_cumulative_activity": {
+   "columns": {
+    "actor_id": {
+     "comment": null,
+     "index": 2,
+     "name": "actor_id",
+     "type": "BIGINT"
+    },
+    "bucket": {
+     "comment": null,
+     "index": 1,
+     "name": "bucket",
+     "type": "SMALLINT"
+    },
+    "cum_events": {
+     "comment": null,
+     "index": 4,
+     "name": "cum_events",
+     "type": "HUGEINT"
+    },
+    "cum_repo_days": {
+     "comment": null,
+     "index": 5,
+     "name": "cum_repo_days",
+     "type": "HUGEINT"
+    },
+    "cum_stars_given": {
+     "comment": null,
+     "index": 6,
+     "name": "cum_stars_given",
+     "type": "HUGEINT"
+    },
+    "day": {
+     "comment": null,
+     "index": 3,
+     "name": "day",
+     "type": "DATE"
+    }
+   },
+   "metadata": {
+    "comment": null,
+    "database": "warehouse",
+    "name": "int_actor_cumulative_activity",
+    "owner": null,
+    "schema": "main",
+    "type": "BASE TABLE"
+   },
+   "stats": {},
+   "unique_id": "model.breakout.int_actor_cumulative_activity"
+  },
+  "model.breakout.int_actor_daily_activity": {
+   "columns": {
+    "actor_id": {
+     "comment": null,
+     "index": 2,
+     "name": "actor_id",
+     "type": "BIGINT"
+    },
+    "bucket": {
+     "comment": null,
+     "index": 1,
+     "name": "bucket",
+     "type": "SMALLINT"
+    },
+    "day": {
+     "comment": null,
+     "index": 3,
+     "name": "day",
+     "type": "DATE"
+    },
+    "n_events": {
+     "comment": null,
+     "index": 4,
+     "name": "n_events",
+     "type": "INTEGER"
+    },
+    "n_repos": {
+     "comment": null,
+     "index": 5,
+     "name": "n_repos",
+     "type": "INTEGER"
+    },
+    "n_stars_given": {
+     "comment": null,
+     "index": 6,
+     "name": "n_stars_given",
+     "type": "INTEGER"
+    }
+   },
+   "metadata": {
+    "comment": null,
+    "database": "warehouse",
+    "name": "int_actor_daily_activity",
+    "owner": null,
+    "schema": "main",
+    "type": "BASE TABLE"
+   },
+   "stats": {},
+   "unique_id": "model.breakout.int_actor_daily_activity"
+  },
+  "model.breakout.int_actor_early_cum": {
+   "columns": {
+    "actor_id": {
+     "comment": null,
+     "index": 2,
+     "name": "actor_id",
+     "type": "BIGINT"
+    },
+    "bucket": {
+     "comment": null,
+     "index": 1,
+     "name": "bucket",
+     "type": "SMALLINT"
+    },
+    "early_stars_known": {
+     "comment": null,
+     "index": 4,
+     "name": "early_stars_known",
+     "type": "INTEGER"
+    },
+    "hits_known": {
+     "comment": null,
+     "index": 5,
+     "name": "hits_known",
+     "type": "INTEGER"
+    },
+    "next_outcome_day": {
+     "comment": null,
+     "index": 6,
+     "name": "next_outcome_day",
+     "type": "DATE"
+    },
+    "outcome_day": {
+     "comment": null,
+     "index": 3,
+     "name": "outcome_day",
+     "type": "DATE"
+    }
+   },
+   "metadata": {
+    "comment": null,
+    "database": "warehouse",
+    "name": "int_actor_early_cum",
+    "owner": null,
+    "schema": "main",
+    "type": "BASE TABLE"
+   },
+   "stats": {},
+   "unique_id": "model.breakout.int_actor_early_cum"
+  },
+  "model.breakout.int_actor_early_stars": {
+   "columns": {
+    "actor_id": {
+     "comment": null,
+     "index": 3,
+     "name": "actor_id",
+     "type": "BIGINT"
+    },
+    "bucket": {
+     "comment": null,
+     "index": 1,
+     "name": "bucket",
+     "type": "SMALLINT"
+    },
+    "gain_lookahead": {
+     "comment": null,
+     "index": 7,
+     "name": "gain_lookahead",
+     "type": "INTEGER"
+    },
+    "is_hit": {
+     "comment": null,
+     "index": 8,
+     "name": "is_hit",
+     "type": "BOOLEAN"
+    },
+    "outcome_day": {
+     "comment": null,
+     "index": 6,
+     "name": "outcome_day",
+     "type": "DATE"
+    },
+    "repo_id": {
+     "comment": null,
+     "index": 2,
+     "name": "repo_id",
+     "type": "BIGINT"
+    },
+    "star_day": {
+     "comment": null,
+     "index": 5,
+     "name": "star_day",
+     "type": "DATE"
+    },
+    "starred_at": {
+     "comment": null,
+     "index": 4,
+     "name": "starred_at",
+     "type": "TIMESTAMP"
+    }
+   },
+   "metadata": {
+    "comment": null,
+    "database": "warehouse",
+    "name": "int_actor_early_stars",
+    "owner": null,
+    "schema": "main",
+    "type": "BASE TABLE"
+   },
+   "stats": {},
+   "unique_id": "model.breakout.int_actor_early_stars"
+  },
+  "model.breakout.int_bot_event_counts": {
+   "columns": {
+    "day": {
+     "comment": null,
+     "index": 2,
+     "name": "day",
+     "type": "DATE"
+    },
+    "n_bot_events": {
+     "comment": null,
+     "index": 3,
+     "name": "n_bot_events",
+     "type": "BIGINT"
+    },
+    "repo_id": {
+     "comment": null,
+     "index": 1,
+     "name": "repo_id",
+     "type": "BIGINT"
+    }
+   },
+   "metadata": {
+    "comment": null,
+    "database": "warehouse",
+    "name": "int_bot_event_counts",
+    "owner": null,
+    "schema": "main",
+    "type": "BASE TABLE"
+   },
+   "stats": {},
+   "unique_id": "model.breakout.int_bot_event_counts"
+  },
+  "model.breakout.int_contributor_first_seen": {
+   "columns": {
+    "actor_id": {
+     "comment": null,
+     "index": 2,
+     "name": "actor_id",
+     "type": "BIGINT"
+    },
+    "first_contribution_at": {
+     "comment": null,
+     "index": 3,
+     "name": "first_contribution_at",
+     "type": "TIMESTAMP"
+    },
+    "first_contribution_type": {
+     "comment": null,
+     "index": 4,
+     "name": "first_contribution_type",
+     "type": "VARCHAR"
+    },
+    "repo_id": {
+     "comment": null,
+     "index": 1,
+     "name": "repo_id",
+     "type": "BIGINT"
+    }
+   },
+   "metadata": {
+    "comment": null,
+    "database": "warehouse",
+    "name": "int_contributor_first_seen",
+    "owner": null,
+    "schema": "main",
+    "type": "BASE TABLE"
+   },
+   "stats": {},
+   "unique_id": "model.breakout.int_contributor_first_seen"
+  },
+  "model.breakout.int_contributor_sessions": {
+   "columns": {
+    "actor_id": {
+     "comment": null,
+     "index": 3,
+     "name": "actor_id",
+     "type": "BIGINT"
+    },
+    "bucket": {
+     "comment": null,
+     "index": 1,
+     "name": "bucket",
+     "type": "SMALLINT"
+    },
+    "event_types": {
+     "comment": null,
+     "index": 8,
+     "name": "event_types",
+     "type": "VARCHAR[]"
+    },
+    "n_events": {
+     "comment": null,
+     "index": 7,
+     "name": "n_events",
+     "type": "INTEGER"
+    },
+    "repo_id": {
+     "comment": null,
+     "index": 2,
+     "name": "repo_id",
+     "type": "BIGINT"
+    },
+    "session_end": {
+     "comment": null,
+     "index": 6,
+     "name": "session_end",
+     "type": "TIMESTAMP"
+    },
+    "session_id": {
+     "comment": null,
+     "index": 4,
+     "name": "session_id",
+     "type": "INTEGER"
+    },
+    "session_start": {
+     "comment": null,
+     "index": 5,
+     "name": "session_start",
+     "type": "TIMESTAMP"
+    }
+   },
+   "metadata": {
+    "comment": null,
+    "database": "warehouse",
+    "name": "int_contributor_sessions",
+    "owner": null,
+    "schema": "main",
+    "type": "BASE TABLE"
+   },
+   "stats": {},
+   "unique_id": "model.breakout.int_contributor_sessions"
+  },
+  "model.breakout.int_core_actors_daily": {
+   "columns": {
+    "actor_id": {
+     "comment": null,
+     "index": 2,
+     "name": "actor_id",
+     "type": "BIGINT"
+    },
+    "closed_pr": {
+     "comment": null,
+     "index": 5,
+     "name": "closed_pr",
+     "type": "BOOLEAN"
+    },
+    "day": {
+     "comment": null,
+     "index": 3,
+     "name": "day",
+     "type": "DATE"
+    },
+    "is_owner": {
+     "comment": null,
+     "index": 6,
+     "name": "is_owner",
+     "type": "BOOLEAN"
+    },
+    "pushed": {
+     "comment": null,
+     "index": 4,
+     "name": "pushed",
+     "type": "BOOLEAN"
+    },
+    "repo_id": {
+     "comment": null,
+     "index": 1,
+     "name": "repo_id",
+     "type": "BIGINT"
+    }
+   },
+   "metadata": {
+    "comment": null,
+    "database": "warehouse",
+    "name": "int_core_actors_daily",
+    "owner": null,
+    "schema": "main",
+    "type": "BASE TABLE"
+   },
+   "stats": {},
+   "unique_id": "model.breakout.int_core_actors_daily"
+  },
+  "model.breakout.int_early_stars": {
+   "columns": {
+    "actor_id": {
+     "comment": null,
+     "index": 2,
+     "name": "actor_id",
+     "type": "BIGINT"
+    },
+    "event_id": {
+     "comment": null,
+     "index": 5,
+     "name": "event_id",
+     "type": "BIGINT"
+    },
+    "repo_id": {
+     "comment": null,
+     "index": 1,
+     "name": "repo_id",
+     "type": "BIGINT"
+    },
+    "star_day": {
+     "comment": null,
+     "index": 4,
+     "name": "star_day",
+     "type": "DATE"
+    },
+    "starred_at": {
+     "comment": null,
+     "index": 3,
+     "name": "starred_at",
+     "type": "TIMESTAMP"
+    }
+   },
+   "metadata": {
+    "comment": null,
+    "database": "warehouse",
+    "name": "int_early_stars",
+    "owner": null,
+    "schema": "main",
+    "type": "BASE TABLE"
+   },
+   "stats": {},
+   "unique_id": "model.breakout.int_early_stars"
+  },
+  "model.breakout.int_issue_response": {
+   "columns": {
+    "author_id": {
+     "comment": null,
+     "index": 4,
+     "name": "author_id",
+     "type": "BIGINT"
+    },
+    "closed_at": {
+     "comment": null,
+     "index": 6,
+     "name": "closed_at",
+     "type": "TIMESTAMP"
+    },
+    "first_response_at": {
+     "comment": null,
+     "index": 5,
+     "name": "first_response_at",
+     "type": "TIMESTAMP"
+    },
+    "number": {
+     "comment": null,
+     "index": 2,
+     "name": "number",
+     "type": "INTEGER"
+    },
+    "opened_at": {
+     "comment": null,
+     "index": 3,
+     "name": "opened_at",
+     "type": "TIMESTAMP"
+    },
+    "repo_id": {
+     "comment": null,
+     "index": 1,
+     "name": "repo_id",
+     "type": "BIGINT"
+    }
+   },
+   "metadata": {
+    "comment": null,
+    "database": "warehouse",
+    "name": "int_issue_response",
+    "owner": null,
+    "schema": "main",
+    "type": "BASE TABLE"
+   },
+   "stats": {},
+   "unique_id": "model.breakout.int_issue_response"
+  },
+  "model.breakout.int_pr_lifecycle": {
+   "columns": {
+    "author_id": {
+     "comment": null,
+     "index": 4,
+     "name": "author_id",
+     "type": "BIGINT"
+    },
+    "closed_at": {
+     "comment": null,
+     "index": 5,
+     "name": "closed_at",
+     "type": "TIMESTAMP"
+    },
+    "first_review_at": {
+     "comment": null,
+     "index": 7,
+     "name": "first_review_at",
+     "type": "TIMESTAMP"
+    },
+    "merged_at": {
+     "comment": null,
+     "index": 6,
+     "name": "merged_at",
+     "type": "TIMESTAMP"
+    },
+    "number": {
+     "comment": null,
+     "index": 2,
+     "name": "number",
+     "type": "INTEGER"
+    },
+    "opened_at": {
+     "comment": null,
+     "index": 3,
+     "name": "opened_at",
+     "type": "TIMESTAMP"
+    },
+    "repo_id": {
+     "comment": null,
+     "index": 1,
+     "name": "repo_id",
+     "type": "BIGINT"
+    }
+   },
+   "metadata": {
+    "comment": null,
+    "database": "warehouse",
+    "name": "int_pr_lifecycle",
+    "owner": null,
+    "schema": "main",
+    "type": "BASE TABLE"
+   },
+   "stats": {},
+   "unique_id": "model.breakout.int_pr_lifecycle"
+  },
+  "model.breakout.int_repo_birth": {
+   "columns": {
+    "api_created_at": {
+     "comment": null,
+     "index": 6,
+     "name": "api_created_at",
+     "type": "TIMESTAMP"
+    },
+    "birth_at": {
+     "comment": null,
+     "index": 7,
+     "name": "birth_at",
+     "type": "TIMESTAMP"
+    },
+    "birth_source": {
+     "comment": null,
+     "index": 8,
+     "name": "birth_source",
+     "type": "VARCHAR"
+    },
+    "created_repo_event_at": {
+     "comment": null,
+     "index": 4,
+     "name": "created_repo_event_at",
+     "type": "TIMESTAMP"
+    },
+    "first_event_at": {
+     "comment": null,
+     "index": 2,
+     "name": "first_event_at",
+     "type": "TIMESTAMP"
+    },
+    "first_star_at": {
+     "comment": null,
+     "index": 3,
+     "name": "first_star_at",
+     "type": "TIMESTAMP"
+    },
+    "has_metadata": {
+     "comment": null,
+     "index": 11,
+     "name": "has_metadata",
+     "type": "BOOLEAN"
+    },
+    "is_fork": {
+     "comment": null,
+     "index": 9,
+     "name": "is_fork",
+     "type": "BOOLEAN"
+    },
+    "is_left_censored": {
+     "comment": null,
+     "index": 12,
+     "name": "is_left_censored",
+     "type": "BOOLEAN"
+    },
+    "is_mirror_like": {
+     "comment": null,
+     "index": 10,
+     "name": "is_mirror_like",
+     "type": "BOOLEAN"
+    },
+    "made_public_at": {
+     "comment": null,
+     "index": 5,
+     "name": "made_public_at",
+     "type": "TIMESTAMP"
+    },
+    "repo_id": {
+     "comment": null,
+     "index": 1,
+     "name": "repo_id",
+     "type": "BIGINT"
+    }
+   },
+   "metadata": {
+    "comment": null,
+    "database": "warehouse",
+    "name": "int_repo_birth",
+    "owner": null,
+    "schema": "main",
+    "type": "BASE TABLE"
+   },
+   "stats": {},
+   "unique_id": "model.breakout.int_repo_birth"
+  },
+  "model.breakout.int_repo_daily_activity": {
+   "columns": {
+    "bucket": {
+     "comment": null,
+     "index": 1,
+     "name": "bucket",
+     "type": "SMALLINT"
+    },
+    "day": {
+     "comment": null,
+     "index": 3,
+     "name": "day",
+     "type": "DATE"
+    },
+    "detail_level_min": {
+     "comment": null,
+     "index": 23,
+     "name": "detail_level_min",
+     "type": "TINYINT"
+    },
+    "n_comment_events": {
+     "comment": null,
+     "index": 9,
+     "name": "n_comment_events",
+     "type": "INTEGER"
+    },
+    "n_creates_branch": {
+     "comment": null,
+     "index": 18,
+     "name": "n_creates_branch",
+     "type": "INTEGER"
+    },
+    "n_creates_tag": {
+     "comment": null,
+     "index": 19,
+     "name": "n_creates_tag",
+     "type": "INTEGER"
+    },
+    "n_distinct_actors": {
+     "comment": null,
+     "index": 22,
+     "name": "n_distinct_actors",
+     "type": "INTEGER"
+    },
+    "n_forks": {
+     "comment": null,
+     "index": 5,
+     "name": "n_forks",
+     "type": "INTEGER"
+    },
+    "n_issue_comments": {
+     "comment": null,
+     "index": 11,
+     "name": "n_issue_comments",
+     "type": "INTEGER"
+    },
+    "n_issue_events": {
+     "comment": null,
+     "index": 8,
+     "name": "n_issue_events",
+     "type": "INTEGER"
+    },
+    "n_issues_closed": {
+     "comment": null,
+     "index": 7,
+     "name": "n_issues_closed",
+     "type": "INTEGER"
+    },
+    "n_issues_opened": {
+     "comment": null,
+     "index": 6,
+     "name": "n_issues_opened",
+     "type": "INTEGER"
+    },
+    "n_pr_comments": {
+     "comment": null,
+     "index": 12,
+     "name": "n_pr_comments",
+     "type": "INTEGER"
+    },
+    "n_pr_events": {
+     "comment": null,
+     "index": 10,
+     "name": "n_pr_events",
+     "type": "INTEGER"
+    },
+    "n_prs_closed": {
+     "comment": null,
+     "index": 14,
+     "name": "n_prs_closed",
+     "type": "INTEGER"
+    },
+    "n_prs_merged": {
+     "comment": null,
+     "index": 15,
+     "name": "n_prs_merged",
+     "type": "INTEGER"
+    },
+    "n_prs_opened": {
+     "comment": null,
+     "index": 13,
+     "name": "n_prs_opened",
+     "type": "INTEGER"
+    },
+    "n_pushers": {
+     "comment": null,
+     "index": 21,
+     "name": "n_pushers",
+     "type": "INTEGER"
+    },
+    "n_pushes": {
+     "comment": null,
+     "index": 20,
+     "name": "n_pushes",
+     "type": "INTEGER"
+    },
+    "n_releases": {
+     "comment": null,
+     "index": 17,
+     "name": "n_releases",
+     "type": "INTEGER"
+    },
+    "n_reviews": {
+     "comment": null,
+     "index": 16,
+     "name": "n_reviews",
+     "type": "INTEGER"
+    },
+    "n_stars": {
+     "comment": null,
+     "index": 4,
+     "name": "n_stars",
+     "type": "INTEGER"
+    },
+    "repo_id": {
+     "comment": null,
+     "index": 2,
+     "name": "repo_id",
+     "type": "BIGINT"
+    }
+   },
+   "metadata": {
+    "comment": null,
+    "database": "warehouse",
+    "name": "int_repo_daily_activity",
+    "owner": null,
+    "schema": "main",
+    "type": "BASE TABLE"
+   },
+   "stats": {},
+   "unique_id": "model.breakout.int_repo_daily_activity"
+  },
+  "model.breakout.int_repo_first_hit": {
+   "columns": {
+    "first_hit_outcome_day": {
+     "comment": null,
+     "index": 2,
+     "name": "first_hit_outcome_day",
+     "type": "DATE"
+    },
+    "repo_id": {
+     "comment": null,
+     "index": 1,
+     "name": "repo_id",
+     "type": "BIGINT"
+    }
+   },
+   "metadata": {
+    "comment": null,
+    "database": "warehouse",
+    "name": "int_repo_first_hit",
+    "owner": null,
+    "schema": "main",
+    "type": "BASE TABLE"
+   },
+   "stats": {},
+   "unique_id": "model.breakout.int_repo_first_hit"
+  },
+  "model.breakout.int_repo_star_daily": {
+   "columns": {
+    "bucket": {
+     "comment": null,
+     "index": 1,
+     "name": "bucket",
+     "type": "SMALLINT"
+    },
+    "day": {
+     "comment": null,
+     "index": 3,
+     "name": "day",
+     "type": "DATE"
+    },
+    "n_stars": {
+     "comment": null,
+     "index": 4,
+     "name": "n_stars",
+     "type": "INTEGER"
+    },
+    "repo_id": {
+     "comment": null,
+     "index": 2,
+     "name": "repo_id",
+     "type": "BIGINT"
+    }
+   },
+   "metadata": {
+    "comment": null,
+    "database": "warehouse",
+    "name": "int_repo_star_daily",
+    "owner": null,
+    "schema": "main",
+    "type": "BASE TABLE"
+   },
+   "stats": {},
+   "unique_id": "model.breakout.int_repo_star_daily"
+  },
+  "model.breakout.int_star_active_repos": {
+   "columns": {
+    "bucket": {
+     "comment": null,
+     "index": 1,
+     "name": "bucket",
+     "type": "SMALLINT"
+    },
+    "first_qualifying_day": {
+     "comment": null,
+     "index": 4,
+     "name": "first_qualifying_day",
+     "type": "DATE"
+    },
+    "first_star_day": {
+     "comment": null,
+     "index": 3,
+     "name": "first_star_day",
+     "type": "DATE"
+    },
+    "repo_id": {
+     "comment": null,
+     "index": 2,
+     "name": "repo_id",
+     "type": "BIGINT"
+    }
+   },
+   "metadata": {
+    "comment": null,
+    "database": "warehouse",
+    "name": "int_star_active_repos",
+    "owner": null,
+    "schema": "main",
+    "type": "BASE TABLE"
+   },
+   "stats": {},
+   "unique_id": "model.breakout.int_star_active_repos"
+  },
+  "model.breakout.int_star_cohort_retention": {
+   "columns": {
+    "cohort_week": {
+     "comment": null,
+     "index": 2,
+     "name": "cohort_week",
+     "type": "DATE"
+    },
+    "is_mature_30d": {
+     "comment": null,
+     "index": 19,
+     "name": "is_mature_30d",
+     "type": "BOOLEAN"
+    },
+    "is_mature_60d": {
+     "comment": null,
+     "index": 20,
+     "name": "is_mature_60d",
+     "type": "BOOLEAN"
+    },
+    "is_mature_90d": {
+     "comment": null,
+     "index": 21,
+     "name": "is_mature_90d",
+     "type": "BOOLEAN"
+    },
+    "n_stargazers": {
+     "comment": null,
+     "index": 3,
+     "name": "n_stargazers",
+     "type": "INTEGER"
+    },
+    "repo_id": {
+     "comment": null,
+     "index": 1,
+     "name": "repo_id",
+     "type": "BIGINT"
+    },
+    "share_any_30d": {
+     "comment": null,
+     "index": 16,
+     "name": "share_any_30d",
+     "type": "DOUBLE"
+    },
+    "share_any_60d": {
+     "comment": null,
+     "index": 17,
+     "name": "share_any_60d",
+     "type": "DOUBLE"
+    },
+    "share_any_90d": {
+     "comment": null,
+     "index": 18,
+     "name": "share_any_90d",
+     "type": "DOUBLE"
+    },
+    "share_comment_30d": {
+     "comment": null,
+     "index": 13,
+     "name": "share_comment_30d",
+     "type": "DOUBLE"
+    },
+    "share_comment_60d": {
+     "comment": null,
+     "index": 14,
+     "name": "share_comment_60d",
+     "type": "DOUBLE"
+    },
+    "share_comment_90d": {
+     "comment": null,
+     "index": 15,
+     "name": "share_comment_90d",
+     "type": "DOUBLE"
+    },
+    "share_fork_30d": {
+     "comment": null,
+     "index": 4,
+     "name": "share_fork_30d",
+     "type": "DOUBLE"
+    },
+    "share_fork_60d": {
+     "comment": null,
+     "index": 5,
+     "name": "share_fork_60d",
+     "type": "DOUBLE"
+    },
+    "share_fork_90d": {
+     "comment": null,
+     "index": 6,
+     "name": "share_fork_90d",
+     "type": "DOUBLE"
+    },
+    "share_issue_30d": {
+     "comment": null,
+     "index": 7,
+     "name": "share_issue_30d",
+     "type": "DOUBLE"
+    },
+    "share_issue_60d": {
+     "comment": null,
+     "index": 8,
+     "name": "share_issue_60d",
+     "type": "DOUBLE"
+    },
+    "share_issue_90d": {
+     "comment": null,
+     "index": 9,
+     "name": "share_issue_90d",
+     "type": "DOUBLE"
+    },
+    "share_pull_request_30d": {
+     "comment": null,
+     "index": 10,
+     "name": "share_pull_request_30d",
+     "type": "DOUBLE"
+    },
+    "share_pull_request_60d": {
+     "comment": null,
+     "index": 11,
+     "name": "share_pull_request_60d",
+     "type": "DOUBLE"
+    },
+    "share_pull_request_90d": {
+     "comment": null,
+     "index": 12,
+     "name": "share_pull_request_90d",
+     "type": "DOUBLE"
+    }
+   },
+   "metadata": {
+    "comment": null,
+    "database": "warehouse",
+    "name": "int_star_cohort_retention",
+    "owner": null,
+    "schema": "main",
+    "type": "BASE TABLE"
+   },
+   "stats": {},
+   "unique_id": "model.breakout.int_star_cohort_retention"
+  },
+  "model.breakout.int_star_events_enriched": {
+   "columns": {
+    "account_age_days_at_star": {
+     "comment": null,
+     "index": 8,
+     "name": "account_age_days_at_star",
+     "type": "INTEGER"
+    },
+    "actor_events_prior_90d": {
+     "comment": null,
+     "index": 9,
+     "name": "actor_events_prior_90d",
+     "type": "BIGINT"
+    },
+    "actor_id": {
+     "comment": null,
+     "index": 3,
+     "name": "actor_id",
+     "type": "BIGINT"
+    },
+    "actor_repos_prior_90d": {
+     "comment": null,
+     "index": 10,
+     "name": "actor_repos_prior_90d",
+     "type": "BIGINT"
+    },
+    "actor_stars_prior_90d": {
+     "comment": null,
+     "index": 11,
+     "name": "actor_stars_prior_90d",
+     "type": "BIGINT"
+    },
+    "actor_stars_same_day": {
+     "comment": null,
+     "index": 12,
+     "name": "actor_stars_same_day",
+     "type": "INTEGER"
+    },
+    "bucket": {
+     "comment": null,
+     "index": 1,
+     "name": "bucket",
+     "type": "SMALLINT"
+    },
+    "est_account_created_at": {
+     "comment": null,
+     "index": 6,
+     "name": "est_account_created_at",
+     "type": "TIMESTAMP"
+    },
+    "est_is_extrapolated": {
+     "comment": null,
+     "index": 7,
+     "name": "est_is_extrapolated",
+     "type": "BOOLEAN"
+    },
+    "repo_id": {
+     "comment": null,
+     "index": 2,
+     "name": "repo_id",
+     "type": "BIGINT"
+    },
+    "star_day": {
+     "comment": null,
+     "index": 5,
+     "name": "star_day",
+     "type": "DATE"
+    },
+    "starred_at": {
+     "comment": null,
+     "index": 4,
+     "name": "starred_at",
+     "type": "TIMESTAMP"
+    }
+   },
+   "metadata": {
+    "comment": null,
+    "database": "warehouse",
+    "name": "int_star_events_enriched",
+    "owner": null,
+    "schema": "main",
+    "type": "BASE TABLE"
+   },
+   "stats": {},
+   "unique_id": "model.breakout.int_star_events_enriched"
+  },
+  "model.breakout.int_stargazer_later_actions": {
+   "columns": {
+    "action_at": {
+     "comment": null,
+     "index": 6,
+     "name": "action_at",
+     "type": "TIMESTAMP"
+    },
+    "action_event_id": {
+     "comment": null,
+     "index": 7,
+     "name": "action_event_id",
+     "type": "BIGINT"
+    },
+    "action_type": {
+     "comment": null,
+     "index": 5,
+     "name": "action_type",
+     "type": "VARCHAR"
+    },
+    "actor_id": {
+     "comment": null,
+     "index": 3,
+     "name": "actor_id",
+     "type": "BIGINT"
+    },
+    "bucket": {
+     "comment": null,
+     "index": 1,
+     "name": "bucket",
+     "type": "SMALLINT"
+    },
+    "days_after_star": {
+     "comment": null,
+     "index": 8,
+     "name": "days_after_star",
+     "type": "INTEGER"
+    },
+    "repo_id": {
+     "comment": null,
+     "index": 2,
+     "name": "repo_id",
+     "type": "BIGINT"
+    },
+    "starred_at": {
+     "comment": null,
+     "index": 4,
+     "name": "starred_at",
+     "type": "TIMESTAMP"
+    }
+   },
+   "metadata": {
+    "comment": null,
+    "database": "warehouse",
+    "name": "int_stargazer_later_actions",
+    "owner": null,
+    "schema": "main",
+    "type": "BASE TABLE"
+   },
+   "stats": {},
+   "unique_id": "model.breakout.int_stargazer_later_actions"
+  },
+  "model.breakout.int_tastemaker_thresholds": {
+   "columns": {
+    "month": {
+     "comment": null,
+     "index": 1,
+     "name": "month",
+     "type": "DATE"
+    },
+    "n_actors": {
+     "comment": null,
+     "index": 3,
+     "name": "n_actors",
+     "type": "BIGINT"
+    },
+    "score_threshold": {
+     "comment": null,
+     "index": 2,
+     "name": "score_threshold",
+     "type": "DOUBLE"
+    }
+   },
+   "metadata": {
+    "comment": null,
+    "database": "warehouse",
+    "name": "int_tastemaker_thresholds",
+    "owner": null,
+    "schema": "main",
+    "type": "BASE TABLE"
+   },
+   "stats": {},
+   "unique_id": "model.breakout.int_tastemaker_thresholds"
+  },
+  "model.breakout.int_young_moving_repos": {
+   "columns": {
+    "first_moving_day": {
+     "comment": null,
+     "index": 2,
+     "name": "first_moving_day",
+     "type": "DATE"
+    },
+    "repo_id": {
+     "comment": null,
+     "index": 1,
+     "name": "repo_id",
+     "type": "BIGINT"
+    }
+   },
+   "metadata": {
+    "comment": null,
+    "database": "warehouse",
+    "name": "int_young_moving_repos",
+    "owner": null,
+    "schema": "main",
+    "type": "BASE TABLE"
+   },
+   "stats": {},
+   "unique_id": "model.breakout.int_young_moving_repos"
+  },
+  "model.breakout.mart_candidates": {
+   "columns": {
+    "age_days": {
+     "comment": null,
+     "index": 5,
+     "name": "age_days",
+     "type": "BIGINT"
+    },
+    "birth_at": {
+     "comment": null,
+     "index": 4,
+     "name": "birth_at",
+     "type": "TIMESTAMP"
+    },
+    "birth_source": {
+     "comment": null,
+     "index": 11,
+     "name": "birth_source",
+     "type": "VARCHAR"
+    },
+    "bucket": {
+     "comment": null,
+     "index": 1,
+     "name": "bucket",
+     "type": "SMALLINT"
+    },
+    "repo_id": {
+     "comment": null,
+     "index": 2,
+     "name": "repo_id",
+     "type": "BIGINT"
+    },
+    "repo_name_at_D": {
+     "comment": null,
+     "index": 12,
+     "name": "repo_name_at_D",
+     "type": "VARCHAR"
+    },
+    "snapshot_date": {
+     "comment": null,
+     "index": 3,
+     "name": "snapshot_date",
+     "type": "DATE"
+    },
+    "stars_14d": {
+     "comment": null,
+     "index": 9,
+     "name": "stars_14d",
+     "type": "INTEGER"
+    },
+    "stars_1d": {
+     "comment": null,
+     "index": 7,
+     "name": "stars_1d",
+     "type": "INTEGER"
+    },
+    "stars_7d": {
+     "comment": null,
+     "index": 8,
+     "name": "stars_7d",
+     "type": "INTEGER"
+    },
+    "stars_prev_7d": {
+     "comment": null,
+     "index": 10,
+     "name": "stars_prev_7d",
+     "type": "INTEGER"
+    },
+    "stars_total_before": {
+     "comment": null,
+     "index": 6,
+     "name": "stars_total_before",
+     "type": "INTEGER"
+    }
+   },
+   "metadata": {
+    "comment": null,
+    "database": "warehouse",
+    "name": "mart_candidates",
+    "owner": null,
+    "schema": "main",
+    "type": "BASE TABLE"
+   },
+   "stats": {},
+   "unique_id": "model.breakout.mart_candidates"
+  },
+  "model.breakout.mart_labels": {
+   "columns": {
+    "breakout_abs": {
+     "comment": null,
+     "index": 6,
+     "name": "breakout_abs",
+     "type": "BOOLEAN"
+    },
+    "breakout_rel": {
+     "comment": null,
+     "index": 5,
+     "name": "breakout_rel",
+     "type": "BOOLEAN"
+    },
+    "days_to_threshold": {
+     "comment": null,
+     "index": 7,
+     "name": "days_to_threshold",
+     "type": "BIGINT"
+    },
+    "first_trending_date": {
+     "comment": null,
+     "index": 8,
+     "name": "first_trending_date",
+     "type": "DATE"
+    },
+    "gain_30d": {
+     "comment": null,
+     "index": 3,
+     "name": "gain_30d",
+     "type": "INTEGER"
+    },
+    "repo_id": {
+     "comment": null,
+     "index": 1,
+     "name": "repo_id",
+     "type": "BIGINT"
+    },
+    "snapshot_date": {
+     "comment": null,
+     "index": 2,
+     "name": "snapshot_date",
+     "type": "DATE"
+    },
+    "threshold_rel": {
+     "comment": null,
+     "index": 4,
+     "name": "threshold_rel",
+     "type": "DOUBLE"
+    },
+    "trending_covered": {
+     "comment": null,
+     "index": 9,
+     "name": "trending_covered",
+     "type": "BOOLEAN"
+    }
+   },
+   "metadata": {
+    "comment": null,
+    "database": "warehouse",
+    "name": "mart_labels",
+    "owner": null,
+    "schema": "main",
+    "type": "BASE TABLE"
+   },
+   "stats": {},
+   "unique_id": "model.breakout.mart_labels"
+  },
+  "model.breakout.mart_repo_features": {
+   "columns": {
+    "actor_days_14d": {
+     "comment": null,
+     "index": 21,
+     "name": "actor_days_14d",
+     "type": "INTEGER"
+    },
+    "age_days": {
+     "comment": null,
+     "index": 13,
+     "name": "age_days",
+     "type": "INTEGER"
+    },
+    "birth_from_public_event": {
+     "comment": null,
+     "index": 69,
+     "name": "birth_from_public_event",
+     "type": "INTEGER"
+    },
+    "bucket": {
+     "comment": null,
+     "index": 1,
+     "name": "bucket",
+     "type": "SMALLINT"
+    },
+    "comment_events_14d": {
+     "comment": null,
+     "index": 23,
+     "name": "comment_events_14d",
+     "type": "INTEGER"
+    },
+    "core_actor_count_90d": {
+     "comment": null,
+     "index": 63,
+     "name": "core_actor_count_90d",
+     "type": "INTEGER"
+    },
+    "days_api_created_to_birth": {
+     "comment": null,
+     "index": 70,
+     "name": "days_api_created_to_birth",
+     "type": "INTEGER"
+    },
+    "days_since_first_star": {
+     "comment": null,
+     "index": 12,
+     "name": "days_since_first_star",
+     "type": "BIGINT"
+    },
+    "days_since_last_release": {
+     "comment": null,
+     "index": 27,
+     "name": "days_since_last_release",
+     "type": "BIGINT"
+    },
+    "detail_coverage_28d": {
+     "comment": null,
+     "index": 54,
+     "name": "detail_coverage_28d",
+     "type": "DOUBLE"
+    },
+    "distinct_contributors_28d": {
+     "comment": null,
+     "index": 31,
+     "name": "distinct_contributors_28d",
+     "type": "INTEGER"
+    },
+    "distinct_pushers_28d": {
+     "comment": null,
+     "index": 29,
+     "name": "distinct_pushers_28d",
+     "type": "INTEGER"
+    },
+    "distinct_session_actors_28d": {
+     "comment": null,
+     "index": 37,
+     "name": "distinct_session_actors_28d",
+     "type": "INTEGER"
+    },
+    "era_post_2025_10": {
+     "comment": null,
+     "index": 66,
+     "name": "era_post_2025_10",
+     "type": "INTEGER"
+    },
+    "event_type_entropy_14d": {
+     "comment": null,
+     "index": 30,
+     "name": "event_type_entropy_14d",
+     "type": "DOUBLE"
+    },
+    "external_pr_authors_28d": {
+     "comment": null,
+     "index": 64,
+     "name": "external_pr_authors_28d",
+     "type": "INTEGER"
+    },
+    "first_time_contributor_rate_28d": {
+     "comment": null,
+     "index": 33,
+     "name": "first_time_contributor_rate_28d",
+     "type": "DOUBLE"
+    },
+    "fork_star_ratio_14d": {
+     "comment": null,
+     "index": 20,
+     "name": "fork_star_ratio_14d",
+     "type": "DOUBLE"
+    },
+    "forks_14d": {
+     "comment": null,
+     "index": 19,
+     "name": "forks_14d",
+     "type": "INTEGER"
+    },
+    "forks_7d": {
+     "comment": null,
+     "index": 18,
+     "name": "forks_7d",
+     "type": "INTEGER"
+    },
+    "hn_any_before": {
+     "comment": null,
+     "index": 74,
+     "name": "hn_any_before",
+     "type": "INTEGER"
+    },
+    "hn_max_points_aged": {
+     "comment": null,
+     "index": 73,
+     "name": "hn_max_points_aged",
+     "type": "INTEGER"
+    },
+    "hn_stories_before_14d": {
+     "comment": null,
+     "index": 71,
+     "name": "hn_stories_before_14d",
+     "type": "INTEGER"
+    },
+    "hn_stories_before_3d": {
+     "comment": null,
+     "index": 72,
+     "name": "hn_stories_before_3d",
+     "type": "INTEGER"
+    },
+    "issue_close_ratio_28d": {
+     "comment": null,
+     "index": 57,
+     "name": "issue_close_ratio_28d",
+     "type": "DOUBLE"
+    },
+    "issue_events_14d": {
+     "comment": null,
+     "index": 22,
+     "name": "issue_events_14d",
+     "type": "INTEGER"
+    },
+    "issues_closed_28d": {
+     "comment": null,
+     "index": 56,
+     "name": "issues_closed_28d",
+     "type": "HUGEINT"
+    },
+    "issues_opened_28d": {
+     "comment": null,
+     "index": 55,
+     "name": "issues_opened_28d",
+     "type": "HUGEINT"
+    },
+    "median_first_response_hours_28d": {
+     "comment": null,
+     "index": 58,
+     "name": "median_first_response_hours_28d",
+     "type": "DOUBLE"
+    },
+    "median_merge_hours_28d": {
+     "comment": null,
+     "index": 62,
+     "name": "median_merge_hours_28d",
+     "type": "DOUBLE"
+    },
+    "median_session_minutes_28d": {
+     "comment": null,
+     "index": 36,
+     "name": "median_session_minutes_28d",
+     "type": "DOUBLE"
+    },
+    "new_contributors_28d": {
+     "comment": null,
+     "index": 32,
+     "name": "new_contributors_28d",
+     "type": "INTEGER"
+    },
+    "owner_prior_breakouts": {
+     "comment": null,
+     "index": 53,
+     "name": "owner_prior_breakouts",
+     "type": "INTEGER"
+    },
+    "owner_prior_repos_seen": {
+     "comment": null,
+     "index": 52,
+     "name": "owner_prior_repos_seen",
+     "type": "INTEGER"
+    },
+    "owner_type": {
+     "comment": null,
+     "index": 68,
+     "name": "owner_type",
+     "type": "VARCHAR"
+    },
+    "pr_events_14d": {
+     "comment": null,
+     "index": 24,
+     "name": "pr_events_14d",
+     "type": "INTEGER"
+    },
+    "primary_language": {
+     "comment": null,
+     "index": 67,
+     "name": "primary_language",
+     "type": "VARCHAR"
+    },
+    "prs_merged_28d": {
+     "comment": null,
+     "index": 61,
+     "name": "prs_merged_28d",
+     "type": "HUGEINT"
+    },
+    "prs_opened_28d": {
+     "comment": null,
+     "index": 60,
+     "name": "prs_opened_28d",
+     "type": "HUGEINT"
+    },
+    "push_active_days_14d": {
+     "comment": null,
+     "index": 28,
+     "name": "push_active_days_14d",
+     "type": "INTEGER"
+    },
+    "releases_total_before": {
+     "comment": null,
+     "index": 26,
+     "name": "releases_total_before",
+     "type": "INTEGER"
+    },
+    "repo_id": {
+     "comment": null,
+     "index": 2,
+     "name": "repo_id",
+     "type": "BIGINT"
+    },
+    "reviews_14d": {
+     "comment": null,
+     "index": 25,
+     "name": "reviews_14d",
+     "type": "INTEGER"
+    },
+    "sessions_28d": {
+     "comment": null,
+     "index": 35,
+     "name": "sessions_28d",
+     "type": "INTEGER"
+    },
+    "sg_median_account_age_days": {
+     "comment": null,
+     "index": 40,
+     "name": "sg_median_account_age_days",
+     "type": "DOUBLE"
+    },
+    "sg_median_stars_same_day": {
+     "comment": null,
+     "index": 43,
+     "name": "sg_median_stars_same_day",
+     "type": "DOUBLE"
+    },
+    "sg_n": {
+     "comment": null,
+     "index": 38,
+     "name": "sg_n",
+     "type": "INTEGER"
+    },
+    "sg_retention_any_28d": {
+     "comment": null,
+     "index": 45,
+     "name": "sg_retention_any_28d",
+     "type": "DOUBLE"
+    },
+    "sg_retention_fork_28d": {
+     "comment": null,
+     "index": 46,
+     "name": "sg_retention_fork_28d",
+     "type": "DOUBLE"
+    },
+    "sg_retention_issue_or_pr_28d": {
+     "comment": null,
+     "index": 47,
+     "name": "sg_retention_issue_or_pr_28d",
+     "type": "DOUBLE"
+    },
+    "sg_share_account_lt_30d": {
+     "comment": null,
+     "index": 41,
+     "name": "sg_share_account_lt_30d",
+     "type": "DOUBLE"
+    },
+    "sg_share_bulk_starrers": {
+     "comment": null,
+     "index": 44,
+     "name": "sg_share_bulk_starrers",
+     "type": "DOUBLE"
+    },
+    "sg_share_experienced": {
+     "comment": null,
+     "index": 39,
+     "name": "sg_share_experienced",
+     "type": "DOUBLE"
+    },
+    "sg_share_zero_prior_activity": {
+     "comment": null,
+     "index": 42,
+     "name": "sg_share_zero_prior_activity",
+     "type": "DOUBLE"
+    },
+    "sg_tm_known_share_14d": {
+     "comment": null,
+     "index": 51,
+     "name": "sg_tm_known_share_14d",
+     "type": "DOUBLE"
+    },
+    "sg_tm_max_14d": {
+     "comment": null,
+     "index": 49,
+     "name": "sg_tm_max_14d",
+     "type": "DOUBLE"
+    },
+    "sg_tm_mean_14d": {
+     "comment": null,
+     "index": 48,
+     "name": "sg_tm_mean_14d",
+     "type": "DOUBLE"
+    },
+    "sg_tm_top_count_14d": {
+     "comment": null,
+     "index": 50,
+     "name": "sg_tm_top_count_14d",
+     "type": "INTEGER"
+    },
+    "share_issues_responded_48h": {
+     "comment": null,
+     "index": 59,
+     "name": "share_issues_responded_48h",
+     "type": "DOUBLE"
+    },
+    "snapshot_date": {
+     "comment": null,
+     "index": 3,
+     "name": "snapshot_date",
+     "type": "DATE"
+    },
+    "star_accel_7d": {
+     "comment": null,
+     "index": 10,
+     "name": "star_accel_7d",
+     "type": "INTEGER"
+    },
+    "star_active_days_14d": {
+     "comment": null,
+     "index": 14,
+     "name": "star_active_days_14d",
+     "type": "INTEGER"
+    },
+    "star_gini_14d": {
+     "comment": null,
+     "index": 15,
+     "name": "star_gini_14d",
+     "type": "DOUBLE"
+    },
+    "star_max_day_share_14d": {
+     "comment": null,
+     "index": 16,
+     "name": "star_max_day_share_14d",
+     "type": "DOUBLE"
+    },
+    "star_max_hour_share_7d": {
+     "comment": null,
+     "index": 17,
+     "name": "star_max_hour_share_7d",
+     "type": "DOUBLE"
+    },
+    "star_ratio_7d": {
+     "comment": null,
+     "index": 11,
+     "name": "star_ratio_7d",
+     "type": "DOUBLE"
+    },
+    "stars_14d": {
+     "comment": null,
+     "index": 7,
+     "name": "stars_14d",
+     "type": "INTEGER"
+    },
+    "stars_1d": {
+     "comment": null,
+     "index": 4,
+     "name": "stars_1d",
+     "type": "INTEGER"
+    },
+    "stars_28d": {
+     "comment": null,
+     "index": 8,
+     "name": "stars_28d",
+     "type": "INTEGER"
+    },
+    "stars_3d": {
+     "comment": null,
+     "index": 5,
+     "name": "stars_3d",
+     "type": "INTEGER"
+    },
+    "stars_7d": {
+     "comment": null,
+     "index": 6,
+     "name": "stars_7d",
+     "type": "INTEGER"
+    },
+    "stars_total_before": {
+     "comment": null,
+     "index": 9,
+     "name": "stars_total_before",
+     "type": "INTEGER"
+    },
+    "tags_created_total_before": {
+     "comment": null,
+     "index": 65,
+     "name": "tags_created_total_before",
+     "type": "HUGEINT"
+    },
+    "top_actor_share_28d": {
+     "comment": null,
+     "index": 34,
+     "name": "top_actor_share_28d",
+     "type": "DOUBLE"
+    }
+   },
+   "metadata": {
+    "comment": null,
+    "database": "warehouse",
+    "name": "mart_repo_features",
+    "owner": null,
+    "schema": "main",
+    "type": "BASE TABLE"
+   },
+   "stats": {},
+   "unique_id": "model.breakout.mart_repo_features"
+  },
+  "model.breakout.mart_similar_repos": {
+   "columns": {
+    "cosine": {
+     "comment": null,
+     "index": 4,
+     "name": "cosine",
+     "type": "DOUBLE"
+    },
+    "overlap": {
+     "comment": null,
+     "index": 3,
+     "name": "overlap",
+     "type": "BIGINT"
+    },
+    "repo_id": {
+     "comment": null,
+     "index": 1,
+     "name": "repo_id",
+     "type": "BIGINT"
+    },
+    "similar_language": {
+     "comment": null,
+     "index": 6,
+     "name": "similar_language",
+     "type": "VARCHAR"
+    },
+    "similar_repo_id": {
+     "comment": null,
+     "index": 2,
+     "name": "similar_repo_id",
+     "type": "BIGINT"
+    },
+    "similar_repo_name": {
+     "comment": null,
+     "index": 5,
+     "name": "similar_repo_name",
+     "type": "VARCHAR"
+    }
+   },
+   "metadata": {
+    "comment": null,
+    "database": "warehouse",
+    "name": "mart_similar_repos",
+    "owner": null,
+    "schema": "main",
+    "type": "VIEW"
+   },
+   "stats": {},
+   "unique_id": "model.breakout.mart_similar_repos"
+  },
+  "model.breakout.mart_snapshot_dates": {
+   "columns": {
+    "is_label_matured": {
+     "comment": null,
+     "index": 2,
+     "name": "is_label_matured",
+     "type": "BOOLEAN"
+    },
+    "latest_ingested_day": {
+     "comment": null,
+     "index": 3,
+     "name": "latest_ingested_day",
+     "type": "DATE"
+    },
+    "snapshot_date": {
+     "comment": null,
+     "index": 1,
+     "name": "snapshot_date",
+     "type": "DATE"
+    }
+   },
+   "metadata": {
+    "comment": null,
+    "database": "warehouse",
+    "name": "mart_snapshot_dates",
+    "owner": null,
+    "schema": "main",
+    "type": "BASE TABLE"
+   },
+   "stats": {},
+   "unique_id": "model.breakout.mart_snapshot_dates"
+  },
+  "model.breakout.mart_suspicion": {
+   "columns": {
+    "bucket": {
+     "comment": null,
+     "index": 1,
+     "name": "bucket",
+     "type": "SMALLINT"
+    },
+    "raw_score": {
+     "comment": null,
+     "index": 10,
+     "name": "raw_score",
+     "type": "DOUBLE"
+    },
+    "repo_id": {
+     "comment": null,
+     "index": 2,
+     "name": "repo_id",
+     "type": "BIGINT"
+    },
+    "s_bulk": {
+     "comment": null,
+     "index": 6,
+     "name": "s_bulk",
+     "type": "DOUBLE"
+    },
+    "s_burst": {
+     "comment": null,
+     "index": 7,
+     "name": "s_burst",
+     "type": "DOUBLE"
+    },
+    "s_inactive": {
+     "comment": null,
+     "index": 5,
+     "name": "s_inactive",
+     "type": "DOUBLE"
+    },
+    "s_lockstep": {
+     "comment": null,
+     "index": 8,
+     "name": "s_lockstep",
+     "type": "DECIMAL(2,1)"
+    },
+    "s_new_accounts": {
+     "comment": null,
+     "index": 4,
+     "name": "s_new_accounts",
+     "type": "DOUBLE"
+    },
+    "s_no_engagement": {
+     "comment": null,
+     "index": 9,
+     "name": "s_no_engagement",
+     "type": "DOUBLE"
+    },
+    "snapshot_date": {
+     "comment": null,
+     "index": 3,
+     "name": "snapshot_date",
+     "type": "DATE"
+    },
+    "suspicion_level": {
+     "comment": null,
+     "index": 12,
+     "name": "suspicion_level",
+     "type": "VARCHAR"
+    },
+    "suspicion_score": {
+     "comment": null,
+     "index": 11,
+     "name": "suspicion_score",
+     "type": "DOUBLE"
+    }
+   },
+   "metadata": {
+    "comment": null,
+    "database": "warehouse",
+    "name": "mart_suspicion",
+    "owner": null,
+    "schema": "main",
+    "type": "VIEW"
+   },
+   "stats": {},
+   "unique_id": "model.breakout.mart_suspicion"
+  },
+  "model.breakout.stg_actor_age_map": {
+   "columns": {
+    "actor_id_breakpoint": {
+     "comment": null,
+     "index": 1,
+     "name": "actor_id_breakpoint",
+     "type": "BIGINT"
+    },
+    "est_created_at": {
+     "comment": null,
+     "index": 2,
+     "name": "est_created_at",
+     "type": "TIMESTAMP"
+    }
+   },
+   "metadata": {
+    "comment": null,
+    "database": "warehouse",
+    "name": "stg_actor_age_map",
+    "owner": null,
+    "schema": "main",
+    "type": "VIEW"
+   },
+   "stats": {},
+   "unique_id": "model.breakout.stg_actor_age_map"
+  },
+  "model.breakout.stg_bot_actor_signals": {
+   "columns": {
+    "actor_id": {
+     "comment": null,
+     "index": 2,
+     "name": "actor_id",
+     "type": "BIGINT"
+    },
+    "bot_like_login": {
+     "comment": null,
+     "index": 3,
+     "name": "bot_like_login",
+     "type": "VARCHAR"
+    },
+    "month": {
+     "comment": null,
+     "index": 1,
+     "name": "month",
+     "type": "DATE"
+    },
+    "n_busy_days": {
+     "comment": null,
+     "index": 4,
+     "name": "n_busy_days",
+     "type": "INTEGER"
+    }
+   },
+   "metadata": {
+    "comment": null,
+    "database": "warehouse",
+    "name": "stg_bot_actor_signals",
+    "owner": null,
+    "schema": "main",
+    "type": "BASE TABLE"
+   },
+   "stats": {},
+   "unique_id": "model.breakout.stg_bot_actor_signals"
+  },
+  "model.breakout.stg_bot_actors": {
+   "columns": {
+    "actor_id": {
+     "comment": null,
+     "index": 1,
+     "name": "actor_id",
+     "type": "BIGINT"
+    },
+    "reason": {
+     "comment": null,
+     "index": 2,
+     "name": "reason",
+     "type": "VARCHAR"
+    }
+   },
+   "metadata": {
+    "comment": null,
+    "database": "warehouse",
+    "name": "stg_bot_actors",
+    "owner": null,
+    "schema": "main",
+    "type": "BASE TABLE"
+   },
+   "stats": {},
+   "unique_id": "model.breakout.stg_bot_actors"
+  },
+  "model.breakout.stg_creates": {
+   "columns": {
+    "actor_id": {
+     "comment": null,
+     "index": 5,
+     "name": "actor_id",
+     "type": "BIGINT"
+    },
+    "actor_login": {
+     "comment": null,
+     "index": 6,
+     "name": "actor_login",
+     "type": "VARCHAR"
+    },
+    "created_at": {
+     "comment": null,
+     "index": 2,
+     "name": "created_at",
+     "type": "TIMESTAMP"
+    },
+    "detail_level": {
+     "comment": null,
+     "index": 7,
+     "name": "detail_level",
+     "type": "UTINYINT"
+    },
+    "event_id": {
+     "comment": null,
+     "index": 1,
+     "name": "event_id",
+     "type": "BIGINT"
+    },
+    "ref_type": {
+     "comment": null,
+     "index": 8,
+     "name": "ref_type",
+     "type": "VARCHAR"
+    },
+    "repo_id": {
+     "comment": null,
+     "index": 3,
+     "name": "repo_id",
+     "type": "BIGINT"
+    },
+    "repo_name": {
+     "comment": null,
+     "index": 4,
+     "name": "repo_name",
+     "type": "VARCHAR"
+    }
+   },
+   "metadata": {
+    "comment": null,
+    "database": "warehouse",
+    "name": "stg_creates",
+    "owner": null,
+    "schema": "main",
+    "type": "VIEW"
+   },
+   "stats": {},
+   "unique_id": "model.breakout.stg_creates"
+  },
+  "model.breakout.stg_forks": {
+   "columns": {
+    "actor_id": {
+     "comment": null,
+     "index": 5,
+     "name": "actor_id",
+     "type": "BIGINT"
+    },
+    "actor_login": {
+     "comment": null,
+     "index": 6,
+     "name": "actor_login",
+     "type": "VARCHAR"
+    },
+    "created_at": {
+     "comment": null,
+     "index": 2,
+     "name": "created_at",
+     "type": "TIMESTAMP"
+    },
+    "detail_level": {
+     "comment": null,
+     "index": 7,
+     "name": "detail_level",
+     "type": "UTINYINT"
+    },
+    "event_id": {
+     "comment": null,
+     "index": 1,
+     "name": "event_id",
+     "type": "BIGINT"
+    },
+    "forkee_repo_id": {
+     "comment": null,
+     "index": 8,
+     "name": "forkee_repo_id",
+     "type": "BIGINT"
+    },
+    "repo_id": {
+     "comment": null,
+     "index": 3,
+     "name": "repo_id",
+     "type": "BIGINT"
+    },
+    "repo_name": {
+     "comment": null,
+     "index": 4,
+     "name": "repo_name",
+     "type": "VARCHAR"
+    }
+   },
+   "metadata": {
+    "comment": null,
+    "database": "warehouse",
+    "name": "stg_forks",
+    "owner": null,
+    "schema": "main",
+    "type": "VIEW"
+   },
+   "stats": {},
+   "unique_id": "model.breakout.stg_forks"
+  },
+  "model.breakout.stg_hn_stories": {
+   "columns": {
+    "created_at": {
+     "comment": null,
+     "index": 2,
+     "name": "created_at",
+     "type": "TIMESTAMP"
+    },
+    "fetched_at": {
+     "comment": null,
+     "index": 7,
+     "name": "fetched_at",
+     "type": "TIMESTAMP"
+    },
+    "num_comments": {
+     "comment": null,
+     "index": 4,
+     "name": "num_comments",
+     "type": "INTEGER"
+    },
+    "points": {
+     "comment": null,
+     "index": 3,
+     "name": "points",
+     "type": "INTEGER"
+    },
+    "repo_id": {
+     "comment": null,
+     "index": 5,
+     "name": "repo_id",
+     "type": "BIGINT"
+    },
+    "repo_name": {
+     "comment": null,
+     "index": 6,
+     "name": "repo_name",
+     "type": "VARCHAR"
+    },
+    "story_id": {
+     "comment": null,
+     "index": 1,
+     "name": "story_id",
+     "type": "BIGINT"
+    }
+   },
+   "metadata": {
+    "comment": null,
+    "database": "warehouse",
+    "name": "stg_hn_stories",
+    "owner": null,
+    "schema": "main",
+    "type": "VIEW"
+   },
+   "stats": {},
+   "unique_id": "model.breakout.stg_hn_stories"
+  },
+  "model.breakout.stg_issue_comments": {
+   "columns": {
+    "action": {
+     "comment": null,
+     "index": 8,
+     "name": "action",
+     "type": "VARCHAR"
+    },
+    "actor_id": {
+     "comment": null,
+     "index": 5,
+     "name": "actor_id",
+     "type": "BIGINT"
+    },
+    "actor_login": {
+     "comment": null,
+     "index": 6,
+     "name": "actor_login",
+     "type": "VARCHAR"
+    },
+    "created_at": {
+     "comment": null,
+     "index": 2,
+     "name": "created_at",
+     "type": "TIMESTAMP"
+    },
+    "detail_level": {
+     "comment": null,
+     "index": 7,
+     "name": "detail_level",
+     "type": "UTINYINT"
+    },
+    "event_id": {
+     "comment": null,
+     "index": 1,
+     "name": "event_id",
+     "type": "BIGINT"
+    },
+    "is_pull_request": {
+     "comment": null,
+     "index": 10,
+     "name": "is_pull_request",
+     "type": "BOOLEAN"
+    },
+    "number": {
+     "comment": null,
+     "index": 9,
+     "name": "number",
+     "type": "INTEGER"
+    },
+    "repo_id": {
+     "comment": null,
+     "index": 3,
+     "name": "repo_id",
+     "type": "BIGINT"
+    },
+    "repo_name": {
+     "comment": null,
+     "index": 4,
+     "name": "repo_name",
+     "type": "VARCHAR"
+    },
+    "target_user_id": {
+     "comment": null,
+     "index": 11,
+     "name": "target_user_id",
+     "type": "BIGINT"
+    }
+   },
+   "metadata": {
+    "comment": null,
+    "database": "warehouse",
+    "name": "stg_issue_comments",
+    "owner": null,
+    "schema": "main",
+    "type": "VIEW"
+   },
+   "stats": {},
+   "unique_id": "model.breakout.stg_issue_comments"
+  },
+  "model.breakout.stg_issues": {
+   "columns": {
+    "action": {
+     "comment": null,
+     "index": 8,
+     "name": "action",
+     "type": "VARCHAR"
+    },
+    "actor_id": {
+     "comment": null,
+     "index": 5,
+     "name": "actor_id",
+     "type": "BIGINT"
+    },
+    "actor_login": {
+     "comment": null,
+     "index": 6,
+     "name": "actor_login",
+     "type": "VARCHAR"
+    },
+    "created_at": {
+     "comment": null,
+     "index": 2,
+     "name": "created_at",
+     "type": "TIMESTAMP"
+    },
+    "detail_level": {
+     "comment": null,
+     "index": 7,
+     "name": "detail_level",
+     "type": "UTINYINT"
+    },
+    "event_id": {
+     "comment": null,
+     "index": 1,
+     "name": "event_id",
+     "type": "BIGINT"
+    },
+    "number": {
+     "comment": null,
+     "index": 9,
+     "name": "number",
+     "type": "INTEGER"
+    },
+    "repo_id": {
+     "comment": null,
+     "index": 3,
+     "name": "repo_id",
+     "type": "BIGINT"
+    },
+    "repo_name": {
+     "comment": null,
+     "index": 4,
+     "name": "repo_name",
+     "type": "VARCHAR"
+    },
+    "target_created_at": {
+     "comment": null,
+     "index": 11,
+     "name": "target_created_at",
+     "type": "TIMESTAMP"
+    },
+    "target_user_id": {
+     "comment": null,
+     "index": 10,
+     "name": "target_user_id",
+     "type": "BIGINT"
+    }
+   },
+   "metadata": {
+    "comment": null,
+    "database": "warehouse",
+    "name": "stg_issues",
+    "owner": null,
+    "schema": "main",
+    "type": "VIEW"
+   },
+   "stats": {},
+   "unique_id": "model.breakout.stg_issues"
+  },
+  "model.breakout.stg_pr_reviews": {
+   "columns": {
+    "action": {
+     "comment": null,
+     "index": 8,
+     "name": "action",
+     "type": "VARCHAR"
+    },
+    "actor_id": {
+     "comment": null,
+     "index": 5,
+     "name": "actor_id",
+     "type": "BIGINT"
+    },
+    "actor_login": {
+     "comment": null,
+     "index": 6,
+     "name": "actor_login",
+     "type": "VARCHAR"
+    },
+    "created_at": {
+     "comment": null,
+     "index": 2,
+     "name": "created_at",
+     "type": "TIMESTAMP"
+    },
+    "detail_level": {
+     "comment": null,
+     "index": 7,
+     "name": "detail_level",
+     "type": "UTINYINT"
+    },
+    "event_id": {
+     "comment": null,
+     "index": 1,
+     "name": "event_id",
+     "type": "BIGINT"
+    },
+    "number": {
+     "comment": null,
+     "index": 9,
+     "name": "number",
+     "type": "INTEGER"
+    },
+    "repo_id": {
+     "comment": null,
+     "index": 3,
+     "name": "repo_id",
+     "type": "BIGINT"
+    },
+    "repo_name": {
+     "comment": null,
+     "index": 4,
+     "name": "repo_name",
+     "type": "VARCHAR"
+    },
+    "review_state": {
+     "comment": null,
+     "index": 10,
+     "name": "review_state",
+     "type": "VARCHAR"
+    }
+   },
+   "metadata": {
+    "comment": null,
+    "database": "warehouse",
+    "name": "stg_pr_reviews",
+    "owner": null,
+    "schema": "main",
+    "type": "VIEW"
+   },
+   "stats": {},
+   "unique_id": "model.breakout.stg_pr_reviews"
+  },
+  "model.breakout.stg_public_events": {
+   "columns": {
+    "actor_id": {
+     "comment": null,
+     "index": 5,
+     "name": "actor_id",
+     "type": "BIGINT"
+    },
+    "actor_login": {
+     "comment": null,
+     "index": 6,
+     "name": "actor_login",
+     "type": "VARCHAR"
+    },
+    "created_at": {
+     "comment": null,
+     "index": 2,
+     "name": "created_at",
+     "type": "TIMESTAMP"
+    },
+    "detail_level": {
+     "comment": null,
+     "index": 7,
+     "name": "detail_level",
+     "type": "UTINYINT"
+    },
+    "event_id": {
+     "comment": null,
+     "index": 1,
+     "name": "event_id",
+     "type": "BIGINT"
+    },
+    "repo_id": {
+     "comment": null,
+     "index": 3,
+     "name": "repo_id",
+     "type": "BIGINT"
+    },
+    "repo_name": {
+     "comment": null,
+     "index": 4,
+     "name": "repo_name",
+     "type": "VARCHAR"
+    }
+   },
+   "metadata": {
+    "comment": null,
+    "database": "warehouse",
+    "name": "stg_public_events",
+    "owner": null,
+    "schema": "main",
+    "type": "VIEW"
+   },
+   "stats": {},
+   "unique_id": "model.breakout.stg_public_events"
+  },
+  "model.breakout.stg_pull_requests": {
+   "columns": {
+    "action": {
+     "comment": null,
+     "index": 8,
+     "name": "action",
+     "type": "VARCHAR"
+    },
+    "actor_id": {
+     "comment": null,
+     "index": 5,
+     "name": "actor_id",
+     "type": "BIGINT"
+    },
+    "actor_login": {
+     "comment": null,
+     "index": 6,
+     "name": "actor_login",
+     "type": "VARCHAR"
+    },
+    "created_at": {
+     "comment": null,
+     "index": 2,
+     "name": "created_at",
+     "type": "TIMESTAMP"
+    },
+    "detail_level": {
+     "comment": null,
+     "index": 7,
+     "name": "detail_level",
+     "type": "UTINYINT"
+    },
+    "event_id": {
+     "comment": null,
+     "index": 1,
+     "name": "event_id",
+     "type": "BIGINT"
+    },
+    "number": {
+     "comment": null,
+     "index": 9,
+     "name": "number",
+     "type": "INTEGER"
+    },
+    "pr_merged": {
+     "comment": null,
+     "index": 10,
+     "name": "pr_merged",
+     "type": "BOOLEAN"
+    },
+    "repo_id": {
+     "comment": null,
+     "index": 3,
+     "name": "repo_id",
+     "type": "BIGINT"
+    },
+    "repo_name": {
+     "comment": null,
+     "index": 4,
+     "name": "repo_name",
+     "type": "VARCHAR"
+    },
+    "target_created_at": {
+     "comment": null,
+     "index": 12,
+     "name": "target_created_at",
+     "type": "TIMESTAMP"
+    },
+    "target_user_id": {
+     "comment": null,
+     "index": 11,
+     "name": "target_user_id",
+     "type": "BIGINT"
+    }
+   },
+   "metadata": {
+    "comment": null,
+    "database": "warehouse",
+    "name": "stg_pull_requests",
+    "owner": null,
+    "schema": "main",
+    "type": "VIEW"
+   },
+   "stats": {},
+   "unique_id": "model.breakout.stg_pull_requests"
+  },
+  "model.breakout.stg_push_daily": {
+   "columns": {
+    "actor_id": {
+     "comment": null,
+     "index": 2,
+     "name": "actor_id",
+     "type": "BIGINT"
+    },
+    "day": {
+     "comment": null,
+     "index": 3,
+     "name": "day",
+     "type": "DATE"
+    },
+    "n_pushes": {
+     "comment": null,
+     "index": 4,
+     "name": "n_pushes",
+     "type": "INTEGER"
+    },
+    "repo_id": {
+     "comment": null,
+     "index": 1,
+     "name": "repo_id",
+     "type": "BIGINT"
+    }
+   },
+   "metadata": {
+    "comment": null,
+    "database": "warehouse",
+    "name": "stg_push_daily",
+    "owner": null,
+    "schema": "main",
+    "type": "VIEW"
+   },
+   "stats": {},
+   "unique_id": "model.breakout.stg_push_daily"
+  },
+  "model.breakout.stg_releases": {
+   "columns": {
+    "action": {
+     "comment": null,
+     "index": 8,
+     "name": "action",
+     "type": "VARCHAR"
+    },
+    "actor_id": {
+     "comment": null,
+     "index": 5,
+     "name": "actor_id",
+     "type": "BIGINT"
+    },
+    "actor_login": {
+     "comment": null,
+     "index": 6,
+     "name": "actor_login",
+     "type": "VARCHAR"
+    },
+    "created_at": {
+     "comment": null,
+     "index": 2,
+     "name": "created_at",
+     "type": "TIMESTAMP"
+    },
+    "detail_level": {
+     "comment": null,
+     "index": 7,
+     "name": "detail_level",
+     "type": "UTINYINT"
+    },
+    "event_id": {
+     "comment": null,
+     "index": 1,
+     "name": "event_id",
+     "type": "BIGINT"
+    },
+    "release_prerelease": {
+     "comment": null,
+     "index": 9,
+     "name": "release_prerelease",
+     "type": "BOOLEAN"
+    },
+    "repo_id": {
+     "comment": null,
+     "index": 3,
+     "name": "repo_id",
+     "type": "BIGINT"
+    },
+    "repo_name": {
+     "comment": null,
+     "index": 4,
+     "name": "repo_name",
+     "type": "VARCHAR"
+    }
+   },
+   "metadata": {
+    "comment": null,
+    "database": "warehouse",
+    "name": "stg_releases",
+    "owner": null,
+    "schema": "main",
+    "type": "VIEW"
+   },
+   "stats": {},
+   "unique_id": "model.breakout.stg_releases"
+  },
+  "model.breakout.stg_repo_metadata": {
+   "columns": {
+    "api_created_at": {
+     "comment": null,
+     "index": 4,
+     "name": "api_created_at",
+     "type": "TIMESTAMP"
+    },
+    "fetched_at": {
+     "comment": null,
+     "index": 3,
+     "name": "fetched_at",
+     "type": "TIMESTAMP"
+    },
+    "is_archived": {
+     "comment": null,
+     "index": 7,
+     "name": "is_archived",
+     "type": "BOOLEAN"
+    },
+    "is_fork": {
+     "comment": null,
+     "index": 5,
+     "name": "is_fork",
+     "type": "BOOLEAN"
+    },
+    "is_mirror": {
+     "comment": null,
+     "index": 8,
+     "name": "is_mirror",
+     "type": "BOOLEAN"
+    },
+    "is_template": {
+     "comment": null,
+     "index": 9,
+     "name": "is_template",
+     "type": "BOOLEAN"
+    },
+    "owner_created_at": {
+     "comment": null,
+     "index": 13,
+     "name": "owner_created_at",
+     "type": "TIMESTAMP"
+    },
+    "owner_id": {
+     "comment": null,
+     "index": 12,
+     "name": "owner_id",
+     "type": "BIGINT"
+    },
+    "owner_type": {
+     "comment": null,
+     "index": 11,
+     "name": "owner_type",
+     "type": "VARCHAR"
+    },
+    "parent_repo_id": {
+     "comment": null,
+     "index": 6,
+     "name": "parent_repo_id",
+     "type": "BIGINT"
+    },
+    "primary_language": {
+     "comment": null,
+     "index": 10,
+     "name": "primary_language",
+     "type": "VARCHAR"
+    },
+    "repo_id": {
+     "comment": null,
+     "index": 1,
+     "name": "repo_id",
+     "type": "BIGINT"
+    },
+    "status": {
+     "comment": null,
+     "index": 2,
+     "name": "status",
+     "type": "VARCHAR"
+    }
+   },
+   "metadata": {
+    "comment": null,
+    "database": "warehouse",
+    "name": "stg_repo_metadata",
+    "owner": null,
+    "schema": "main",
+    "type": "VIEW"
+   },
+   "stats": {},
+   "unique_id": "model.breakout.stg_repo_metadata"
+  },
+  "model.breakout.stg_repo_name_history": {
+   "columns": {
+    "first_seen": {
+     "comment": null,
+     "index": 3,
+     "name": "first_seen",
+     "type": "TIMESTAMP"
+    },
+    "last_seen": {
+     "comment": null,
+     "index": 4,
+     "name": "last_seen",
+     "type": "TIMESTAMP"
+    },
+    "n_events": {
+     "comment": null,
+     "index": 5,
+     "name": "n_events",
+     "type": "BIGINT"
+    },
+    "repo_id": {
+     "comment": null,
+     "index": 1,
+     "name": "repo_id",
+     "type": "BIGINT"
+    },
+    "repo_name": {
+     "comment": null,
+     "index": 2,
+     "name": "repo_name",
+     "type": "VARCHAR"
+    }
+   },
+   "metadata": {
+    "comment": null,
+    "database": "warehouse",
+    "name": "stg_repo_name_history",
+    "owner": null,
+    "schema": "main",
+    "type": "VIEW"
+   },
+   "stats": {},
+   "unique_id": "model.breakout.stg_repo_name_history"
+  },
+  "model.breakout.stg_stars": {
+   "columns": {
+    "actor_id": {
+     "comment": null,
+     "index": 3,
+     "name": "actor_id",
+     "type": "BIGINT"
+    },
+    "bucket": {
+     "comment": null,
+     "index": 1,
+     "name": "bucket",
+     "type": "SMALLINT"
+    },
+    "detail_level": {
+     "comment": null,
+     "index": 6,
+     "name": "detail_level",
+     "type": "UTINYINT"
+    },
+    "event_id": {
+     "comment": null,
+     "index": 5,
+     "name": "event_id",
+     "type": "BIGINT"
+    },
+    "repo_id": {
+     "comment": null,
+     "index": 2,
+     "name": "repo_id",
+     "type": "BIGINT"
+    },
+    "starred_at": {
+     "comment": null,
+     "index": 4,
+     "name": "starred_at",
+     "type": "TIMESTAMP"
+    }
+   },
+   "metadata": {
+    "comment": null,
+    "database": "warehouse",
+    "name": "stg_stars",
+    "owner": null,
+    "schema": "main",
+    "type": "BASE TABLE"
+   },
+   "stats": {},
+   "unique_id": "model.breakout.stg_stars"
+  },
+  "model.breakout.stg_trending": {
+   "columns": {
+    "language_filter": {
+     "comment": null,
+     "index": 5,
+     "name": "language_filter",
+     "type": "VARCHAR"
+    },
+    "rank": {
+     "comment": null,
+     "index": 2,
+     "name": "rank",
+     "type": "INTEGER"
+    },
+    "repo_id": {
+     "comment": null,
+     "index": 3,
+     "name": "repo_id",
+     "type": "BIGINT"
+    },
+    "repo_name": {
+     "comment": null,
+     "index": 4,
+     "name": "repo_name",
+     "type": "VARCHAR"
+    },
+    "source": {
+     "comment": null,
+     "index": 6,
+     "name": "source",
+     "type": "VARCHAR"
+    },
+    "trending_date": {
+     "comment": null,
+     "index": 1,
+     "name": "trending_date",
+     "type": "DATE"
+    }
+   },
+   "metadata": {
+    "comment": null,
+    "database": "warehouse",
+    "name": "stg_trending",
+    "owner": null,
+    "schema": "main",
+    "type": "VIEW"
+   },
+   "stats": {},
+   "unique_id": "model.breakout.stg_trending"
+  },
+  "seed.breakout.known_bots": {
+   "columns": {
+    "login": {
+     "comment": null,
+     "index": 1,
+     "name": "login",
+     "type": "VARCHAR"
+    },
+    "reason": {
+     "comment": null,
+     "index": 2,
+     "name": "reason",
+     "type": "VARCHAR"
+    }
+   },
+   "metadata": {
+    "comment": null,
+    "database": "warehouse",
+    "name": "known_bots",
+    "owner": null,
+    "schema": "main",
+    "type": "BASE TABLE"
+   },
+   "stats": {},
+   "unique_id": "seed.breakout.known_bots"
+  },
+  "seed.breakout.top_languages": {
+   "columns": {
+    "language": {
+     "comment": null,
+     "index": 1,
+     "name": "language",
+     "type": "VARCHAR"
+    }
+   },
+   "metadata": {
+    "comment": null,
+    "database": "warehouse",
+    "name": "top_languages",
+    "owner": null,
+    "schema": "main",
+    "type": "BASE TABLE"
+   },
+   "stats": {},
+   "unique_id": "seed.breakout.top_languages"
+  }
+ },
+ "sources": {}
+}

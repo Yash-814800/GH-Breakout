@@ -28,7 +28,7 @@ jobs:
     timeout-minutes: 90
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
       - name: Free disk space
         run: |
@@ -40,7 +40,7 @@ jobs:
           df -h
 
       - name: Setup uv
-        uses: astral-sh/setup-uv@v10.3.0
+        uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
         with:
           enable-cache: true
 
@@ -62,9 +62,13 @@ jobs:
           fi
           uv run breakout daily run $ARGS
 
+      - name: Build dbt docs
+        continue-on-error: true
+        run: uv run breakout publish dbt-docs
+
       - name: Upload run status and logs artifact
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: daily-run-status-${{ inputs.date || 'today' }}
           path: |
@@ -73,14 +77,22 @@ jobs:
           retention-days: 14
 
       - name: Upload site data artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: site-data
           path: site/public/data/
           retention-days: 7
 
+      - name: Upload dbt docs artifact
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: site-dbt-docs
+          path: site/public/dbt-docs/
+          retention-days: 7
+          if-no-files-found: ignore
+
       - name: Upload badges artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: site-badges
           path: site/public/badges/
@@ -92,6 +104,7 @@ jobs:
     if: inputs.skip_deploy != true
     runs-on: ubuntu-latest
     permissions:
+      contents: read
       pages: write
       id-token: write
     environment:
@@ -99,23 +112,30 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
       - name: Download site data artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
           name: site-data
           path: site/public/data
 
+      - name: Download dbt docs artifact
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        continue-on-error: true
+        with:
+          name: site-dbt-docs
+          path: site/public/dbt-docs
+
       - name: Download badges artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         continue-on-error: true
         with:
           name: site-badges
           path: site/public/badges
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: 22
           cache: npm
@@ -150,11 +170,11 @@ jobs:
 
       - name: Upload Pages artifact
         if: steps.qa.outcome == 'success'
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa # v3
         with:
           path: site/dist
 
       - name: Deploy to GitHub Pages
         id: deployment
         if: steps.qa.outcome == 'success'
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e # v4

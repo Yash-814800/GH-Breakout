@@ -1217,6 +1217,58 @@ def export_live_predictions_parquet(
     return LIVE_PREDICTIONS_PARQUET
 
 
+def ingest_summary(target_date: date, lake: Path | None = None) -> list[dict[str, Any]]:
+    """Rows and newest event per event type for the day before ``target_date``.
+
+    Reads only the small ``day-*`` / ``month-*`` files of the month the day is in, so it is cheap on
+    a runner. Returns an empty list where the lake has no such files (a failure never stops the
+    export).
+    """
+    root = (lake or P.DATA_DIR / "lake") / "events"
+    start = datetime.combine(target_date - timedelta(days=1), datetime.min.time())
+    end = datetime.combine(target_date, datetime.min.time())
+    out: list[dict[str, Any]] = []
+    con = duckdb.connect()
+    try:
+        for tdir in sorted(root.glob("event_type=*")):
+            files = sorted(
+                str(f)
+                for f in tdir.glob(f"year={start.year}/month={start.month:02d}/*.parquet")
+                if f.name.startswith(("day-", "month-"))
+            )
+            if not files:
+                continue
+            try:
+                n, latest = con.execute(
+                    "select count(*), max(created_at) from read_parquet(?) "
+                    "where created_at >= ? and created_at < ?",
+                    [files, start, end],
+                ).fetchone()  # type: ignore[misc]
+            except Exception as exc:
+                log.debug("ingest summary skipped %s: %s", tdir.name, exc)
+                continue
+            out.append(
+                {
+                    "event_type": tdir.name.split("=", 1)[1],
+                    "latest_event": latest.isoformat(timespec="seconds") if latest else None,
+                    "rows_24h": int(n),
+                }
+            )
+    finally:
+        con.close()
+    return out
+
+
+def dbt_summary() -> dict[str, Any]:
+    """Number of dbt tests of the project, from the summary written by ``publish dbt-docs``."""
+    p = P.ROOT / "reports" / "dbt" / "summary.json"
+    try:
+        n = int(json.loads(p.read_text())["tests"])
+    except (OSError, ValueError, KeyError):
+        return {"tests_passing": None, "status": "unknown"}
+    return {"tests_passing": n, "status": "clean"}
+
+
 def export_status(
     cfg: Config,
     target_date: date,
@@ -1231,6 +1283,8 @@ def export_status(
     step_durations: dict[str, float] = {}
     missing_hours: list[str] = []
     rows_ingested: list[dict[str, Any]] = []
+    with contextlib.suppress(Exception):
+        rows_ingested = ingest_summary(target_date)
 
     if run_status_path.exists():
         with contextlib.suppress(Exception):
@@ -1278,7 +1332,7 @@ def export_status(
         "step_durations": step_durations or None,
         "rows_ingested_last_14d": rows_ingested,
         "missing_hours": missing_hours,
-        "dbt_summary": {"tests_passing": 162, "status": "clean"},
+        "dbt_summary": dbt_summary(),
         "model": model_info or None,
         "drift": drift_info or None,
         "heartbeat": hb_info or None,

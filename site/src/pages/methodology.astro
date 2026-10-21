@@ -125,7 +125,10 @@ for (const n of ['cv_pr_curve', 'cv_precision_by_year', 'cv_reliability', 'shap_
         <li><strong>Star manipulation.</strong> A neutral "Unusual star pattern" label marks repos whose recent stars look different from other young repos. It is a statistical signal, not an accusation, and it never changes the model's score.</li>
         <li><strong>Back-tests are simulations.</strong> The back-test uses out-of-sample predictions, not lists published at the time. Only the <a href={url('/track-record/')}>track record</a> counts as live.</li>
       </ul>
-      <p>Code, data and the full model card are public on <a href={GITHUB_REPO}>GitHub</a> and Hugging Face.</p>
+      <p>
+        Code, data and the full model card are public on <a href={GITHUB_REPO}>GitHub</a> and Hugging Face. Every table the model is built from, with its columns and how the tables depend on each other, is documented in the
+        <a href={url('/dbt-docs/')}>data model docs</a>.
+      </p>
     </div>
   </div>
 </LongformLayout>

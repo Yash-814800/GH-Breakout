@@ -1,5 +1,4 @@
 ---
-import { existsSync } from 'node:fs';
 import { BRAND } from '../../lib/site';
 import { url, GITHUB_REPO, HF_EVENTS, HF_DERIVED, HF_SNAPSHOTS, HF_MODELS } from '../../lib/url';
 import { date, utcTime } from '../../lib/format';
@@ -8,7 +7,6 @@ import Icon from '../ui/Icon.astro';
 
 const meta = getMeta();
 const built = new Date(meta.build_time);
-const hasFeed = existsSync('public/feed.xml');
 
 const cols = [
   {
@@ -38,7 +36,9 @@ const cols = [
       { href: url('/methodology/'), label: 'Methodology' },
       { href: url('/status/'), label: 'Status' },
       { href: GITHUB_REPO, label: 'Source code', ext: true },
-      ...(hasFeed ? [{ href: url('/feed.xml'), label: 'RSS feed' }] : []),
+      { href: url('/blog/'), label: 'Blog' },
+      { href: url('/dbt-docs/'), label: 'Data model docs' },
+      { href: url('/feed.xml'), label: 'RSS feed' },
     ],
   },
   {

@@ -1,0 +1,767 @@
+{
+  "generated_at": "2026-10-21T12:40:34+00:00",
+  "hardware": {
+    "cpu": "AMD Ryzen 5 5600H with Radeon Graphics",
+    "logical_cores": 12,
+    "ram_gb": 14.9,
+    "os": "Linux-7.2.11-200.fc44.x86_64-x86_64-with-glibc2.43"
+  },
+  "versions": {
+    "duckdb": "1.5.6",
+    "clickhouse_local": "ClickHouse local version 26.8.32.14 (official build)."
+  },
+  "settings": {
+    "threads": 4,
+    "engine_memory_limit_gb": 4.0,
+    "warm_runs": 5,
+    "data": "one year (2022) of WatchEvent, IssueCommentEvent and PullRequestEvent, Parquet files of the lake"
+  },
+  "queries": {
+    "q1_daily_stars": {
+      "title": "Daily stars per repo (GROUP BY)",
+      "duckdb": {
+        "runs": [
+          {
+            "wall_s": 3.405,
+            "peak_rss_mb": 1132,
+            "ok": true,
+            "elapsed_s": 3.137,
+            "kind": "cold"
+          },
+          {
+            "wall_s": 2.406,
+            "peak_rss_mb": 1130,
+            "ok": true,
+            "elapsed_s": 2.2,
+            "kind": "warm"
+          },
+          {
+            "wall_s": 2.303,
+            "peak_rss_mb": 1131,
+            "ok": true,
+            "elapsed_s": 2.128,
+            "kind": "warm"
+          },
+          {
+            "wall_s": 2.303,
+            "peak_rss_mb": 1129,
+            "ok": true,
+            "elapsed_s": 2.047,
+            "kind": "warm"
+          },
+          {
+            "wall_s": 2.203,
+            "peak_rss_mb": 1130,
+            "ok": true,
+            "elapsed_s": 1.988,
+            "kind": "warm"
+          },
+          {
+            "wall_s": 2.305,
+            "peak_rss_mb": 1131,
+            "ok": true,
+            "elapsed_s": 2.076,
+            "kind": "warm"
+          }
+        ],
+        "cold_s": 3.137,
+        "warm_median_s": 2.076,
+        "warm_min_s": 1.988,
+        "peak_rss_mb": 1132,
+        "files_evicted_before": 36,
+        "completed": true
+      },
+      "clickhouse": {
+        "runs": [
+          {
+            "wall_s": 5.808,
+            "peak_rss_mb": 3160,
+            "ok": true,
+            "elapsed_s": 5.526,
+            "kind": "cold"
+          },
+          {
+            "wall_s": 5.145,
+            "peak_rss_mb": 2605,
+            "ok": true,
+            "elapsed_s": 4.866,
+            "kind": "warm"
+          },
+          {
+            "wall_s": 4.807,
+            "peak_rss_mb": 3094,
+            "ok": true,
+            "elapsed_s": 4.568,
+            "kind": "warm"
+          },
+          {
+            "wall_s": 5.107,
+            "peak_rss_mb": 2925,
+            "ok": true,
+            "elapsed_s": 4.834,
+            "kind": "warm"
+          },
+          {
+            "wall_s": 4.808,
+            "peak_rss_mb": 2532,
+            "ok": true,
+            "elapsed_s": 4.532,
+            "kind": "warm"
+          },
+          {
+            "wall_s": 5.006,
+            "peak_rss_mb": 3093,
+            "ok": true,
+            "elapsed_s": 4.781,
+            "kind": "warm"
+          }
+        ],
+        "cold_s": 5.526,
+        "warm_median_s": 4.781,
+        "warm_min_s": 4.532,
+        "peak_rss_mb": 3160,
+        "files_evicted_before": 36,
+        "completed": true
+      },
+      "results_identical": true,
+      "n_result_rows": 1
+    },
+    "q2_velocity_top100": {
+      "title": "Top 100 by 7-day velocity on 12 dates (window functions)",
+      "duckdb": {
+        "runs": [
+          {
+            "wall_s": 6.207,
+            "peak_rss_mb": 1328,
+            "ok": true,
+            "elapsed_s": 5.912,
+            "kind": "cold"
+          },
+          {
+            "wall_s": 4.705,
+            "peak_rss_mb": 1338,
+            "ok": true,
+            "elapsed_s": 4.511,
+            "kind": "warm"
+          },
+          {
+            "wall_s": 4.706,
+            "peak_rss_mb": 1327,
+            "ok": true,
+            "elapsed_s": 4.505,
+            "kind": "warm"
+          },
+          {
+            "wall_s": 5.082,
+            "peak_rss_mb": 1333,
+            "ok": true,
+            "elapsed_s": 4.697,
+            "kind": "warm"
+          },
+          {
+            "wall_s": 4.806,
+            "peak_rss_mb": 1334,
+            "ok": true,
+            "elapsed_s": 4.571,
+            "kind": "warm"
+          },
+          {
+            "wall_s": 4.709,
+            "peak_rss_mb": 1338,
+            "ok": true,
+            "elapsed_s": 4.534,
+            "kind": "warm"
+          }
+        ],
+        "cold_s": 5.912,
+        "warm_median_s": 4.534,
+        "warm_min_s": 4.505,
+        "peak_rss_mb": 1338,
+        "files_evicted_before": 36,
+        "completed": true
+      },
+      "clickhouse": {
+        "runs": [
+          {
+            "wall_s": 9.513,
+            "peak_rss_mb": 2622,
+            "ok": true,
+            "elapsed_s": 9.303,
+            "kind": "cold"
+          },
+          {
+            "wall_s": 9.213,
+            "peak_rss_mb": 2821,
+            "ok": true,
+            "elapsed_s": 8.974,
+            "kind": "warm"
+          },
+          {
+            "wall_s": 8.21,
+            "peak_rss_mb": 2712,
+            "ok": true,
+            "elapsed_s": 8.029,
+            "kind": "warm"
+          },
+          {
+            "wall_s": 8.31,
+            "peak_rss_mb": 3005,
+            "ok": true,
+            "elapsed_s": 8.16,
+            "kind": "warm"
+          },
+          {
+            "wall_s": 8.513,
+            "peak_rss_mb": 3296,
+            "ok": true,
+            "elapsed_s": 8.303,
+            "kind": "warm"
+          },
+          {
+            "wall_s": 8.65,
+            "peak_rss_mb": 3056,
+            "ok": true,
+            "elapsed_s": 8.438,
+            "kind": "warm"
+          }
+        ],
+        "cold_s": 9.303,
+        "warm_median_s": 8.303,
+        "warm_min_s": 8.029,
+        "peak_rss_mb": 3296,
+        "files_evicted_before": 36,
+        "completed": true
+      },
+      "results_identical": true,
+      "n_result_rows": 1200
+    },
+    "q3_sessions": {
+      "title": "Sessionization, 30-minute gap (LAG + running sum)",
+      "duckdb": {
+        "runs": [
+          {
+            "wall_s": 21.725,
+            "peak_rss_mb": 4350,
+            "ok": true,
+            "elapsed_s": 21.425,
+            "kind": "cold"
+          },
+          {
+            "wall_s": 18.727,
+            "peak_rss_mb": 4279,
+            "ok": true,
+            "elapsed_s": 18.408,
+            "kind": "warm"
+          },
+          {
+            "wall_s": 18.624,
+            "peak_rss_mb": 4287,
+            "ok": true,
+            "elapsed_s": 18.314,
+            "kind": "warm"
+          },
+          {
+            "wall_s": 18.221,
+            "peak_rss_mb": 4355,
+            "ok": true,
+            "elapsed_s": 17.897,
+            "kind": "warm"
+          },
+          {
+            "wall_s": 17.421,
+            "peak_rss_mb": 4369,
+            "ok": true,
+            "elapsed_s": 17.086,
+            "kind": "warm"
+          },
+          {
+            "wall_s": 16.518,
+            "peak_rss_mb": 4393,
+            "ok": true,
+            "elapsed_s": 16.212,
+            "kind": "warm"
+          }
+        ],
+        "cold_s": 21.425,
+        "warm_median_s": 17.897,
+        "warm_min_s": 16.212,
+        "peak_rss_mb": 4393,
+        "files_evicted_before": 36,
+        "completed": true
+      },
+      "clickhouse": {
+        "runs": [
+          {
+            "wall_s": 23.255,
+            "peak_rss_mb": 4432,
+            "ok": false,
+            "error": "22.197\nCode: 241. DB::Exception: (total) memory limit exceeded: would use 3.26 GiB (attempt to allocate chunk of 4.01 MiB), current RSS: 3.43 GiB, maximum: 3.43 GiB. Untracked memory across all threads: 2.38 MiB: While executing SourceFromNativeStream. (MEMORY_LIMIT_EXCEEDED)",
+            "kind": "cold"
+          }
+        ],
+        "cold_s": null,
+        "warm_median_s": null,
+        "warm_min_s": null,
+        "peak_rss_mb": 4432,
+        "files_evicted_before": 36,
+        "completed": false
+      },
+      "results_identical": null,
+      "n_result_rows": 1
+    },
+    "q4_cohort_retention": {
+      "title": "Weekly stargazer cohort retention (join stars to later actions)",
+      "duckdb": {
+        "runs": [
+          {
+            "wall_s": 38.559,
+            "peak_rss_mb": 4456,
+            "ok": true,
+            "elapsed_s": 38.092,
+            "kind": "cold"
+          },
+          {
+            "wall_s": 41.552,
+            "peak_rss_mb": 4730,
+            "ok": true,
+            "elapsed_s": 41.09,
+            "kind": "warm"
+          },
+          {
+            "wall_s": 40.151,
+            "peak_rss_mb": 4542,
+            "ok": true,
+            "elapsed_s": 39.762,
+            "kind": "warm"
+          },
+          {
+            "wall_s": 35.155,
+            "peak_rss_mb": 4798,
+            "ok": true,
+            "elapsed_s": 34.788,
+            "kind": "warm"
+          },
+          {
+            "wall_s": 34.742,
+            "peak_rss_mb": 4520,
+            "ok": true,
+            "elapsed_s": 34.428,
+            "kind": "warm"
+          },
+          {
+            "wall_s": 35.542,
+            "peak_rss_mb": 4471,
+            "ok": true,
+            "elapsed_s": 35.121,
+            "kind": "warm"
+          }
+        ],
+        "cold_s": 38.092,
+        "warm_median_s": 35.121,
+        "warm_min_s": 34.428,
+        "peak_rss_mb": 4798,
+        "files_evicted_before": 36,
+        "completed": true
+      },
+      "clickhouse": {
+        "runs": [
+          {
+            "wall_s": 16.522,
+            "peak_rss_mb": 4240,
+            "ok": false,
+            "error": "15.917\nCode: 241. DB::Exception: (total) memory limit exceeded: would use 3.15 GiB (attempt to allocate chunk of 1.50 GiB), current RSS: 3.50 GiB, maximum: 4.34 GiB. Untracked memory across all threads: 9.16 MiB: While executing FillingRightJoinSide. (MEMORY_LIMIT_EXCEEDED)",
+            "kind": "cold"
+          }
+        ],
+        "cold_s": null,
+        "warm_median_s": null,
+        "warm_min_s": null,
+        "peak_rss_mb": 4240,
+        "files_evicted_before": 36,
+        "completed": false
+      },
+      "results_identical": null,
+      "n_result_rows": 53
+    },
+    "q5_costar_overlap": {
+      "title": "Co-star overlap of the 100 top repos (self-join on actor)",
+      "duckdb": {
+        "runs": [
+          {
+            "wall_s": 2.004,
+            "peak_rss_mb": 560,
+            "ok": true,
+            "elapsed_s": 1.782,
+            "kind": "cold"
+          },
+          {
+            "wall_s": 1.102,
+            "peak_rss_mb": 593,
+            "ok": true,
+            "elapsed_s": 0.96,
+            "kind": "warm"
+          },
+          {
+            "wall_s": 1.102,
+            "peak_rss_mb": 587,
+            "ok": true,
+            "elapsed_s": 0.949,
+            "kind": "warm"
+          },
+          {
+            "wall_s": 1.102,
+            "peak_rss_mb": 589,
+            "ok": true,
+            "elapsed_s": 0.943,
+            "kind": "warm"
+          },
+          {
+            "wall_s": 1.102,
+            "peak_rss_mb": 584,
+            "ok": true,
+            "elapsed_s": 0.948,
+            "kind": "warm"
+          },
+          {
+            "wall_s": 1.102,
+            "peak_rss_mb": 581,
+            "ok": true,
+            "elapsed_s": 0.943,
+            "kind": "warm"
+          }
+        ],
+        "cold_s": 1.782,
+        "warm_median_s": 0.948,
+        "warm_min_s": 0.943,
+        "peak_rss_mb": 593,
+        "files_evicted_before": 36,
+        "completed": true
+      },
+      "clickhouse": {
+        "runs": [
+          {
+            "wall_s": 6.216,
+            "peak_rss_mb": 2050,
+            "ok": true,
+            "elapsed_s": 6.004,
+            "kind": "cold"
+          },
+          {
+            "wall_s": 3.005,
+            "peak_rss_mb": 2310,
+            "ok": true,
+            "elapsed_s": 2.745,
+            "kind": "warm"
+          },
+          {
+            "wall_s": 3.105,
+            "peak_rss_mb": 2300,
+            "ok": true,
+            "elapsed_s": 2.802,
+            "kind": "warm"
+          },
+          {
+            "wall_s": 3.105,
+            "peak_rss_mb": 2451,
+            "ok": true,
+            "elapsed_s": 2.858,
+            "kind": "warm"
+          },
+          {
+            "wall_s": 3.104,
+            "peak_rss_mb": 2199,
+            "ok": true,
+            "elapsed_s": 2.879,
+            "kind": "warm"
+          },
+          {
+            "wall_s": 3.105,
+            "peak_rss_mb": 2269,
+            "ok": true,
+            "elapsed_s": 2.807,
+            "kind": "warm"
+          }
+        ],
+        "cold_s": 6.004,
+        "warm_median_s": 2.807,
+        "warm_min_s": 2.745,
+        "peak_rss_mb": 2451,
+        "files_evicted_before": 36,
+        "completed": true
+      },
+      "results_identical": true,
+      "n_result_rows": 50
+    },
+    "q6a_distinct_exact": {
+      "title": "Exact COUNT(DISTINCT actor_id) per month",
+      "duckdb": {
+        "runs": [
+          {
+            "wall_s": 2.703,
+            "peak_rss_mb": 1125,
+            "ok": true,
+            "elapsed_s": 2.526,
+            "kind": "cold"
+          },
+          {
+            "wall_s": 2.203,
+            "peak_rss_mb": 1129,
+            "ok": true,
+            "elapsed_s": 1.952,
+            "kind": "warm"
+          },
+          {
+            "wall_s": 2.403,
+            "peak_rss_mb": 1121,
+            "ok": true,
+            "elapsed_s": 2.163,
+            "kind": "warm"
+          },
+          {
+            "wall_s": 2.703,
+            "peak_rss_mb": 1133,
+            "ok": true,
+            "elapsed_s": 2.464,
+            "kind": "warm"
+          },
+          {
+            "wall_s": 2.303,
+            "peak_rss_mb": 1126,
+            "ok": true,
+            "elapsed_s": 2.074,
+            "kind": "warm"
+          },
+          {
+            "wall_s": 2.303,
+            "peak_rss_mb": 1130,
+            "ok": true,
+            "elapsed_s": 2.08,
+            "kind": "warm"
+          }
+        ],
+        "cold_s": 2.526,
+        "warm_median_s": 2.08,
+        "warm_min_s": 1.952,
+        "peak_rss_mb": 1133,
+        "files_evicted_before": 36,
+        "completed": true
+      },
+      "clickhouse": {
+        "runs": [
+          {
+            "wall_s": 2.903,
+            "peak_rss_mb": 886,
+            "ok": true,
+            "elapsed_s": 2.72,
+            "kind": "cold"
+          },
+          {
+            "wall_s": 1.833,
+            "peak_rss_mb": 1122,
+            "ok": true,
+            "elapsed_s": 1.651,
+            "kind": "warm"
+          },
+          {
+            "wall_s": 1.903,
+            "peak_rss_mb": 1126,
+            "ok": true,
+            "elapsed_s": 1.712,
+            "kind": "warm"
+          },
+          {
+            "wall_s": 1.903,
+            "peak_rss_mb": 1149,
+            "ok": true,
+            "elapsed_s": 1.719,
+            "kind": "warm"
+          },
+          {
+            "wall_s": 1.903,
+            "peak_rss_mb": 1129,
+            "ok": true,
+            "elapsed_s": 1.739,
+            "kind": "warm"
+          },
+          {
+            "wall_s": 1.903,
+            "peak_rss_mb": 1125,
+            "ok": true,
+            "elapsed_s": 1.655,
+            "kind": "warm"
+          }
+        ],
+        "cold_s": 2.72,
+        "warm_median_s": 1.712,
+        "warm_min_s": 1.651,
+        "peak_rss_mb": 1149,
+        "files_evicted_before": 36,
+        "completed": true
+      },
+      "results_identical": true,
+      "n_result_rows": 12,
+      "exact_rows": [
+        [
+          "2022-01-01",
+          "1313528"
+        ],
+        [
+          "2022-02-01",
+          "1202608"
+        ],
+        [
+          "2022-03-01",
+          "1335123"
+        ],
+        [
+          "2022-04-01",
+          "1327488"
+        ],
+        [
+          "2022-05-01",
+          "1304732"
+        ],
+        [
+          "2022-06-01",
+          "1225228"
+        ],
+        [
+          "2022-07-01",
+          "1272484"
+        ],
+        [
+          "2022-08-01",
+          "1330696"
+        ],
+        [
+          "2022-09-01",
+          "1320919"
+        ],
+        [
+          "2022-10-01",
+          "1349923"
+        ],
+        [
+          "2022-11-01",
+          "1346510"
+        ],
+        [
+          "2022-12-01",
+          "1251138"
+        ]
+      ]
+    },
+    "q6b_distinct_approx": {
+      "title": "Approximate distinct count per month",
+      "duckdb": {
+        "runs": [
+          {
+            "wall_s": 2.203,
+            "peak_rss_mb": 92,
+            "ok": true,
+            "elapsed_s": 2.092,
+            "kind": "cold"
+          },
+          {
+            "wall_s": 1.302,
+            "peak_rss_mb": 89,
+            "ok": true,
+            "elapsed_s": 1.184,
+            "kind": "warm"
+          },
+          {
+            "wall_s": 1.302,
+            "peak_rss_mb": 90,
+            "ok": true,
+            "elapsed_s": 1.179,
+            "kind": "warm"
+          },
+          {
+            "wall_s": 1.302,
+            "peak_rss_mb": 90,
+            "ok": true,
+            "elapsed_s": 1.17,
+            "kind": "warm"
+          },
+          {
+            "wall_s": 1.403,
+            "peak_rss_mb": 92,
+            "ok": true,
+            "elapsed_s": 1.22,
+            "kind": "warm"
+          },
+          {
+            "wall_s": 1.302,
+            "peak_rss_mb": 91,
+            "ok": true,
+            "elapsed_s": 1.187,
+            "kind": "warm"
+          }
+        ],
+        "cold_s": 2.092,
+        "warm_median_s": 1.184,
+        "warm_min_s": 1.17,
+        "peak_rss_mb": 92,
+        "files_evicted_before": 36,
+        "completed": true,
+        "mean_rel_error": 0.14057,
+        "max_rel_error": 0.32804
+      },
+      "clickhouse": {
+        "runs": [
+          {
+            "wall_s": 2.803,
+            "peak_rss_mb": 435,
+            "ok": true,
+            "elapsed_s": 2.616,
+            "kind": "cold"
+          },
+          {
+            "wall_s": 0.902,
+            "peak_rss_mb": 440,
+            "ok": true,
+            "elapsed_s": 0.811,
+            "kind": "warm"
+          },
+          {
+            "wall_s": 0.902,
+            "peak_rss_mb": 441,
+            "ok": true,
+            "elapsed_s": 0.807,
+            "kind": "warm"
+          },
+          {
+            "wall_s": 0.944,
+            "peak_rss_mb": 452,
+            "ok": true,
+            "elapsed_s": 0.807,
+            "kind": "warm"
+          },
+          {
+            "wall_s": 0.902,
+            "peak_rss_mb": 464,
+            "ok": true,
+            "elapsed_s": 0.793,
+            "kind": "warm"
+          },
+          {
+            "wall_s": 0.901,
+            "peak_rss_mb": 457,
+            "ok": true,
+            "elapsed_s": 0.788,
+            "kind": "warm"
+          }
+        ],
+        "cold_s": 2.616,
+        "warm_median_s": 0.807,
+        "warm_min_s": 0.788,
+        "peak_rss_mb": 464,
+        "files_evicted_before": 36,
+        "completed": true,
+        "mean_rel_error": 0.00597,
+        "max_rel_error": 0.01251
+      },
+      "results_identical": null
+    }
+  }
+}

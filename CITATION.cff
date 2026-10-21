@@ -1,0 +1,21 @@
+cff-version: 1.2.0
+message: "If you use this project, please cite it as below."
+title: "Breakout Radar (gh-breakout): predicting which young GitHub repositories break out"
+type: software
+license: MIT
+repository-code: "https://github.com/Yash-814800/GH-Breakout"
+url: "https://yash-814800.github.io/GH-Breakout/"
+abstract: >-
+  A free, daily, public leaderboard of young GitHub repositories likely to gain an unusual number of
+  stars in the next 30 days, built on the public GH Archive event stream, with a hash-chained,
+  tamper-evident record of every prediction.
+keywords:
+  - github
+  - gh-archive
+  - forecasting
+  - duckdb
+  - dbt
+  - lightgbm
+authors:
+  - name: "Yash-814800"
+date-released: "2026-10-21"

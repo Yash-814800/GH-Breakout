@@ -1297,6 +1297,33 @@ def publish_insights_cmd(
     typer.echo(f"Wrote insights stories to {p}")
 
 
+@publish_app.command("dbt-docs")
+def publish_dbt_docs_cmd(
+    ctx: typer.Context,
+    refresh_catalog: Annotated[
+        bool,
+        typer.Option(
+            "--refresh-catalog",
+            help="read column types from the local warehouse and rewrite reports/dbt/catalog.json",
+        ),
+    ] = False,
+) -> None:
+    """Generate the dbt docs and copy them to site/public/dbt-docs/ (Phase 13.2)."""
+    from breakout.publish import dbt_docs
+
+    cfg = get_config(ctx.obj["config"])
+    typer.echo(f"Wrote {dbt_docs.publish_docs(cfg, refresh_catalog=refresh_catalog)}")
+
+
+@publish_app.command("data-dictionary")
+def publish_data_dictionary_cmd(ctx: typer.Context) -> None:
+    """Write docs/data_dictionary.md from the dbt manifest (Phase 13.2)."""
+    from breakout.publish import dbt_docs
+
+    cfg = get_config(ctx.obj["config"])
+    typer.echo(f"Wrote {dbt_docs.write_data_dictionary(cfg)}")
+
+
 @publish_app.command("feeds")
 def publish_feeds_cmd(ctx: typer.Context) -> None:
     """Write feed_items.json (new leaderboard entries) for /feed.xml and /feed.json (Phase 12.1)."""

@@ -8,7 +8,8 @@
     select count(*) filter (where birth_at > first_star_at + interval 1 day) as n_bad, count(*) as n_all
     from {{ model }} where first_star_at is not null and not is_left_censored
 {% endset %}
-{% if execute %}
+{# the count is only logged when tests run; docs generate and compile have no data #}
+{% if execute and flags.WHICH in ('test', 'build') %}
   {% set r = run_query(q).rows[0] %}
   {{ log('birth_not_after_first_star: ' ~ r[0] ~ ' of ' ~ r[1] ~ ' repos violate it', info=True) }}
 {% endif %}

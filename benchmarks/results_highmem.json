@@ -1,0 +1,239 @@
+{
+  "generated_at": "2026-10-21T12:50:35+00:00",
+  "hardware": {
+    "cpu": "AMD Ryzen 5 5600H with Radeon Graphics",
+    "logical_cores": 12,
+    "ram_gb": 14.9,
+    "os": "Linux-7.2.11-200.fc44.x86_64-x86_64-with-glibc2.43"
+  },
+  "versions": {
+    "duckdb": "1.5.6",
+    "clickhouse_local": "ClickHouse local version 26.8.32.14 (official build)."
+  },
+  "settings": {
+    "threads": 4,
+    "engine_memory_limit_gb": 6.0,
+    "warm_runs": 5,
+    "data": "one year (2022) of WatchEvent, IssueCommentEvent and PullRequestEvent, Parquet files of the lake"
+  },
+  "queries": {
+    "q3_sessions": {
+      "title": "Sessionization, 30-minute gap (LAG + running sum)",
+      "duckdb": {
+        "runs": [
+          {
+            "wall_s": 15.617,
+            "peak_rss_mb": 5267,
+            "ok": true,
+            "elapsed_s": 15.316,
+            "kind": "cold"
+          },
+          {
+            "wall_s": 15.016,
+            "peak_rss_mb": 5302,
+            "ok": true,
+            "elapsed_s": 14.695,
+            "kind": "warm"
+          },
+          {
+            "wall_s": 14.116,
+            "peak_rss_mb": 5228,
+            "ok": true,
+            "elapsed_s": 13.816,
+            "kind": "warm"
+          },
+          {
+            "wall_s": 14.516,
+            "peak_rss_mb": 5256,
+            "ok": true,
+            "elapsed_s": 14.266,
+            "kind": "warm"
+          },
+          {
+            "wall_s": 15.016,
+            "peak_rss_mb": 5237,
+            "ok": true,
+            "elapsed_s": 14.664,
+            "kind": "warm"
+          },
+          {
+            "wall_s": 15.216,
+            "peak_rss_mb": 5207,
+            "ok": true,
+            "elapsed_s": 14.846,
+            "kind": "warm"
+          }
+        ],
+        "cold_s": 15.316,
+        "warm_median_s": 14.664,
+        "warm_min_s": 13.816,
+        "peak_rss_mb": 5302,
+        "files_evicted_before": 36,
+        "completed": true
+      },
+      "clickhouse": {
+        "runs": [
+          {
+            "wall_s": 24.93,
+            "peak_rss_mb": 5138,
+            "ok": true,
+            "elapsed_s": 24.571,
+            "kind": "cold"
+          },
+          {
+            "wall_s": 26.029,
+            "peak_rss_mb": 5188,
+            "ok": true,
+            "elapsed_s": 25.496,
+            "kind": "warm"
+          },
+          {
+            "wall_s": 25.96,
+            "peak_rss_mb": 5100,
+            "ok": true,
+            "elapsed_s": 25.245,
+            "kind": "warm"
+          },
+          {
+            "wall_s": 25.431,
+            "peak_rss_mb": 5152,
+            "ok": true,
+            "elapsed_s": 24.965,
+            "kind": "warm"
+          },
+          {
+            "wall_s": 23.867,
+            "peak_rss_mb": 5177,
+            "ok": true,
+            "elapsed_s": 23.48,
+            "kind": "warm"
+          },
+          {
+            "wall_s": 25.43,
+            "peak_rss_mb": 5150,
+            "ok": true,
+            "elapsed_s": 24.967,
+            "kind": "warm"
+          }
+        ],
+        "cold_s": 24.571,
+        "warm_median_s": 24.967,
+        "warm_min_s": 23.48,
+        "peak_rss_mb": 5188,
+        "files_evicted_before": 36,
+        "completed": true
+      },
+      "results_identical": true,
+      "n_result_rows": 1
+    },
+    "q4_cohort_retention": {
+      "title": "Weekly stargazer cohort retention (join stars to later actions)",
+      "duckdb": {
+        "runs": [
+          {
+            "wall_s": 42.755,
+            "peak_rss_mb": 6508,
+            "ok": true,
+            "elapsed_s": 41.839,
+            "kind": "cold"
+          },
+          {
+            "wall_s": 43.748,
+            "peak_rss_mb": 6433,
+            "ok": true,
+            "elapsed_s": 43.172,
+            "kind": "warm"
+          },
+          {
+            "wall_s": 34.036,
+            "peak_rss_mb": 6472,
+            "ok": true,
+            "elapsed_s": 33.469,
+            "kind": "warm"
+          },
+          {
+            "wall_s": 34.436,
+            "peak_rss_mb": 6320,
+            "ok": true,
+            "elapsed_s": 33.827,
+            "kind": "warm"
+          },
+          {
+            "wall_s": 36.949,
+            "peak_rss_mb": 6388,
+            "ok": true,
+            "elapsed_s": 36.391,
+            "kind": "warm"
+          },
+          {
+            "wall_s": 30.542,
+            "peak_rss_mb": 6384,
+            "ok": true,
+            "elapsed_s": 29.972,
+            "kind": "warm"
+          }
+        ],
+        "cold_s": 41.839,
+        "warm_median_s": 33.827,
+        "warm_min_s": 29.972,
+        "peak_rss_mb": 6508,
+        "files_evicted_before": 36,
+        "completed": true
+      },
+      "clickhouse": {
+        "runs": [
+          {
+            "wall_s": 53.974,
+            "peak_rss_mb": 4287,
+            "ok": true,
+            "elapsed_s": 52.442,
+            "kind": "cold"
+          },
+          {
+            "wall_s": 51.868,
+            "peak_rss_mb": 4288,
+            "ok": true,
+            "elapsed_s": 50.984,
+            "kind": "warm"
+          },
+          {
+            "wall_s": 51.387,
+            "peak_rss_mb": 4409,
+            "ok": true,
+            "elapsed_s": 50.646,
+            "kind": "warm"
+          },
+          {
+            "wall_s": 51.9,
+            "peak_rss_mb": 4952,
+            "ok": true,
+            "elapsed_s": 51.413,
+            "kind": "warm"
+          },
+          {
+            "wall_s": 51.558,
+            "peak_rss_mb": 5268,
+            "ok": true,
+            "elapsed_s": 50.979,
+            "kind": "warm"
+          },
+          {
+            "wall_s": 51.383,
+            "peak_rss_mb": 4290,
+            "ok": true,
+            "elapsed_s": 50.745,
+            "kind": "warm"
+          }
+        ],
+        "cold_s": 52.442,
+        "warm_median_s": 50.979,
+        "warm_min_s": 50.646,
+        "peak_rss_mb": 5268,
+        "files_evicted_before": 36,
+        "completed": true
+      },
+      "results_identical": true,
+      "n_result_rows": 53
+    }
+  }
+}
