@@ -157,3 +157,11 @@ def test_ops_group_lists_commands():
     assert result.exit_code == 0
     for cmd in ("verify-ledger", "parity", "drift"):
         assert cmd in result.output
+
+
+def test_daily_run_has_a_skip_bootstrap_option():
+    import typer.main
+
+    daily = typer.main.get_command(app).commands["daily"].commands["run"]  # type: ignore[attr-defined]
+    opts = {o for p in daily.params for o in p.opts}
+    assert {"--skip-bootstrap", "--no-upload"} <= opts

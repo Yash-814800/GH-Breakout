@@ -17,8 +17,8 @@ measured (row counts, sizes, runtimes, metrics). Future sessions rely on it.
 | 09 | Daily pipeline, weekly retrain, health checks | ☑ (live enrichment not wired) | 2026-10-20 | Validated on GitHub Actions: `daily.yml` succeeds (203 s, 1,033 candidates, ledger row, snapshot on HF); a same-day re-run ingests nothing and adds no ledger row; `weekly.yml` retrains and keeps the champion; `monthly.yml` passes (`lake verify-remote`); `health.yml` opens and closes the alert issue. Parity PASS (2024-06-03). CI green again. See ADR-027 and "Phase 9 status". |
 | 10 | Website (Astro) + deploy | ☑ | 2026-10-20 | Astro static site (105 pages, 8 routes) deployed to GitHub Pages via GitHub Actions ($0 cost). Leaderboard: 50 candidates, sparklines, language & probability filters, raw 185 KB (< 200 KB cap), Lighthouse Performance 100, Accessibility 96. Detail pages: 98 repos. DuckDB-WASM SQL explorer with HTTP 206 range requests. 332 pytest pass. Screenshots in reports/site_screenshots/. See "Phase 10 status" and ADR-028. |
 | 11 | Fake-star detector, similar repos, cohort retention | ☑ | 2026-10-21 | Suspicious-growth score (6 signals, robust z-score, empirical CDF [0, 100], Low/Med/High). Validated vs StarScout ICSE 2026 dataset (0.51% historical breakout prevalence). Item-item co-star similarity (80,965 repos, 17.25M pairs indexed in 71.7s, 90.9 MB). Stargazer cohort retention benchmarks. 4-story /insights/ page with DuckDB SQL. 344 pytest pass. Acceptance review 2026-10-21: insight texts corrected to match their data; label policy awaits human confirmation. See ADR-030 and "Phase 11 status". |
-| 12 | Distribution (RSS, badges, digest, Bluesky) | ☐ | | |
-| 13 | Portfolio polish, dbt docs, ClickHouse benchmark, final audit | ☐ | | |
+| 12 | Distribution (RSS, badges, digest, Bluesky) | ☑ (Bluesky bot intentionally not built) | 2026-10-21 | Feeds (`/feed.xml`, `/feed.json`, `/digest/feed.xml`) validated by 5 Playwright tests and live; shields.io badge renders for flagged repos (`breakout radar: #2 today · 36%`); one real digest (2026-W43) on the derived repo; Discussions enabled (posts to Announcements until a "Digest" category exists). 26 new pytest tests. See ADR-032 and "Phase 12 and 13 status". |
+| 13 | Portfolio polish, dbt docs, ClickHouse benchmark, final audit | ☑ (coverage 63%, target 70% not met) | 2026-10-21 | README rewrite, dbt docs with all 500 columns described and a CI check, generated data dictionary, DuckDB vs ClickHouse benchmark (7 queries, all reported) and 2 blog posts, `reports/final_audit.md`, `docs/portfolio_summary.md`, MIT license. See "Phase 12 and 13 status". |
 | 14 | Frontend redesign: design system, every page, pixel-level QA | ☑ (merged and deployed; checkpoints A and B were not asked) | 2026-10-21 | New design system (tokens, Tailwind v4, Instrument Sans self-hosted, 40 components), 15 routes rebuilt, light/dark, 360-1920 px. Fixture build: Lighthouse desktop 100 / 100 / 96 / 100, mobile 99-100 / 100 / 96 / 100, CLS 0.000. 136 Playwright + 34 Vitest + 347 pytest pass; content check passes on real data. See "Phase 14 status" and ADR-031. |
 
 ## Amendments after Phase 1 (ADR-009, ADR-010, 2026-10-12)
@@ -38,6 +38,28 @@ measured (row counts, sizes, runtimes, metrics). Future sessions rely on it.
 | Source test from a GitHub Actions runner | ☑ NO-GO | OpenDigger ~0.01 MB/s from the runner (needs >= 1), manifests 404; gharchive 54 MB/s. `reports/source_validation.md`, run 38194688025 |
 | Stargazers API for per-repo ground truth | ✖ not available | GitHub restricted it to admins/collaborators in July 2026 (ADR-010) |
 | Live-source gate / item 5 | ☐ not started | waits for your review of the source test |
+
+## Phase 12 and 13 status (2026-10-21)
+
+- **Phase 12 (without the Bluesky bot, by the owner's decision):** `breakout publish feeds|badges|digest|discuss-digest`
+  (`src/breakout/publish/distribution.py`); Astro endpoints `/feed.xml`, `/feed.json`, `/digest/feed.xml`; badge snippet on repo pages;
+  weekly digest from frozen snapshots and outcomes (stored on the derived repo under `digests/`); GitHub Discussions post (idempotent by
+  title); `site.yml` no longer mixes fixture data into real data. Live check: feeds return 200 with 66 items, badge
+  `https://img.shields.io/endpoint?url=https%3A%2F%2Fyash-814800.github.io%2FGH-Breakout%2Fbadges%2F1421825221.json` renders
+  "breakout radar: #2 today · 36%", `/digest/2026-W43/` is live (an in-progress week; the first live list has no history, so its repos are not
+  counted as new). Bug found and fixed on the first daily run: the Hub client cache folder in `site/public/data` was uploaded with the bundle (PR #5).
+- **Phase 13:** `breakout publish dbt-docs` (empty-catalog docs, column types from `reports/dbt/catalog.json`), `breakout publish data-dictionary`
+  (`docs/data_dictionary.md`, 52 models, 500 columns, 274 tests; CI fails when stale), a description for every column, `benchmarks/`
+  (`run.py`, `report.py`, SQL in two dialects, `results.json`, `results_highmem.json`), blog (`/blog/`, two posts), README, `reports/final_audit.md`,
+  `docs/portfolio_summary.md`, `LICENSE` (MIT), `SECURITY.md`, `CITATION.cff`, `CONTRIBUTING.md`, Dependabot, SHA-pinned actions.
+- **Benchmark (Ryzen 5 5600H, 14.9 GB, DuckDB 1.5.6, ClickHouse local 26.8.32.14, 2022 data, 4 threads, 4 GB):** DuckDB faster on Q1 (2.08 vs 4.78 s),
+  Q2 (4.53 vs 8.30), Q5 (0.95 vs 2.81); ClickHouse faster on Q6a (1.71 vs 2.08) and Q6b (0.81 vs 1.18); ClickHouse failed Q3 and Q4 at 4 GB and, at
+  6 GB, was slower (Q3 24.97 vs 14.66 s, Q4 50.98 vs 33.83 s). DuckDB's `approx_count_distinct` was off by 14% on average (up to 33%), ClickHouse `uniq` by 0.6%.
+- **Audit findings fixed here:** `daily run --no-upload` did not bootstrap on a clean clone (now reads what is missing, `--skip-bootstrap` added);
+  status page ingest table and dbt test count were empty or hardcoded (now filled); methodology page discloses the non-Monday over-prediction.
+- **Checks:** pytest 390, Vitest 41, Playwright 178 (pinned container), ruff, mypy; leak test PASS (2 dates), parity PASS (99.9883%); coverage 63%.
+- **Open for the human:** rotate the two tokens printed during the audit; create the Discussions category "Digest"; the label policy (Phase 11) and the
+  calibration decision; see the end of `reports/final_audit.md`.
 
 ## Phase 14 status (2026-10-21)
 

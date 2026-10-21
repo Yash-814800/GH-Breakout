@@ -102,14 +102,25 @@ def merge_vars(args: list[str], base: dict[str, Any]) -> list[str]:
 _NO_VARS = {"deps", "clean", "init", "debug"}
 
 
-def run_dbt(cfg: Config, args: list[str], *, extra_vars: dict[str, Any] | None = None) -> int:
-    """Run ``dbt <args>`` from the repo root; returns the exit code."""
+def run_dbt(
+    cfg: Config,
+    args: list[str],
+    *,
+    extra_vars: dict[str, Any] | None = None,
+    lake: Path | None = None,
+    warehouse: Path | None = None,
+) -> int:
+    """Run ``dbt <args>`` from the repo root; returns the exit code.
+
+    ``lake`` and ``warehouse`` override the data locations (the docs build points both at empty
+    scratch paths because compiling needs no data).
+    """
     (P.TMP_DIR / "duckdb").mkdir(parents=True, exist_ok=True)
     if args and args[0] not in _NO_VARS:
         args = merge_vars(args, {**config_vars(cfg), **(extra_vars or {})})
     cmd = [sys.executable, "-m", "dbt.cli.main", *args, "--project-dir", str(DBT_DIR)]
     log.info("dbt %s", " ".join(args))
-    rc = subprocess.call(cmd, env=dbt_env(), cwd=P.ROOT)  # noqa: S603
+    rc = subprocess.call(cmd, env=dbt_env(lake=lake, warehouse=warehouse), cwd=P.ROOT)  # noqa: S603
     _collect_timings()
     return rc
 

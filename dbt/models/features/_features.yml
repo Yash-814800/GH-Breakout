@@ -10,17 +10,47 @@ models:
           arguments: {combination_of_columns: [repo_id, snapshot_date]}
     columns:
       - name: repo_id
+        description: GitHub repository id. The only key used to join repositories; names are display-only.
         tests: [not_null]
       - name: snapshot_date
+        description: 'Snapshot date D: the world as known at D 00:00 UTC. Only events before D are used.'
         tests: [not_null]
       - name: stars_14d
+        description: Stars received in the last 14 days.
         tests: [{dbt_utils.accepted_range: {arguments: {min_value: "{{ var('min_stars_14d') }}"}}}]
       - name: star_gini_14d
+        description: 'Gini coefficient of the 14 daily star counts (zeros included); 0 = even, 1 = one-day spike.'
         tests: [{dbt_utils.accepted_range: {arguments: {min_value: -0.000001, max_value: 1}}}]
       - name: star_max_day_share_14d
+        description: Largest single-day share of the stars of the last 14 days.
         tests: [{dbt_utils.accepted_range: {arguments: {min_value: 0, max_value: 1}}}]
       - name: star_max_hour_share_7d
+        description: Largest single-hour share of the stars of the last 7 days.
         tests: [{dbt_utils.accepted_range: {arguments: {min_value: 0, max_value: 1}}}]
+      - name: bucket
+        description: Hash bucket of repo_id (or actor_id) used to build the model in bounded memory (ADR-020); not meaningful downstream.
+      - name: stars_1d
+        description: Stars received in the last 1 day.
+      - name: stars_3d
+        description: Stars received in the last 3 days.
+      - name: stars_7d
+        description: Stars received in the last 7 days.
+      - name: stars_28d
+        description: Stars received in the last 28 days.
+      - name: stars_total_before
+        description: Cumulative stars observed before D.
+      - name: star_accel_7d
+        description: Stars in the last 7 days minus stars in the 7 days before.
+      - name: star_ratio_7d
+        description: (stars last 7d + 1) / (stars previous 7d + 1).
+      - name: days_since_first_star
+        description: Days from the first observed star to D.
+      - name: age_days
+        description: 'Days since the repository''s birth (mart_candidates definition).'
+      - name: star_active_days_14d
+        description: Days among the last 14 with at least one star.
+      - name: _max_input_ts
+        description: Newest source timestamp used for the row; a test asserts it is before snapshot_date. Not a feature.
   - name: feat_activity
     description: >
       Tier A. Forks, issues, comments, PRs, reviews, releases, pushes, contributors and sessions in the last 14/28 days. Grain (repo_id, snapshot_date), one row per candidate; every source row is strictly before
@@ -30,13 +60,57 @@ models:
           arguments: {combination_of_columns: [repo_id, snapshot_date]}
     columns:
       - name: repo_id
+        description: GitHub repository id. The only key used to join repositories; names are display-only.
         tests: [not_null]
       - name: snapshot_date
+        description: 'Snapshot date D: the world as known at D 00:00 UTC. Only events before D are used.'
         tests: [not_null]
       - name: event_type_entropy_14d
+        description: 'Shannon entropy of the mix of event types (stars, forks, issues, comments, PRs, reviews, pushes) in 14 days.'
         tests: [{dbt_utils.accepted_range: {arguments: {min_value: -0.000001, max_value: 3}}}]
       - name: top_actor_share_28d
+        description: Share of contribution events (completed sessions of the last 28 days) by the single most active actor.
         tests: [{dbt_utils.accepted_range: {arguments: {min_value: 0, max_value: 1}}}]
+      - name: bucket
+        description: Hash bucket of repo_id (or actor_id) used to build the model in bounded memory (ADR-020); not meaningful downstream.
+      - name: forks_7d
+        description: Forks in the last 7 days.
+      - name: forks_14d
+        description: Forks in the last 14 days.
+      - name: fork_star_ratio_14d
+        description: forks_14d / (stars_14d + 1).
+      - name: actor_days_14d
+        description: 'Sum over the last 14 days of the distinct non-bot actors per day (actor-days, not distinct actors).'
+      - name: issue_events_14d
+        description: IssuesEvent count in the last 14 days (any action).
+      - name: comment_events_14d
+        description: IssueCommentEvent count in the last 14 days (issues and PRs).
+      - name: pr_events_14d
+        description: PullRequestEvent count in the last 14 days (any action).
+      - name: reviews_14d
+        description: PullRequestReviewEvent count in the last 14 days.
+      - name: releases_total_before
+        description: ReleaseEvent count before D.
+      - name: days_since_last_release
+        description: Days from the latest release before D to D (NULL if none).
+      - name: push_active_days_14d
+        description: Days among the last 14 with at least one push.
+      - name: distinct_pushers_28d
+        description: Distinct actors who pushed in the last 28 days.
+      - name: distinct_contributors_28d
+        description: Distinct actors who started an issue/PR/comment/review session in the last 28 days.
+      - name: new_contributors_28d
+        description: Contributors whose first-ever session on the repo started in the last 28 days.
+      - name: first_time_contributor_rate_28d
+        description: new_contributors_28d / distinct_contributors_28d.
+      - name: sessions_28d
+        description: Contribution sessions that started in the last 28 days (30-minute gap rule).
+      - name: median_session_minutes_28d
+        description: Median length of the completed contribution sessions of the last 28 days.
+      - name: distinct_session_actors_28d
+        description: Distinct actors with a completed contribution session in the last 28 days.
+      - name: _max_input_ts
+        description: Newest source timestamp used for the row; a test asserts it is before snapshot_date. Not a feature.
   - name: feat_stargazers
     description: >
       Tier A with actor-age enrichment. Quality of the first stars in [D-14, D) and retention so far of those in [D-28, D-7). Grain (repo_id, snapshot_date), one row per candidate; every source row is strictly before
@@ -46,13 +120,37 @@ models:
           arguments: {combination_of_columns: [repo_id, snapshot_date]}
     columns:
       - name: repo_id
+        description: GitHub repository id. The only key used to join repositories; names are display-only.
         tests: [not_null]
       - name: snapshot_date
+        description: 'Snapshot date D: the world as known at D 00:00 UTC. Only events before D are used.'
         tests: [not_null]
       - name: sg_share_experienced
+        description: 'Share of the last 14 days'' stars from accounts with >= 10 events and >= 2 repos in the 90 days before the star.'
         tests: [{dbt_utils.accepted_range: {arguments: {min_value: 0, max_value: 1}}}]
       - name: sg_retention_any_28d
+        description: 'Of stargazers from [D-28, D-7): share who forked, opened an issue/PR or commented on the repo before D.'
         tests: [{dbt_utils.accepted_range: {arguments: {min_value: 0, max_value: 1}}}]
+      - name: bucket
+        description: Hash bucket of repo_id (or actor_id) used to build the model in bounded memory (ADR-020); not meaningful downstream.
+      - name: sg_n
+        description: First stars in the last 14 days (stargazer sample size).
+      - name: sg_median_account_age_days
+        description: Median estimated account age of recent stargazers at star time (from the actor id).
+      - name: sg_share_account_lt_30d
+        description: Share of recent stars from accounts younger than 30 days.
+      - name: sg_share_zero_prior_activity
+        description: Share of recent stars from accounts with no event in the 90 days before the star day.
+      - name: sg_median_stars_same_day
+        description: Median number of stars the recent stargazers gave on the same day.
+      - name: sg_share_bulk_starrers
+        description: 'Share of recent stars from accounts that starred >= 50 repos that day.'
+      - name: sg_retention_fork_28d
+        description: 'Of stargazers from [D-28, D-7): share who forked the repo before D.'
+      - name: sg_retention_issue_or_pr_28d
+        description: 'Of stargazers from [D-28, D-7): share who opened an issue or PR before D.'
+      - name: _max_input_ts
+        description: Newest source timestamp used for the row; a test asserts it is before snapshot_date. Not a feature.
   - name: feat_tastemaker
     description: >
       Tier A. Co-star signal: how well the recent stargazers picked early stars whose outcome was known before D. Grain (repo_id, snapshot_date), one row per candidate; every source row is strictly before
@@ -62,11 +160,24 @@ models:
           arguments: {combination_of_columns: [repo_id, snapshot_date]}
     columns:
       - name: repo_id
+        description: GitHub repository id. The only key used to join repositories; names are display-only.
         tests: [not_null]
       - name: snapshot_date
+        description: 'Snapshot date D: the world as known at D 00:00 UTC. Only events before D are used.'
         tests: [not_null]
       - name: sg_tm_mean_14d
+        description: 'Mean smoothed tastemaker score of the last 14 days'' stargazers (hit rate of their earlier early stars, outcome known before D).'
         tests: [{dbt_utils.accepted_range: {arguments: {min_value: 0, max_value: 1}}}]
+      - name: bucket
+        description: Hash bucket of repo_id (or actor_id) used to build the model in bounded memory (ADR-020); not meaningful downstream.
+      - name: sg_tm_max_14d
+        description: 'Highest tastemaker score among the last 14 days'' stargazers.'
+      - name: sg_tm_top_count_14d
+        description: 'Recent stargazers with >= 5 known early stars and a score in the top 1% (as of the last month boundary).'
+      - name: sg_tm_known_share_14d
+        description: Share of recent stargazers with any early star whose outcome is known.
+      - name: _max_input_ts
+        description: Newest source timestamp used for the row; a test asserts it is before snapshot_date. Not a feature.
   - name: feat_owner
     description: >
       Tier A. Owner-level prior repos and known hits before D (display-level owner key). Grain (repo_id, snapshot_date), one row per candidate; every source row is strictly before
@@ -76,9 +187,19 @@ models:
           arguments: {combination_of_columns: [repo_id, snapshot_date]}
     columns:
       - name: repo_id
+        description: GitHub repository id. The only key used to join repositories; names are display-only.
         tests: [not_null]
       - name: snapshot_date
+        description: 'Snapshot date D: the world as known at D 00:00 UTC. Only events before D are used.'
         tests: [not_null]
+      - name: bucket
+        description: Hash bucket of repo_id (or actor_id) used to build the model in bounded memory (ADR-020); not meaningful downstream.
+      - name: owner_prior_repos_seen
+        description: Other repos that carried a name with the same owner prefix and were first seen before D.
+      - name: owner_prior_breakouts
+        description: 'Of the owner''s other repos: those that are known hits (60-day absolute rule) before D.'
+      - name: _max_input_ts
+        description: Newest source timestamp used for the row; a test asserts it is before snapshot_date. Not a feature.
   - name: feat_detail
     description: >
       Tier B. Payload-detail features (issue response, PR merge, core actors); NULL without detail coverage. Grain (repo_id, snapshot_date), one row per candidate; every source row is strictly before
@@ -88,11 +209,42 @@ models:
           arguments: {combination_of_columns: [repo_id, snapshot_date]}
     columns:
       - name: repo_id
+        description: GitHub repository id. The only key used to join repositories; names are display-only.
         tests: [not_null]
       - name: snapshot_date
+        description: 'Snapshot date D: the world as known at D 00:00 UTC. Only events before D are used.'
         tests: [not_null]
       - name: detail_coverage_28d
+        description: Share of the last 28 days that lie in the payload-detail era (detail_level 1).
         tests: [not_null, {dbt_utils.accepted_range: {arguments: {min_value: 0, max_value: 1}}}]
+      - name: bucket
+        description: Hash bucket of repo_id (or actor_id) used to build the model in bounded memory (ADR-020); not meaningful downstream.
+      - name: issues_opened_28d
+        description: Issues opened in the last 28 days (NULL without detail coverage).
+      - name: issues_closed_28d
+        description: Issues closed in the last 28 days.
+      - name: issue_close_ratio_28d
+        description: issues_closed_28d / issues_opened_28d.
+      - name: median_first_response_hours_28d
+        description: 'Median hours to the first non-author comment, over issues opened in the last 28 days and answered before D.'
+      - name: share_issues_responded_48h
+        description: 'Of issues opened in [D-28, D-2): share answered within 48 hours (and before D).'
+      - name: prs_opened_28d
+        description: Pull requests opened in the last 28 days.
+      - name: prs_merged_28d
+        description: 'Pull requests merged in the last 28 days (NULL from payload_trim_date: merged flag removed).'
+      - name: median_merge_hours_28d
+        description: Median hours from opening to merge of PRs merged in the last 28 days (NULL from payload_trim_date).
+      - name: core_actor_count_90d
+        description: 'Distinct actors with maintainer evidence (push, PR close, owner) in the last 90 days.'
+      - name: external_pr_authors_28d
+        description: Distinct PR openers in the last 28 days who are not core actors.
+      - name: tags_created_total_before
+        description: 'Tags created since the detail era began, before D.'
+      - name: era_post_2025_10
+        description: 1 if D is on or after the Events API payload trim (2025-10-07); constant 0 in every training row.
+      - name: _max_input_ts
+        description: Newest source timestamp used for the row; a test asserts it is before snapshot_date. Not a feature.
   - name: feat_enrich
     description: >
       Tier C. Allowed repo metadata fields and Hacker News counts before D. Grain (repo_id, snapshot_date), one row per candidate; every source row is strictly before
@@ -102,13 +254,33 @@ models:
           arguments: {combination_of_columns: [repo_id, snapshot_date]}
     columns:
       - name: repo_id
+        description: GitHub repository id. The only key used to join repositories; names are display-only.
         tests: [not_null]
       - name: snapshot_date
+        description: 'Snapshot date D: the world as known at D 00:00 UTC. Only events before D are used.'
         tests: [not_null]
       - name: owner_type
+        description: User / Organization / Unknown. Slowly-varying documented exception (ADR-017).
         tests: [not_null, {accepted_values: {arguments: {values: [User, Organization, Unknown]}}}]
       - name: primary_language
+        description: Primary language (top 30 by frequency else Other; Unknown if missing). Slowly-varying documented exception (ADR-017).
         tests: [not_null]
+      - name: bucket
+        description: Hash bucket of repo_id (or actor_id) used to build the model in bounded memory (ADR-020); not meaningful downstream.
+      - name: birth_from_public_event
+        description: '1 if the repo''s birth is a PublicEvent (made public) rather than creation.'
+      - name: days_api_created_to_birth
+        description: 'Days between the API creation date (fixed) and birth_at; > 0 for repos made public later.'
+      - name: hn_stories_before_14d
+        description: Hacker News stories linking to the repo created in the last 14 days (NULL if HN disabled).
+      - name: hn_stories_before_3d
+        description: Hacker News stories created in the last 3 days.
+      - name: hn_max_points_aged
+        description: 'Max HN points among stories created in [D-30, D-3) (fetch-time points, aged >= 3 days, ADR-019).'
+      - name: hn_any_before
+        description: 1 if any Hacker News story linked to the repo before D.
+      - name: _max_input_ts
+        description: Newest source timestamp used for the row; a test asserts it is before snapshot_date. Not a feature.
   - name: mart_repo_features
     description: >
       Grain (repo_id, snapshot_date): the model input. mart_candidates keys LEFT JOIN all feat_* groups.
@@ -119,6 +291,152 @@ models:
           arguments: {combination_of_columns: [repo_id, snapshot_date]}
     columns:
       - name: repo_id
+        description: GitHub repository id. The only key used to join repositories; names are display-only.
         tests: [not_null]
       - name: snapshot_date
+        description: 'Snapshot date D: the world as known at D 00:00 UTC. Only events before D are used.'
         tests: [not_null]
+      - name: bucket
+        description: Hash bucket of repo_id (or actor_id) used to build the model in bounded memory (ADR-020); not meaningful downstream.
+      - name: stars_1d
+        description: Stars received in the last 1 day.
+      - name: stars_3d
+        description: Stars received in the last 3 days.
+      - name: stars_7d
+        description: Stars received in the last 7 days.
+      - name: stars_14d
+        description: Stars received in the last 14 days.
+      - name: stars_28d
+        description: Stars received in the last 28 days.
+      - name: stars_total_before
+        description: Cumulative stars observed before D.
+      - name: star_accel_7d
+        description: Stars in the last 7 days minus stars in the 7 days before.
+      - name: star_ratio_7d
+        description: (stars last 7d + 1) / (stars previous 7d + 1).
+      - name: days_since_first_star
+        description: Days from the first observed star to D.
+      - name: age_days
+        description: 'Days since the repository''s birth (mart_candidates definition).'
+      - name: star_active_days_14d
+        description: Days among the last 14 with at least one star.
+      - name: star_gini_14d
+        description: 'Gini coefficient of the 14 daily star counts (zeros included); 0 = even, 1 = one-day spike.'
+      - name: star_max_day_share_14d
+        description: Largest single-day share of the stars of the last 14 days.
+      - name: star_max_hour_share_7d
+        description: Largest single-hour share of the stars of the last 7 days.
+      - name: forks_7d
+        description: Forks in the last 7 days.
+      - name: forks_14d
+        description: Forks in the last 14 days.
+      - name: fork_star_ratio_14d
+        description: forks_14d / (stars_14d + 1).
+      - name: actor_days_14d
+        description: 'Sum over the last 14 days of the distinct non-bot actors per day (actor-days, not distinct actors).'
+      - name: issue_events_14d
+        description: IssuesEvent count in the last 14 days (any action).
+      - name: comment_events_14d
+        description: IssueCommentEvent count in the last 14 days (issues and PRs).
+      - name: pr_events_14d
+        description: PullRequestEvent count in the last 14 days (any action).
+      - name: reviews_14d
+        description: PullRequestReviewEvent count in the last 14 days.
+      - name: releases_total_before
+        description: ReleaseEvent count before D.
+      - name: days_since_last_release
+        description: Days from the latest release before D to D (NULL if none).
+      - name: push_active_days_14d
+        description: Days among the last 14 with at least one push.
+      - name: distinct_pushers_28d
+        description: Distinct actors who pushed in the last 28 days.
+      - name: event_type_entropy_14d
+        description: 'Shannon entropy of the mix of event types (stars, forks, issues, comments, PRs, reviews, pushes) in 14 days.'
+      - name: distinct_contributors_28d
+        description: Distinct actors who started an issue/PR/comment/review session in the last 28 days.
+      - name: new_contributors_28d
+        description: Contributors whose first-ever session on the repo started in the last 28 days.
+      - name: first_time_contributor_rate_28d
+        description: new_contributors_28d / distinct_contributors_28d.
+      - name: top_actor_share_28d
+        description: Share of contribution events (completed sessions of the last 28 days) by the single most active actor.
+      - name: sessions_28d
+        description: Contribution sessions that started in the last 28 days (30-minute gap rule).
+      - name: median_session_minutes_28d
+        description: Median length of the completed contribution sessions of the last 28 days.
+      - name: distinct_session_actors_28d
+        description: Distinct actors with a completed contribution session in the last 28 days.
+      - name: sg_n
+        description: First stars in the last 14 days (stargazer sample size).
+      - name: sg_share_experienced
+        description: 'Share of the last 14 days'' stars from accounts with >= 10 events and >= 2 repos in the 90 days before the star.'
+      - name: sg_median_account_age_days
+        description: Median estimated account age of recent stargazers at star time (from the actor id).
+      - name: sg_share_account_lt_30d
+        description: Share of recent stars from accounts younger than 30 days.
+      - name: sg_share_zero_prior_activity
+        description: Share of recent stars from accounts with no event in the 90 days before the star day.
+      - name: sg_median_stars_same_day
+        description: Median number of stars the recent stargazers gave on the same day.
+      - name: sg_share_bulk_starrers
+        description: 'Share of recent stars from accounts that starred >= 50 repos that day.'
+      - name: sg_retention_any_28d
+        description: 'Of stargazers from [D-28, D-7): share who forked, opened an issue/PR or commented on the repo before D.'
+      - name: sg_retention_fork_28d
+        description: 'Of stargazers from [D-28, D-7): share who forked the repo before D.'
+      - name: sg_retention_issue_or_pr_28d
+        description: 'Of stargazers from [D-28, D-7): share who opened an issue or PR before D.'
+      - name: sg_tm_mean_14d
+        description: 'Mean smoothed tastemaker score of the last 14 days'' stargazers (hit rate of their earlier early stars, outcome known before D).'
+      - name: sg_tm_max_14d
+        description: 'Highest tastemaker score among the last 14 days'' stargazers.'
+      - name: sg_tm_top_count_14d
+        description: 'Recent stargazers with >= 5 known early stars and a score in the top 1% (as of the last month boundary).'
+      - name: sg_tm_known_share_14d
+        description: Share of recent stargazers with any early star whose outcome is known.
+      - name: owner_prior_repos_seen
+        description: Other repos that carried a name with the same owner prefix and were first seen before D.
+      - name: owner_prior_breakouts
+        description: 'Of the owner''s other repos: those that are known hits (60-day absolute rule) before D.'
+      - name: detail_coverage_28d
+        description: Share of the last 28 days that lie in the payload-detail era (detail_level 1).
+      - name: issues_opened_28d
+        description: Issues opened in the last 28 days (NULL without detail coverage).
+      - name: issues_closed_28d
+        description: Issues closed in the last 28 days.
+      - name: issue_close_ratio_28d
+        description: issues_closed_28d / issues_opened_28d.
+      - name: median_first_response_hours_28d
+        description: 'Median hours to the first non-author comment, over issues opened in the last 28 days and answered before D.'
+      - name: share_issues_responded_48h
+        description: 'Of issues opened in [D-28, D-2): share answered within 48 hours (and before D).'
+      - name: prs_opened_28d
+        description: Pull requests opened in the last 28 days.
+      - name: prs_merged_28d
+        description: 'Pull requests merged in the last 28 days (NULL from payload_trim_date: merged flag removed).'
+      - name: median_merge_hours_28d
+        description: Median hours from opening to merge of PRs merged in the last 28 days (NULL from payload_trim_date).
+      - name: core_actor_count_90d
+        description: 'Distinct actors with maintainer evidence (push, PR close, owner) in the last 90 days.'
+      - name: external_pr_authors_28d
+        description: Distinct PR openers in the last 28 days who are not core actors.
+      - name: tags_created_total_before
+        description: 'Tags created since the detail era began, before D.'
+      - name: era_post_2025_10
+        description: 1 if D is on or after the Events API payload trim (2025-10-07); constant 0 in every training row.
+      - name: primary_language
+        description: Primary language (top 30 by frequency else Other; Unknown if missing). Slowly-varying documented exception (ADR-017).
+      - name: owner_type
+        description: User / Organization / Unknown. Slowly-varying documented exception (ADR-017).
+      - name: birth_from_public_event
+        description: '1 if the repo''s birth is a PublicEvent (made public) rather than creation.'
+      - name: days_api_created_to_birth
+        description: 'Days between the API creation date (fixed) and birth_at; > 0 for repos made public later.'
+      - name: hn_stories_before_14d
+        description: Hacker News stories linking to the repo created in the last 14 days (NULL if HN disabled).
+      - name: hn_stories_before_3d
+        description: Hacker News stories created in the last 3 days.
+      - name: hn_max_points_aged
+        description: 'Max HN points among stories created in [D-30, D-3) (fetch-time points, aged >= 3 days, ADR-019).'
+      - name: hn_any_before
+        description: 1 if any Hacker News story linked to the repo before D.

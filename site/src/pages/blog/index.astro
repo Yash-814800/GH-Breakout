@@ -1,0 +1,52 @@
+---
+import AppLayout from '../../layouts/AppLayout.astro';
+import PageHeader from '../../components/layout/PageHeader.astro';
+import { getPosts } from '../../lib/blog';
+import { date } from '../../lib/format';
+import { url } from '../../lib/url';
+
+const posts = getPosts();
+---
+
+<AppLayout title="Blog" description="How Breakout Radar was built, and how DuckDB compares with ClickHouse on the same files.">
+  <PageHeader slot="header" title="Blog" lead="How the project was built, and what was measured along the way." />
+  <ul class="posts">
+    {
+      posts.map((p) => (
+        <li>
+          <a href={url(`/blog/${p.slug}/`)}>
+            <span class="t-h3 title">{p.title}</span>
+            <span class="t-caption faint when">{date(p.date)}</span>
+            <span class="t-body-sm muted sum">{p.description}</span>
+          </a>
+        </li>
+      ))
+    }
+  </ul>
+</AppLayout>
+
+<style>
+  .posts {
+    border: 1px solid var(--line);
+    border-radius: var(--r-lg);
+    background: var(--raised);
+    overflow: hidden;
+  }
+  .posts li + li {
+    border-top: 1px solid var(--line);
+  }
+  .posts a {
+    display: grid;
+    gap: 4px;
+    padding: 20px;
+  }
+  .posts a:hover {
+    background: var(--row-hover);
+  }
+  .posts a:hover .title {
+    color: var(--accent);
+  }
+  .sum {
+    max-width: 72ch;
+  }
+</style>

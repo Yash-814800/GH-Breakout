@@ -111,3 +111,29 @@ def test_merge_vars_user_values_win():
 def test_merge_vars_without_user_vars_appends():
     out = merge_vars(["build", "--select", "staging"], {"a": 1})
     assert json.loads(out[-1]) == {"a": 1}
+
+
+def _model_entries():
+    for yml in sorted((DBT / "models").rglob("*.yml")):
+        for m in (yaml.safe_load(yml.read_text()) or {}).get("models", []):
+            yield yml.parent.name, m
+
+
+def test_every_column_of_every_model_has_a_description():
+    """Phase 13.2: the published dbt docs describe every column of every model."""
+    bare = [
+        f"{m['name']}.{c['name']}"
+        for _, m in _model_entries()
+        for c in m.get("columns", [])
+        if not str(c.get("description") or "").strip()
+    ]
+    assert not bare, f"columns without a description: {bare}"
+
+
+def test_marts_intermediate_and_features_declare_their_columns():
+    for layer, m in _model_entries():
+        if layer in ("marts", "intermediate", "features"):
+            assert len(m.get("columns", [])) >= 1, f"{m['name']} declares no columns"
+            assert len(str(m.get("description", "")).split()) >= 8, (
+                f"{m['name']} description too short"
+            )

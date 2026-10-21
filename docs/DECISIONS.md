@@ -866,3 +866,21 @@ event-based numbers, which are what the model saw; the page says so. Ledger rows
 - The label policy after the ablation (keep labels unchanged) was marked HUMAN DECISION in the phase file and was chosen by the agent. It stays the working default until the human confirms or changes it.
 - The story 4 SQL uses five of the six signals (no lockstep), so its prevalence differs slightly from `mart_suspicion`; the text says so.
 
+
+
+## ADR-032: Phase 12 and 13 design: distribution, dbt docs, benchmark, no Bluesky bot (2026-10-21)
+
+**Context:** Phases 12 and 13 (`docs/phases/PHASE_12_distribution.md`, `PHASE_13_polish.md`) were implemented together on the owner's instruction, "everything except the Bluesky bot".
+
+**Decision:**
+1. **Bluesky bot (12.4) is not built.** `optional.bluesky_enabled` stays `false`; no `atproto` dependency, no posting code. The Mastodon variant is documented only (runbook). This is a deliberate deviation from the phase file.
+2. **Feeds, badges, digest are derived from frozen snapshots** (`breakout.publish.distribution`), restored read-only from the snapshots repo on a clean runner. Feed items persist across runs through the `site_data/latest/feed_items.json` bundle (their age and star facts are captured on the entry day). `/feed.xml`, `/feed.json` and `/digest/feed.xml` are Astro endpoints; the GUID is `repo_id:first_flag_date` (`isPermaLink="false"`, written through `customData` because `@astrojs/rss` derives the GUID from the link).
+3. **First snapshot is not "new".** The first live list has no history, so for the digest its repos are not counted as new (the feed still lists them as the initial entries).
+4. **Badges** are written to `site/public/badges/` (git-ignored, regenerated daily and by `site.yml`); `by-name` files are lower case; badges never encode suspicion.
+5. **Digests** live on the derived repo (`digests/`); `publish site-data` pulls them. `site.yml` no longer copies the fixture data under the real data (fixture digests and feed items would otherwise have been published); fixtures are only the fallback when the Hub pull fails.
+6. **Discussions (12.5):** implemented and enabled by the owner. GitHub has no API to create a discussion category, so the post goes to **Announcements** until the owner creates a category named **Digest** in the repository settings. Posts are idempotent by title.
+7. **dbt docs:** generated with `--empty-catalog` against an empty scratch lake and warehouse (compiling otherwise lists thousands of lake files and opens the 33 GB warehouse); column types come from `reports/dbt/catalog.json`, written from the warehouse's information schema by `--refresh-catalog`. The generic test `birth_not_after_first_star` only runs its logging query during `test`/`build`. Every model column has a description (new pytest check); `docs/data_dictionary.md` is generated and CI fails when it is stale.
+8. **Benchmark:** clickhouse-local LTS 26.8.32.14 and DuckDB 1.5.6, 2022 data, 4 threads, 4 GB engine limit; queries that failed at 4 GB are repeated at a larger limit and both results are reported.
+9. **Housekeeping:** code license **MIT** (owner's decision), `SECURITY.md`, `CITATION.cff`, `CONTRIBUTING.md`, bug issue template, Dependabot for uv, npm and Actions, third-party actions pinned to commit SHAs.
+
+**Consequences:** the site gains `/blog/`, `/dbt-docs/`, feeds and badge snippets; `daily.yml` builds the badges and the dbt docs and passes them to the deploy job as artifacts. A same-day re-run of the daily workflow reports a freeze conflict (the frozen snapshot is immutable and the regenerated file is not byte-identical); the heartbeat says unhealthy until the next regular run.

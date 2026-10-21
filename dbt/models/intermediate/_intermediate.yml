@@ -10,11 +10,16 @@ models:
           arguments: {combination_of_columns: [repo_id, day]}
     columns:
       - name: repo_id
+        description: GitHub repository id. The only key used to join repositories; names are display-only.
         tests: [not_null]
       - name: day
+        description: UTC calendar day.
         tests: [not_null]
       - name: n_stars
+        description: First stars received on the day.
         tests: [not_null, {dbt_utils.expression_is_true: {arguments: {expression: "> 0"}}}]
+      - name: bucket
+        description: Hash bucket of repo_id (or actor_id) used to build the model in bounded memory (ADR-020); not meaningful downstream.
 
   - name: int_star_active_repos
     description: >
@@ -23,11 +28,16 @@ models:
       birth <-> young-moving cycle.
     columns:
       - name: repo_id
+        description: GitHub repository id. The only key used to join repositories; names are display-only.
         tests: [not_null, unique]
       - name: first_star_day
+        description: 'Day of the repository''s first observed star.'
         tests: [not_null]
       - name: first_qualifying_day
+        description: First day the repository had at least min_stars_14d stars in a 14-day window.
         tests: [not_null]
+      - name: bucket
+        description: Hash bucket of repo_id (or actor_id) used to build the model in bounded memory (ADR-020); not meaningful downstream.
 
   - name: int_bot_event_counts
     description: Bot events per (repo_id, day) for star-active repos only, for mirror / bot-heavy repo detection (ADR-020).
@@ -36,10 +46,13 @@ models:
           arguments: {combination_of_columns: [repo_id, day]}
     columns:
       - name: repo_id
+        description: GitHub repository id. The only key used to join repositories; names are display-only.
         tests: [not_null]
       - name: day
+        description: UTC calendar day.
         tests: [not_null]
       - name: n_bot_events
+        description: Events by automation accounts on the repository that day.
         tests: [not_null]
 
   - name: int_active_repo_event_days
@@ -49,9 +62,15 @@ models:
           arguments: {combination_of_columns: [repo_id, day]}
     columns:
       - name: repo_id
+        description: GitHub repository id. The only key used to join repositories; names are display-only.
         tests: [not_null]
       - name: n_events
+        description: Non-bot events of all kept types on the repository that day.
         tests: [not_null]
+      - name: day
+        description: UTC calendar day.
+      - name: first_at
+        description: Time of the earliest non-bot event of the repository that day.
 
   - name: int_repo_birth
     description: >
@@ -60,20 +79,38 @@ models:
       is_left_censored flags repos without an API date whose first event is within 30 days of it.
     columns:
       - name: repo_id
+        description: GitHub repository id. The only key used to join repositories; names are display-only.
         tests: [not_null, unique]
       - name: birth_at
+        description: 'Best estimate of when the repository started to exist for the public: the later of the public time and the earliest of the API date, the CreateEvent and the first event.'
         tests: [not_null]
       - name: birth_source
+        description: 'Which source birth_at came from: api, create_event, public_event or first_event.'
         tests:
           - not_null
           - accepted_values:
               arguments: {values: [api, create_event, first_event, public_event]}
       - name: is_fork
+        description: True when the API says the repository is a fork. NULL when metadata is unknown.
         tests: [not_null]
       - name: is_mirror_like
+        description: 'True when bot events dominate the repository, which marks mirrors.'
         tests: [not_null]
       - name: is_left_censored
+        description: 'True when there is no API date and the first event is within 30 days of the window start, so the real birth may be earlier.'
         tests: [not_null]
+      - name: first_event_at
+        description: Time of the first event of any kept type (left-censored at the start of the window).
+      - name: first_star_at
+        description: Time of the first star.
+      - name: created_repo_event_at
+        description: 'Time of the CreateEvent that created the repository, if seen.'
+      - name: made_public_at
+        description: 'Time of the PublicEvent that made the repository public, if seen.'
+      - name: api_created_at
+        description: 'createdAt from the GitHub API, if the lookup found the repository.'
+      - name: has_metadata
+        description: True when GitHub API metadata exists for the repository.
     tests:
       - birth_not_after_first_star:
           arguments: {tolerance: 0.001}
@@ -84,8 +121,10 @@ models:
       [d-14, d). Superset of candidates; all expensive downstream models are restricted to it.
     columns:
       - name: repo_id
+        description: GitHub repository id. The only key used to join repositories; names are display-only.
         tests: [not_null, unique]
       - name: first_moving_day
+        description: 'First day the repository was young (age <= max_age_days) and had at least min_stars_14d stars in [d-14, d).'
         tests: [not_null]
 
   - name: int_early_stars
@@ -97,11 +136,18 @@ models:
           arguments: {combination_of_columns: [repo_id, actor_id]}
     columns:
       - name: repo_id
+        description: GitHub repository id. The only key used to join repositories; names are display-only.
         tests: [not_null]
       - name: actor_id
+        description: GitHub user id of the actor. The key for users; logins are display-only.
         tests: [not_null]
       - name: starred_at
+        description: UTC time of the first star by this actor on this repository.
         tests: [not_null]
+      - name: star_day
+        description: UTC calendar day of the star.
+      - name: event_id
+        description: Id of the WatchEvent.
 
   - name: int_repo_daily_activity
     description: >
@@ -113,17 +159,57 @@ models:
           arguments: {combination_of_columns: [repo_id, day]}
     columns:
       - name: repo_id
+        description: GitHub repository id. The only key used to join repositories; names are display-only.
         tests: [not_null]
       - name: day
+        description: UTC calendar day.
         tests: [not_null]
       - name: n_stars
+        description: First stars that day.
         tests: [not_null]
       - name: n_distinct_actors
+        description: Distinct non-bot actors across all event types that day.
         tests: [not_null]
       - name: n_comment_events
+        description: All comment events that day (issues and pull requests).
         tests: [not_null]
       - name: n_pr_events
+        description: All pull request events that day (any action).
         tests: [not_null, {dbt_utils.expression_is_true: {arguments: {expression: ">= coalesce(n_prs_opened, 0)"}}}]
+      - name: bucket
+        description: Hash bucket of repo_id (or actor_id) used to build the model in bounded memory (ADR-020); not meaningful downstream.
+      - name: n_forks
+        description: Forks that day.
+      - name: n_issues_opened
+        description: Issues opened that day. NULL before detail_start_date.
+      - name: n_issues_closed
+        description: Issues closed that day. NULL before detail_start_date.
+      - name: n_issue_events
+        description: All issue events that day (any action).
+      - name: n_issue_comments
+        description: Comments on issues that day. NULL before detail_start_date.
+      - name: n_pr_comments
+        description: Comments on pull requests that day. NULL before detail_start_date.
+      - name: n_prs_opened
+        description: Pull requests opened that day. NULL before detail_start_date.
+      - name: n_prs_closed
+        description: Pull requests closed that day. NULL before detail_start_date.
+      - name: n_prs_merged
+        description: Pull requests merged that day. NULL where the merged flag is missing.
+      - name: n_reviews
+        description: Pull request reviews that day.
+      - name: n_releases
+        description: Releases published that day.
+      - name: n_creates_branch
+        description: Branches created that day. NULL before detail_start_date.
+      - name: n_creates_tag
+        description: Tags created that day. NULL before detail_start_date.
+      - name: n_pushes
+        description: Pushes that day (from the push_daily aggregate).
+      - name: n_pushers
+        description: Distinct actors who pushed that day.
+      - name: detail_level_min
+        description: 'Lowest detail_level of the day''s events: 0 means some counts are spine-only.'
 
   - name: int_actor_daily_activity
     description: >
@@ -135,9 +221,19 @@ models:
           arguments: {combination_of_columns: [actor_id, day]}
     columns:
       - name: actor_id
+        description: GitHub user id of the actor. The key for users; logins are display-only.
         tests: [not_null]
       - name: n_events
+        description: Number of events counted in the group.
         tests: [not_null]
+      - name: bucket
+        description: Hash bucket of repo_id (or actor_id) used to build the model in bounded memory (ADR-020); not meaningful downstream.
+      - name: day
+        description: UTC calendar day.
+      - name: n_repos
+        description: Distinct repositories the actor touched that day.
+      - name: n_stars_given
+        description: Stars the actor gave that day.
 
   - name: int_actor_cumulative_activity
     description: Running totals per actor as of the end of each active day.
@@ -149,7 +245,18 @@ models:
           config: {where: "actor_id % 97 = 0"}  # a window over all 430 M rows exceeds the spill cap; sample of actors
     columns:
       - name: actor_id
+        description: GitHub user id of the actor. The key for users; logins are display-only.
         tests: [not_null]
+      - name: bucket
+        description: Hash bucket of repo_id (or actor_id) used to build the model in bounded memory (ADR-020); not meaningful downstream.
+      - name: day
+        description: UTC day the running totals hold as of the end of.
+      - name: cum_events
+        description: 'Running total of the actor''s events.'
+      - name: cum_repo_days
+        description: 'Running total of (repository, day) pairs the actor was active on.'
+      - name: cum_stars_given
+        description: Running total of stars the actor gave.
 
   - name: int_star_events_enriched
     description: >
@@ -160,11 +267,32 @@ models:
           arguments: {combination_of_columns: [repo_id, actor_id]}
     columns:
       - name: est_account_created_at
+        description: 'Estimated creation time of the actor''s account from the actor-age map.'
         tests: [not_null]
       - name: actor_events_prior_90d
+        description: Events by the actor in the 90 days before the star day.
         tests: [not_null, {dbt_utils.expression_is_true: {arguments: {expression: ">= 0"}}}]
       - name: actor_stars_same_day
+        description: Stars the actor gave on the star day itself (bulk starring signal).
         tests: [not_null]
+      - name: bucket
+        description: Hash bucket of repo_id (or actor_id) used to build the model in bounded memory (ADR-020); not meaningful downstream.
+      - name: repo_id
+        description: GitHub repository id. The only key used to join repositories; names are display-only.
+      - name: actor_id
+        description: GitHub user id of the actor. The key for users; logins are display-only.
+      - name: starred_at
+        description: UTC time of the first star by this actor on this repository.
+      - name: star_day
+        description: UTC calendar day of the star.
+      - name: est_is_extrapolated
+        description: 'True when the actor id lies beyond the last breakpoint of the age map, so the age is extrapolated.'
+      - name: account_age_days_at_star
+        description: Estimated account age in days at the time of the star.
+      - name: actor_repos_prior_90d
+        description: Distinct repositories the actor was active on in the 90 days before the star day.
+      - name: actor_stars_prior_90d
+        description: Stars the actor gave in the 90 days before the star day.
 
   - name: int_contributor_first_seen
     description: First contribution (issue opened, comment, PR opened, review or push day) per (repo_id, actor_id).
@@ -173,12 +301,18 @@ models:
           arguments: {combination_of_columns: [repo_id, actor_id]}
     columns:
       - name: first_contribution_at
+        description: 'Time of the actor''s first contribution to the repository.'
         tests: [not_null]
       - name: first_contribution_type
+        description: 'Kind of the first contribution: issue, issue_comment, pull_request, review or push (push has day precision).'
         tests:
           - not_null
           - accepted_values:
               arguments: {values: [issue, issue_comment, pull_request, review, push]}
+      - name: repo_id
+        description: GitHub repository id. The only key used to join repositories; names are display-only.
+      - name: actor_id
+        description: GitHub user id of the actor. The key for users; logins are display-only.
 
   - name: int_contributor_sessions
     description: Sessions of non-push human activity per (repo_id, actor_id), split by a gap of session_gap_minutes.
@@ -187,17 +321,30 @@ models:
           arguments: {combination_of_columns: [repo_id, actor_id, session_id]}
     columns:
       - name: session_start
+        description: Time of the first event of the session.
         tests: [not_null]
       - name: session_end
+        description: Time of the last event of the session.
         tests:
           - not_null
           - dbt_utils.expression_is_true:
               arguments: {expression: ">= session_start"}
       - name: n_events
+        description: Events in the session.
         tests:
           - not_null
           - dbt_utils.expression_is_true:
               arguments: {expression: ">= 1"}
+      - name: bucket
+        description: Hash bucket of repo_id (or actor_id) used to build the model in bounded memory (ADR-020); not meaningful downstream.
+      - name: repo_id
+        description: GitHub repository id. The only key used to join repositories; names are display-only.
+      - name: actor_id
+        description: GitHub user id of the actor. The key for users; logins are display-only.
+      - name: session_id
+        description: 'Running session number within (repository, actor); a new session starts after a gap of session_gap_minutes.'
+      - name: event_types
+        description: Distinct event types in the session.
 
   - name: int_core_actors_daily
     description: "Maintainer evidence per (repo_id, actor_id, day): pushed, closed a PR, or owner login equals actor login."
@@ -206,7 +353,18 @@ models:
           arguments: {combination_of_columns: [repo_id, actor_id, day]}
     columns:
       - name: pushed
+        description: True when the actor pushed to the repository that day.
         tests: [not_null]
+      - name: repo_id
+        description: GitHub repository id. The only key used to join repositories; names are display-only.
+      - name: actor_id
+        description: GitHub user id of the actor. The key for users; logins are display-only.
+      - name: day
+        description: UTC calendar day.
+      - name: closed_pr
+        description: True when the actor closed a pull request that day.
+      - name: is_owner
+        description: 'True when the actor''s login equals the owner part of the repository name.'
 
   - name: int_issue_response
     description: Issues opened (detail eras), with first non-author response and close time.
@@ -215,12 +373,22 @@ models:
           arguments: {combination_of_columns: [repo_id, number]}
     columns:
       - name: opened_at
+        description: Time the issue was opened.
         tests: [not_null]
       - name: first_response_at
+        description: Time of the first comment by someone other than the author.
         tests:
           - dbt_utils.expression_is_true:
               arguments: {expression: "> opened_at"}
               config: {where: "first_response_at is not null"}
+      - name: repo_id
+        description: GitHub repository id. The only key used to join repositories; names are display-only.
+      - name: number
+        description: Issue or pull request number within the repository. NULL where detail_level = 0.
+      - name: author_id
+        description: Id of the user who opened the issue.
+      - name: closed_at
+        description: 'Time the issue was closed, if it was.'
 
   - name: int_pr_lifecycle
     description: Pull requests opened (detail eras), with close, merge (when the flag exists) and first review times.
@@ -229,7 +397,20 @@ models:
           arguments: {combination_of_columns: [repo_id, number]}
     columns:
       - name: opened_at
+        description: Time the pull request was opened.
         tests: [not_null]
+      - name: repo_id
+        description: GitHub repository id. The only key used to join repositories; names are display-only.
+      - name: number
+        description: Issue or pull request number within the repository. NULL where detail_level = 0.
+      - name: author_id
+        description: Id of the user who opened the pull request.
+      - name: closed_at
+        description: 'Time the pull request was closed, if it was.'
+      - name: merged_at
+        description: Time the pull request was merged. NULL when the merged flag is missing or it was not merged.
+      - name: first_review_at
+        description: 'Time of the first review, if any.'
 
   - name: int_stargazer_later_actions
     description: "Later actions (fork, issue, PR, comment) of early stargazers on the same repo within 90 days of the star."
@@ -238,7 +419,22 @@ models:
           arguments: {combination_of_columns: [repo_id, actor_id, action_event_id]}
     columns:
       - name: days_after_star
+        description: Whole days between the star and the action (0 to 90).
         tests: [{dbt_utils.expression_is_true: {arguments: {expression: "between 0 and 90"}}}]
+      - name: bucket
+        description: Hash bucket of repo_id (or actor_id) used to build the model in bounded memory (ADR-020); not meaningful downstream.
+      - name: repo_id
+        description: GitHub repository id. The only key used to join repositories; names are display-only.
+      - name: actor_id
+        description: GitHub user id of the actor. The key for users; logins are display-only.
+      - name: starred_at
+        description: UTC time of the first star by this actor on this repository.
+      - name: action_type
+        description: 'Kind of the later action: fork, issue, pull_request or comment.'
+      - name: action_at
+        description: Time of the later action.
+      - name: action_event_id
+        description: Event id of the later action.
 
   - name: int_star_cohort_retention
     description: >
@@ -249,9 +445,49 @@ models:
           arguments: {combination_of_columns: [repo_id, cohort_week]}
     columns:
       - name: n_stargazers
+        description: Early stargazers in the cohort.
         tests: [not_null, {dbt_utils.expression_is_true: {arguments: {expression: ">= 1"}}}]
       - name: share_any_90d
+        description: Share of the cohort who did any of these things within 90 days of starring.
         tests: [{dbt_utils.expression_is_true: {arguments: {expression: "between 0 and 1"}}}]
+      - name: repo_id
+        description: GitHub repository id. The only key used to join repositories; names are display-only.
+      - name: cohort_week
+        description: 'Monday of the week the cohort''s stars were given.'
+      - name: share_fork_30d
+        description: Share of the cohort who forked the repository within 30 days of starring.
+      - name: share_fork_60d
+        description: Share of the cohort who forked the repository within 60 days of starring.
+      - name: share_fork_90d
+        description: Share of the cohort who forked the repository within 90 days of starring.
+      - name: share_issue_30d
+        description: Share of the cohort who opened an issue within 30 days of starring.
+      - name: share_issue_60d
+        description: Share of the cohort who opened an issue within 60 days of starring.
+      - name: share_issue_90d
+        description: Share of the cohort who opened an issue within 90 days of starring.
+      - name: share_pull_request_30d
+        description: Share of the cohort who opened a pull request within 30 days of starring.
+      - name: share_pull_request_60d
+        description: Share of the cohort who opened a pull request within 60 days of starring.
+      - name: share_pull_request_90d
+        description: Share of the cohort who opened a pull request within 90 days of starring.
+      - name: share_comment_30d
+        description: Share of the cohort who commented within 30 days of starring.
+      - name: share_comment_60d
+        description: Share of the cohort who commented within 60 days of starring.
+      - name: share_comment_90d
+        description: Share of the cohort who commented within 90 days of starring.
+      - name: share_any_30d
+        description: Share of the cohort who did any of these things within 30 days of starring.
+      - name: share_any_60d
+        description: Share of the cohort who did any of these things within 60 days of starring.
+      - name: is_mature_30d
+        description: True when the 30-day window has fully elapsed in the data; use only mature rows.
+      - name: is_mature_60d
+        description: True when the 60-day window has fully elapsed in the data; use only mature rows.
+      - name: is_mature_90d
+        description: True when the 90-day window has fully elapsed in the data; use only mature rows.
 
   - name: int_actor_early_stars
     description: >
@@ -263,16 +499,28 @@ models:
           arguments: {combination_of_columns: [repo_id, actor_id]}
     columns:
       - name: repo_id
+        description: GitHub repository id. The only key used to join repositories; names are display-only.
         tests: [not_null]
       - name: actor_id
+        description: GitHub user id of the actor. The key for users; logins are display-only.
         tests: [not_null]
       - name: outcome_day
+        description: Day on which the outcome of an early star became known (star day plus the look-ahead window).
         tests:
           - not_null
           - dbt_utils.expression_is_true:
               arguments: {expression: "> star_day"}
       - name: is_hit
+        description: 'True when gain_lookahead reached absolute_min_gain: the actor starred a repository that took off.'
         tests: [not_null]
+      - name: bucket
+        description: Hash bucket of repo_id (or actor_id) used to build the model in bounded memory (ADR-020); not meaningful downstream.
+      - name: starred_at
+        description: UTC time of the first star by this actor on this repository.
+      - name: star_day
+        description: UTC calendar day of the star.
+      - name: gain_lookahead
+        description: 'First stars the repository gained on the days after the star day, within the look-ahead window.'
 
   - name: int_actor_early_cum
     description: >
@@ -283,21 +531,32 @@ models:
           arguments: {combination_of_columns: [actor_id, outcome_day]}
     columns:
       - name: actor_id
+        description: GitHub user id of the actor. The key for users; logins are display-only.
         tests: [not_null]
       - name: early_stars_known
+        description: 'Running count of the actor''s early stars whose outcome is known.'
         tests: [not_null, {dbt_utils.expression_is_true: {arguments: {expression: ">= 1"}}}]
       - name: hits_known
+        description: Running count of those that were hits.
         tests:
           - not_null
           - dbt_utils.expression_is_true:
               arguments: {expression: "between 0 and early_stars_known"}
+      - name: bucket
+        description: Hash bucket of repo_id (or actor_id) used to build the model in bounded memory (ADR-020); not meaningful downstream.
+      - name: outcome_day
+        description: Day on which the outcome of an early star became known (star day plus the look-ahead window).
+      - name: next_outcome_day
+        description: 'Day of the actor''s next outcome; the counts hold until then.'
 
   - name: int_repo_first_hit
     description: Grain repo_id; first_hit_outcome_day = day after which the repo is a known hit (tastemaker rule). Used by feat_owner with `< D`.
     columns:
       - name: repo_id
+        description: GitHub repository id. The only key used to join repositories; names are display-only.
         tests: [not_null, unique]
       - name: first_hit_outcome_day
+        description: Day after which the repository counts as a known hit for the tastemaker rule.
         tests: [not_null]
 
   - name: int_tastemaker_thresholds
@@ -306,8 +565,11 @@ models:
       actors with >= tm_min_known known early stars as of that month boundary.
     columns:
       - name: month
+        description: First day of the month the threshold applies from.
         tests: [not_null, unique]
       - name: score_threshold
+        description: Smallest smoothed tastemaker score still in the top tm_top_quantile.
         tests: [not_null]
       - name: n_actors
+        description: Actors with enough known early stars to be scored that month.
         tests: [not_null, {dbt_utils.expression_is_true: {arguments: {expression: "> 0"}}}]

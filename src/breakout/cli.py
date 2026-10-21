@@ -1171,7 +1171,10 @@ def daily_run_cmd(
         bool, typer.Option("--no-commit", help="skip git commit of ledger and status")
     ] = False,
     no_upload: Annotated[
-        bool, typer.Option("--no-upload", help="skip Hugging Face uploads")
+        bool, typer.Option("--no-upload", help="skip Hugging Face uploads (reads still happen)")
+    ] = False,
+    skip_bootstrap: Annotated[
+        bool, typer.Option("--skip-bootstrap", help="do not pull missing inputs from the Hub")
     ] = False,
 ) -> None:
     """Run the 15-step daily pipeline."""
@@ -1187,6 +1190,7 @@ def daily_run_cmd(
         skip_deploy_data=skip_deploy_data,
         no_commit=no_commit,
         no_upload=no_upload,
+        skip_bootstrap=skip_bootstrap,
     )
     if rc != 0:
         raise typer.Exit(rc)
@@ -1295,6 +1299,33 @@ def publish_insights_cmd(
 
     p = insights.export_insights_data()
     typer.echo(f"Wrote insights stories to {p}")
+
+
+@publish_app.command("dbt-docs")
+def publish_dbt_docs_cmd(
+    ctx: typer.Context,
+    refresh_catalog: Annotated[
+        bool,
+        typer.Option(
+            "--refresh-catalog",
+            help="read column types from the local warehouse and rewrite reports/dbt/catalog.json",
+        ),
+    ] = False,
+) -> None:
+    """Generate the dbt docs and copy them to site/public/dbt-docs/ (Phase 13.2)."""
+    from breakout.publish import dbt_docs
+
+    cfg = get_config(ctx.obj["config"])
+    typer.echo(f"Wrote {dbt_docs.publish_docs(cfg, refresh_catalog=refresh_catalog)}")
+
+
+@publish_app.command("data-dictionary")
+def publish_data_dictionary_cmd(ctx: typer.Context) -> None:
+    """Write docs/data_dictionary.md from the dbt manifest (Phase 13.2)."""
+    from breakout.publish import dbt_docs
+
+    cfg = get_config(ctx.obj["config"])
+    typer.echo(f"Wrote {dbt_docs.write_data_dictionary(cfg)}")
 
 
 @publish_app.command("feeds")

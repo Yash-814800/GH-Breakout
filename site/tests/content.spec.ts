@@ -37,8 +37,8 @@ for (const route of ROUTES) {
       expect(text, `${re} found`).not.toMatch(re);
     }
     const floats = text.match(/\d+\.\d{3,}/g) ?? [];
-    // metric pages report PR-AUC and ROC-AUC with three or four decimals on purpose; everything else must be rounded
-    const allowed = route === 'methodology/' || route === 'status/' ? floats.filter((f) => !/^0\.\d{3,4}$/.test(f)) : floats;
+    // metric pages and blog posts report PR-AUC and ROC-AUC with three or four decimals on purpose; everything else must be rounded
+    const allowed = route === 'methodology/' || route === 'status/' || route.startsWith('blog/') ? floats.filter((f) => !/^0\.\d{3,4}$/.test(f)) : floats;
     expect(allowed, 'unrounded numbers').toEqual([]);
     expect(text).not.toMatch(/\b\d{4}-\d{2}-\d{2}T\d{2}:/);
     expect(problems, 'console or network problems').toEqual([]);

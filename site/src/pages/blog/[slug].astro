@@ -1,0 +1,66 @@
+---
+import LongformLayout from '../../layouts/LongformLayout.astro';
+import PageHeader from '../../components/layout/PageHeader.astro';
+import { getPosts } from '../../lib/blog';
+import { date } from '../../lib/format';
+import { url } from '../../lib/url';
+
+export function getStaticPaths() {
+  return getPosts().map((p) => ({ params: { slug: p.slug }, props: { p } }));
+}
+const { p } = Astro.props;
+---
+
+<LongformLayout title={p.title} description={p.description} type="article" toc={p.headings}>
+  <PageHeader slot="header" size="display" center title={p.title} lead={p.description}>
+    <Fragment slot="meta"><span>{date(p.date)}</span></Fragment>
+  </PageHeader>
+  <article class="prose measure" set:html={p.html} />
+  <p class="back t-body-sm"><a href={url('/blog/')}>All posts</a></p>
+</LongformLayout>
+
+<style is:global>
+  .prose .table-wrap {
+    overflow: auto;
+    max-width: 100%;
+    border: 1px solid var(--line);
+    border-radius: var(--r-lg);
+    background: var(--raised);
+  }
+  .prose .tbl {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    font-size: 14px;
+    line-height: 1.45;
+  }
+  .prose .tbl th {
+    padding: 10px 12px;
+    text-align: left;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--ink-3);
+    border-bottom: 1px solid var(--line);
+    white-space: nowrap;
+  }
+  .prose .tbl td {
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--line);
+    vertical-align: top;
+  }
+  .prose .tbl tbody tr:last-child td {
+    border-bottom: 0;
+  }
+  .prose img {
+    max-width: 100%;
+    height: auto;
+    border: 1px solid var(--line);
+  }
+</style>
+<style>
+  .back {
+    max-width: 680px;
+    margin: 48px auto 0;
+    color: var(--accent);
+  }
+</style>
