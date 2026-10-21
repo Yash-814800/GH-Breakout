@@ -730,7 +730,15 @@ def pull_digests(cfg: Config) -> int:
         ]
         if not remote:
             return 0
-        hf_mod.download_files(api, cfg, "derived", remote, DATA_DIR)
+        import shutil
+
+        tmp = P.TMP_DIR / "digests_pull"
+        shutil.rmtree(tmp, ignore_errors=True)
+        got = hf_mod.download_files(api, cfg, "derived", remote, tmp)
+        DIGESTS_DIR.mkdir(parents=True, exist_ok=True)
+        for f in got:  # copy the files only: the Hub client leaves a .cache folder in its target
+            shutil.copy2(f, DIGESTS_DIR / f.name)
+        shutil.rmtree(tmp, ignore_errors=True)
         rebuild_index(DIGESTS_DIR)
         return len(remote)
     except Exception as exc:
