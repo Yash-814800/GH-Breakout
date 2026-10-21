@@ -63,10 +63,11 @@ jobs:
           node-version: 22
           cache: npm
           cache-dependency-path: site/package-lock.json
-      - name: Figures for the methodology page
+      - name: Fixture data (served as static files) and figures
         working-directory: .
         run: |
-          mkdir -p site/public/figures
+          mkdir -p site/public/data site/public/figures
+          cp -r site/test-data/* site/public/data/
           cp reports/figures/*.png site/public/figures/ || true
       - run: npm ci
       - name: Unit tests (formatters, chart theme)
