@@ -84,12 +84,8 @@ def generate_story_1_stars_vs_adoption(con: duckdb.DuckDBPyConnection) -> dict[s
 
     return {
         "id": "stars-vs-adoption",
-        "title": "Stars vs. Real Adoption: Sustained Breakouts vs. Spikes",
-        "summary": (
-            "Repositories that break out and sustain long-term engagement convert star velocity into forks, issues, and code contributions within their first 90 days. "
-            "In contrast, projects driven purely by artificial spikes or viral social media waves experience rapid cohort decay with near-zero downstream activity. "
-            "Monitoring subsequent stargazer interactions separates authentic community adoption from fleeting popularity contests."
-        ),
+        "title": "Stars vs. Real Adoption",
+        "summary": _summary_stars_vs_adoption(chart_data),
         "chart_type": "retention_comparison",
         "chart_data": chart_data,
         "sql": sql.strip(),
@@ -130,12 +126,8 @@ def generate_story_2_ai_era_shift(con: duckdb.DuckDBPyConnection) -> dict[str, A
 
     return {
         "id": "ai-era-shift",
-        "title": "The AI-Era Shift: Machine Learning Dominates Breakouts",
-        "summary": (
-            "Between 2016 and 2021, AI and LLM projects accounted for fewer than 7% of all verified breakout repositories on GitHub. "
-            "Following the late-2022 generative AI boom, the share of machine learning breakouts quadrupled to over 28% in 2023 and 32% in 2025. "
-            "This structural shift established Python as the undisputed primary language for explosive open-source repository growth."
-        ),
+        "title": "The AI-Era Shift",
+        "summary": _summary_ai_era(chart_data),
         "chart_type": "ai_share_trend",
         "chart_data": chart_data,
         "sql": sql.strip(),
@@ -174,12 +166,8 @@ def generate_story_3_lead_time(con: duckdb.DuckDBPyConnection) -> dict[str, Any]
 
     return {
         "id": "lead-time",
-        "title": "Early Discovery Lead Time: Days Ahead of GitHub Trending",
-        "summary": (
-            "Over 22% of breakout repositories that reach GitHub's official Trending feed are detected by gh-breakout days in advance. "
-            "The median discovery lead time is 1 to 2 days before peak viral visibility, with exceptional candidates flagged up to 14 days earlier. "
-            "Algorithmic tracking of early star velocity and contributor networks systematically surfaces projects before curation algorithms notice them."
-        ),
+        "title": "Lead Time Against GitHub Trending",
+        "summary": _summary_lead_time(chart_data),
         "chart_type": "lead_time_distribution",
         "chart_data": chart_data,
         "sql": sql.strip(),
@@ -262,16 +250,69 @@ def generate_story_4_suspicion_trends(con: duckdb.DuckDBPyConnection) -> dict[st
 
     return {
         "id": "suspicion-trends",
-        "title": "Unusual Star Patterns: The Rise of Commercial Star Farming",
-        "summary": (
-            "Auditing ten years of candidate trajectories shows that suspicious starring patterns cluster heavily within specific eras. "
-            "While low-activity accounts and bulk starrers peaked in 2017–2018, modern coordinated lockstep campaigns surged from 2022 onwards. "
-            "Across all historical cohorts, only 0.51% of genuine breakout repositories exhibited anomalous growth signatures."
-        ),
+        "title": "Unusual Star Patterns Over Time",
+        "summary": _summary_suspicion(chart_data),
         "chart_type": "suspicion_prevalence",
         "chart_data": chart_data,
         "sql": sql.strip(),
     }
+
+
+def _summary_stars_vs_adoption(chart_data: list[dict[str, Any]]) -> str:
+    d30 = next(r for r in chart_data if r["horizon_days"] == 30)
+    d90 = next(r for r in chart_data if r["horizon_days"] == 90)
+    return (
+        "Of the stargazers of candidate repositories, the share who later fork, open an issue or PR, or comment "
+        f"reaches {d90['breakouts']:.1f}% within 90 days for repos that went on to break out, "
+        f"against {d90['non_breakouts']:.1f}% for other candidates ({d30['breakouts']:.1f}% against "
+        f"{d30['non_breakouts']:.1f}% at 30 days). "
+        "So in this data breakouts do not retain more engagement per star than other candidates. "
+        "Star counts alone say little about adoption, which is why the model also looks at what stargazers do next."
+    )
+
+
+def _summary_ai_era(chart_data: list[dict[str, Any]]) -> str:
+    first, last = chart_data[0], chart_data[-1]
+    peak = max(chart_data, key=lambda r: r["ai_breakout_pct"])
+    return (
+        f"Breakouts whose repository name matches an AI keyword (a display-only name match, so it over- and "
+        f"under-counts) were {first['ai_breakout_pct']:.1f}% of all breakouts in {first['year']}. "
+        f"The share peaked at {peak['ai_breakout_pct']:.1f}% in {peak['year']}, "
+        f"and {last['year']} is {'a partial year' if last['year'] == peak['year'] else 'the latest year'}. "
+        "Among Python, JavaScript/TypeScript and Rust, Python has the most breakouts in 2023-2025."
+    )
+
+
+def _summary_lead_time(chart_data: list[dict[str, Any]]) -> str:
+    total = sum(r["count"] for r in chart_data)
+    after = sum(r["count"] for r in chart_data if r["lead_days"] > 0)
+    half, acc, median = total / 2, 0, 0
+    for r in chart_data:
+        acc += r["count"]
+        if acc >= half:
+            median = r["lead_days"]
+            break
+    return (
+        "For repos that both entered the candidate universe and appeared on GitHub Trending within the window, "
+        "lead time is the first Trending date minus the first date the repo was a candidate. "
+        f"The median is {median} days, and {after / total * 100:.0f}% of the {total:,} repos reached Trending after "
+        "they first became candidates. "
+        "This measures candidacy, not the model's ranking, so it is not yet a claim about early detection."
+    )
+
+
+def _summary_suspicion(chart_data: list[dict[str, Any]]) -> str:
+    peak = max(chart_data, key=lambda r: r["high_suspicion_pct"])
+    last = chart_data[-1]
+    br = sum(r["breakout_high_suspicion_count"] for r in chart_data)
+    bt = sum(r["breakouts"] for r in chart_data)
+    return (
+        f"The share of candidate snapshots with an unusual star pattern (top 2% of the score) peaked at "
+        f"{peak['high_suspicion_pct']:.1f}% in {peak['year']} and was {last['high_suspicion_pct']:.1f}% in {last['year']}. "
+        f"Among historical breakouts, {br:,} of {bt:,} ({br / bt * 100:.2f}%) had such a pattern. "
+        "This version of the measure uses five of the six signals (no lockstep) and flags a pattern, "
+        "which may or may not indicate artificial stars."
+    )
 
 
 def export_insights_data(

@@ -5,8 +5,8 @@
   "stories": [
     {
       "id": "stars-vs-adoption",
-      "title": "Stars vs. Real Adoption: Sustained Breakouts vs. Spikes",
-      "summary": "Repositories that break out and sustain long-term engagement convert star velocity into forks, issues, and code contributions within their first 90 days. In contrast, projects driven purely by artificial spikes or viral social media waves experience rapid cohort decay with near-zero downstream activity. Monitoring subsequent stargazer interactions separates authentic community adoption from fleeting popularity contests.",
+      "title": "Stars vs. Real Adoption",
+      "summary": "Of the stargazers of candidate repositories, the share who later fork, open an issue or PR, or comment reaches 8.0% within 90 days for repos that went on to break out, against 8.8% for other candidates (7.0% against 8.0% at 30 days). So in this data breakouts do not retain more engagement per star than other candidates. Star counts alone say little about adoption, which is why the model also looks at what stargazers do next.",
       "chart_type": "retention_comparison",
       "chart_data": [
         {
@@ -29,8 +29,8 @@
     },
     {
       "id": "ai-era-shift",
-      "title": "The AI-Era Shift: Machine Learning Dominates Breakouts",
-      "summary": "Between 2016 and 2021, AI and LLM projects accounted for fewer than 7% of all verified breakout repositories on GitHub. Following the late-2022 generative AI boom, the share of machine learning breakouts quadrupled to over 28% in 2023 and 32% in 2025. This structural shift established Python as the undisputed primary language for explosive open-source repository growth.",
+      "title": "The AI-Era Shift",
+      "summary": "Breakouts whose repository name matches an AI keyword (a display-only name match, so it over- and under-counts) were 5.4% of all breakouts in 2016. The share peaked at 32.1% in 2025, and 2025 is a partial year. Among Python, JavaScript/TypeScript and Rust, Python has the most breakouts in 2023-2025.",
       "chart_type": "ai_share_trend",
       "chart_data": [
         {
@@ -138,8 +138,8 @@
     },
     {
       "id": "lead-time",
-      "title": "Early Discovery Lead Time: Days Ahead of GitHub Trending",
-      "summary": "Over 22% of breakout repositories that reach GitHub's official Trending feed are detected by gh-breakout days in advance. The median discovery lead time is 1 to 2 days before peak viral visibility, with exceptional candidates flagged up to 14 days earlier. Algorithmic tracking of early star velocity and contributor networks systematically surfaces projects before curation algorithms notice them.",
+      "title": "Lead Time Against GitHub Trending",
+      "summary": "For repos that both entered the candidate universe and appeared on GitHub Trending within the window, lead time is the first Trending date minus the first date the repo was a candidate. The median is 0 days, and 42% of the 19,087 repos reached Trending after they first became candidates. This measures candidacy, not the model's ranking, so it is not yet a claim about early detection.",
       "chart_type": "lead_time_distribution",
       "chart_data": [
         {
@@ -362,8 +362,8 @@
     },
     {
       "id": "suspicion-trends",
-      "title": "Unusual Star Patterns: The Rise of Commercial Star Farming",
-      "summary": "Auditing ten years of candidate trajectories shows that suspicious starring patterns cluster heavily within specific eras. While low-activity accounts and bulk starrers peaked in 2017\u20132018, modern coordinated lockstep campaigns surged from 2022 onwards. Across all historical cohorts, only 0.51% of genuine breakout repositories exhibited anomalous growth signatures.",
+      "title": "Unusual Star Patterns Over Time",
+      "summary": "The share of candidate snapshots with an unusual star pattern (top 2% of the score) peaked at 3.8% in 2018 and was 0.8% in 2025. Among historical breakouts, 81 of 15,773 (0.51%) had such a pattern. This version of the measure uses five of the six signals (no lockstep) and flags a pattern, which may or may not indicate artificial stars.",
       "chart_type": "suspicion_prevalence",
       "chart_data": [
         {

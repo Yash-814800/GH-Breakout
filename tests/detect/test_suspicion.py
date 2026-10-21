@@ -135,3 +135,31 @@ def test_retention_reference_loading() -> None:
     assert "fork_median" in ref.columns
     assert "any_median" in ref.columns
     assert len(ref) >= 1
+
+
+def test_insight_summaries_follow_chart_data() -> None:
+    from breakout.publish.insights import _summary_stars_vs_adoption, _summary_suspicion
+
+    text = _summary_stars_vs_adoption(
+        [
+            {"horizon_days": 30, "breakouts": 7.0, "non_breakouts": 8.0},
+            {"horizon_days": 90, "breakouts": 8.0, "non_breakouts": 8.8},
+        ]
+    )
+    assert "do not retain more" in text and "8.0%" in text and "8.8%" in text
+    rows = [
+        {
+            "year": 2018,
+            "high_suspicion_pct": 3.8,
+            "breakouts": 10,
+            "breakout_high_suspicion_count": 1,
+        },
+        {
+            "year": 2025,
+            "high_suspicion_pct": 0.8,
+            "breakouts": 10,
+            "breakout_high_suspicion_count": 0,
+        },
+    ]
+    out = _summary_suspicion(rows)
+    assert "peaked at 3.8% in 2018" in out and "farm" not in out.lower()

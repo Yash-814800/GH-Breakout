@@ -829,7 +829,7 @@ event-based numbers, which are what the model saw; the page says so. Ledger rows
 5. **Insights Page (`site/src/pages/insights.astro`, `publish/insights.py`):**
    - Published via `breakout publish insights` to `site/public/data/insights.json` (and `site/test-data/insights.json`).
    - Four data stories featuring narrative text, Observable Plot visualizations, and collapsible DuckDB SQL queries:
-     1. Stars vs. Real Adoption: Cohort retention trajectories of durable breakouts vs. faded spikes.
+     1. Stars vs. Real Adoption: downstream engagement of breakout vs. other candidates' stargazers (breakouts retain slightly less, 8.0% vs 8.8% at 90 days).
      2. The AI-Era Shift: Proportion of breakout repositories classified as AI/ML/LLM tooling (2016–2025).
      3. Lead Time Distribution: Backtest early flag detection advantage relative to GitHub Trending.
      4. Unusual Star Patterns Over Time: Longitudinal prevalence of high-suspicion candidate repositories.
@@ -860,3 +860,9 @@ event-based numbers, which are what the model saw; the page says so. Ledger rows
 
 **Consequences:** Visual changes now show up as snapshot diffs (regenerate with the `update-visual-snapshots` workflow). The dist folder is about 45 MB because of the DuckDB-WASM binary, well under the Pages limit. Phase 12
 (feeds, badges, digest data) fills layouts that already exist. Four data problems found in earlier phases are listed in `docs/PROGRESS.md`.
+
+**Amendment (2026-10-21, Phase 11 acceptance review):**
+- The first insight texts were hand-written and contradicted their charts (story 1 claimed higher retention for breakouts, story 4 claimed a recent rise and used "star farming" wording, story 3 claimed a median lead of 1-2 days). The summaries are now generated from the chart data by `_summary_*` in `publish/insights.py`, titles are neutral, and story 3 states that it measures candidacy, not the model's ranking.
+- The label policy after the ablation (keep labels unchanged) was marked HUMAN DECISION in the phase file and was chosen by the agent. It stays the working default until the human confirms or changes it.
+- The story 4 SQL uses five of the six signals (no lockstep), so its prevalence differs slightly from `mart_suspicion`; the text says so.
+
