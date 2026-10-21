@@ -33,14 +33,14 @@ Tall pages are cropped to 6,000 px / re-compressed to stay under 500 KB per file
 | 11 | `/` | all | inconsistent | Probability colored green/purple in the table; the rest of the site uses neutral ink. Rank column uses a star glyph next to every rank. |
 | 12 | all | 375 | unpolished | Header shows the full desktop nav; no menu pattern. |
 | 13 | `/` | all | unpolished | Default browser `<select>` and checkbox look, labels "Search:", "Language:", "Min Probability:" inline in one row. |
-| 14 | all | dark | unpolished | Dark mode is an inversion: borders and badges lose contrast, the Observable Plot charts keep light backgrounds on `/track-record/`. |
+| 14 | all | dark | unpolished | Dark mode exists (media query) but is a plain inversion with a near-black page and bordered cards everywhere; there is no manual theme toggle and chart colors are hard-coded rather than token-driven. |
 | 15 | all | all | unpolished | Middle-dot meta strings and a monospace badge ("Daily ML Leaderboard", "Data through: 2026-10-20") in tracked-out caps. Banned by §0.4. |
 | 16 | all | all | unpolished | No favicon beyond an emoji data-URI, no OG image, no theme toggle, no skip link. |
 | 17 | `/` | all | unpolished | Probability tooltip is the plain `title` attribute; odds shown as "~1 in 3" with a tilde and no sentence. |
 | 18 | `/explore/` | all | unpolished | Plain `<textarea>` editor with no highlighting; results table has no sticky header, unformatted numbers/timestamps. |
-| 19 | all | all | unpolished | Heading `h1` count is 1 everywhere (OK) but heading levels skip (h1 to h4) on `/repo/*`. |
+| 19 | `/track-record/` | all | unpolished | Every stat is a bordered card with an ALL-CAPS tracked label and a monospace number (banned by §0.4); a stack of identical cards. |
 
-Passing already: exactly one `h1` per page; no failed network requests; base path correct; no CLS from fonts (because none load).
+Passing already: exactly one `h1` per page and a correct heading order (checked on the repo page); no failed network requests; base path correct; no CLS from fonts (because none load).
 
 ## Consequences for the redesign
 
