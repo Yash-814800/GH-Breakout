@@ -6,17 +6,21 @@
   "scripts": {
     "dev": "astro dev",
     "start": "astro dev",
-    "build": "astro build && node scripts/check-base-paths.mjs",
+    "build": "node scripts/gen-og.mjs && astro build && node scripts/check-base-paths.mjs",
     "preview": "astro preview",
     "astro": "astro",
     "check-base-paths": "node scripts/check-base-paths.mjs",
-    "build:fx": "DATA_DIR=test-data OUT_DIR=dist-fx astro build && OUT_DIR=dist-fx node scripts/check-base-paths.mjs",
+    "build:fx": "DATA_DIR=test-data node scripts/gen-og.mjs && DATA_DIR=test-data OUT_DIR=dist-fx astro build && OUT_DIR=dist-fx node scripts/check-base-paths.mjs",
     "lint:tokens": "node scripts/lint-tokens.mjs",
     "test": "vitest run",
     "test:e2e": "playwright test",
     "screenshots": "node scripts/screenshot.mjs",
     "fixtures": "node scripts/make-fixtures.mjs",
-    "languages": "node scripts/gen-languages.mjs"
+    "languages": "node scripts/gen-languages.mjs",
+    "brand": "node scripts/gen-brand.mjs",
+    "og": "node scripts/gen-og.mjs",
+    "check:links": "node scripts/check-links.mjs",
+    "lh": "lhci autorun --config=lighthouserc.desktop.json && lhci autorun --config=lighthouserc.mobile.json && node scripts/lh-summary.mjs"
   },
   "dependencies": {
     "@astrojs/sitemap": "^3.7.4",

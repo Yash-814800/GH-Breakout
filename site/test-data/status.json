@@ -28,7 +28,7 @@
       "event_type": "IssuesEvent",
       "latest_event": "2026-10-20T23:59:12Z",
       "rows_24h": 17140,
-      "missing_hours": 1
+      "missing_hours": 0
     }
   ],
   "missing_hours": [],

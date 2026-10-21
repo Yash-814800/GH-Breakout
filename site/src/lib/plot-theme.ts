@@ -48,10 +48,10 @@ export function baseOptions(t: Tokens, width: number, height: number = HEIGHTS.s
   return {
     width: Math.max(160, Math.floor(width)),
     height,
-    marginLeft: 40,
+    marginLeft: 44,
     marginBottom: 28,
     marginTop: 8,
-    marginRight: 8,
+    marginRight: 24,
     style: {
       fontFamily: t.font,
       fontSize: '12px',

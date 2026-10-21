@@ -126,8 +126,8 @@ const mins = (s: number) => (s >= 90 ? `${(s / 60).toFixed(1)} min` : `${Math.ro
       host.replaceChildren(
         plot({
           ...o,
-          marginLeft: Math.min(160, Math.max(90, w * 0.25)),
-          x: { ...o.x, grid: true, label: null, tickFormat: (d: number) => `${d} s` },
+          marginLeft: Math.min(170, Math.max(112, w * 0.3)),
+          x: { ...o.x, grid: true, label: null, tickFormat: (d: number) => `${d} s`, domain: [0, Math.max(...steps.map((s) => s.s)) * 1.18] },
           y: { ...o.y, grid: false, domain: steps.map((s) => s.name), tickFormat: (d: string) => d },
           marks: [
             Plot.barX(steps, { x: 's', y: 'name', fill: t.accent, rx: 2, inset: 5 }),

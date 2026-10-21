@@ -1,0 +1,22 @@
+// Crawls the built site (served by astro preview, base path included) and fails on any broken internal link.
+// External links are not checked: they would make CI depend on third-party uptime.
+import { spawn } from 'node:child_process';
+import { LinkChecker } from 'linkinator';
+
+const port = Number(process.env.LINK_PORT ?? 4403);
+const base = `http://127.0.0.1:${port}/GH-Breakout/`;
+const server = spawn('npx', ['astro', 'preview', '--port', String(port), '--host', '127.0.0.1'], { stdio: 'ignore', env: { ...process.env, OUT_DIR: process.env.OUT_DIR ?? 'dist-fx' } });
+try {
+  for (let i = 0; i < 60; i++) {
+    try { if ((await fetch(base)).ok) break; } catch {}
+    await new Promise((r) => setTimeout(r, 500));
+  }
+  const res = await new LinkChecker().check({ path: base, recurse: true, linksToSkip: [/^(?!http:\/\/127\.0\.0\.1)/], timeout: 20000 });
+  // the style guide and 404 are reachable only by URL; crawling covers every linked page
+  const broken = res.links.filter((l) => l.state === 'BROKEN');
+  broken.forEach((l) => console.error(`BROKEN ${l.status} ${l.url} (from ${l.parent})`));
+  console.log(`links: ${res.links.length} checked, ${broken.length} broken`);
+  process.exitCode = broken.length ? 1 : 0;
+} finally {
+  server.kill();
+}

@@ -1021,6 +1021,9 @@ def export_track_record(
             }
         )
 
+    first_ledger_date = (
+        str(ledger_summary["first_date"]) if ledger_summary.get("first_date") else None
+    )
     doc = {
         "matured_snapshots": matured_snapshots,
         "summary": {
@@ -1030,7 +1033,7 @@ def export_track_record(
             "base_rate": 0.0051,
             "b1_hit_rate": b1_hr,
             "median_lead_time_days": 1.0,
-            "headline": track_headline(n_mat, top25_hr, 0.0051, ledger_summary.get("first_date")),
+            "headline": track_headline(n_mat, top25_hr, 0.0051, first_ledger_date),
         },
         "calibration": cal_bins,
         "ledger": ledger_summary,

@@ -44,3 +44,4 @@ dbt/.user.yml
 site/.lighthouseci/
 site/test-results/
 site/playwright-report/
+site/public/og/

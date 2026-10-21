@@ -132,7 +132,8 @@ stable versions available at install time; do not guess version numbers from mem
 
 Only: `ledger/predictions.csv`, `status/heartbeat.json`, `dbt/seeds/*.csv` (small,
 hand-maintained lists such as known bots), `tests/fixtures/*` (each fixture < 2 MB),
-`config/*.yaml`, and `reports/` (Markdown, small JSON metrics, PNG figures < 500 KB each).
+`config/*.yaml`, `reports/` (Markdown, small JSON metrics, PNG/JPEG figures < 500 KB each), `site/test-data/**`
+(fixtures for the site build and tests) and `site/tests/**/__screenshots__/*.png` (Playwright snapshots, each < 300 KB).
 Everything else data-like goes to Hugging Face or `data/`.
 
 `.gitignore` must include at least: `data/` and `/data` (on the dev machine `data` is a symlink to the

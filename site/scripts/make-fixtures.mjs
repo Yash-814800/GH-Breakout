@@ -152,7 +152,7 @@ if (arg('--track-days')) {
   st.rows_ingested_last_14d = [
     { event_type: 'WatchEvent', latest_event: '2026-10-20T23:59:41Z', rows_24h: 8571, missing_hours: 0 },
     { event_type: 'PullRequestEvent', latest_event: '2026-10-20T23:59:58Z', rows_24h: 40445, missing_hours: 0 },
-    { event_type: 'IssuesEvent', latest_event: '2026-10-20T23:59:12Z', rows_24h: 17140, missing_hours: 1 },
+    { event_type: 'IssuesEvent', latest_event: '2026-10-20T23:59:12Z', rows_24h: 17140, missing_hours: 0 },
   ];
   st.model = { version: '20261019-b5ff585', promoted_at: '2026-10-19T18:00:00+00:00', cv_pooled_pr_auc: 0.108, holdout_pr_auc: 0.158 };
   st.drift = { as_of: '2026-10-20', high_drift_threshold: 0.25, psi_by_feature: { stars_3d: 0.04, actor_days_14d: 0.12, primary_language: 0.31, stars_7d: 0.08, sg_tm_max_14d: 0.02, age_days: 0.55 } };

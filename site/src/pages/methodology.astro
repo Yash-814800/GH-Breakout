@@ -2,14 +2,11 @@
 import LongformLayout from '../layouts/LongformLayout.astro';
 import PageHeader from '../components/layout/PageHeader.astro';
 import Table from '../components/ui/Table.astro';
-import Pill from '../components/ui/Pill.astro';
 import ExternalLink from '../components/ui/ExternalLink.astro';
-import { getMeta } from '../lib/data';
 import { modelRows } from '../lib/model-metrics';
 import sharp from 'sharp';
 import { url, HF_MODELS, GITHUB_REPO } from '../lib/url';
 
-const meta = getMeta();
 const rows = modelRows();
 const f3 = (n: number) => n.toFixed(3);
 const f4 = (n: number) => n.toFixed(4);
@@ -30,8 +27,8 @@ for (const n of ['cv_pr_curve', 'cv_precision_by_year', 'cv_reliability', 'shap_
 ---
 
 <LongformLayout title="Methodology" description="How Breakout Radar defines a breakout, picks candidates, tests the model against simple baselines and checks its probabilities." toc={toc}>
-  <PageHeader slot="header" size="display" title="Methodology" lead="What a breakout is, how candidates are chosen, and how we check the model against simple rules.">
-    <Fragment slot="meta"><Pill variant="accent">Model {meta.model_version}</Pill><ExternalLink href={HF_MODELS}>Model card</ExternalLink></Fragment>
+  <PageHeader slot="header" size="display" center title="Methodology" lead="What a breakout is, how candidates are chosen, and how we check the model against simple rules.">
+    <Fragment slot="meta"><ExternalLink href={HF_MODELS}>Model card</ExternalLink></Fragment>
   </PageHeader>
 
   <div class="prose measure">

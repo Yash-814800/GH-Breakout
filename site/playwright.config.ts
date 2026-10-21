@@ -21,7 +21,7 @@ export default defineConfig({
     command: `npx astro preview --port ${PORT} --host 127.0.0.1`,
     url: `${ORIGIN}/GH-Breakout/`,
     reuseExistingServer: !process.env.CI,
-    env: { OUT_DIR: 'dist-fx' },
+    env: { OUT_DIR: process.env.E2E_OUT ?? 'dist-fx' },
     timeout: 60_000,
   },
 });

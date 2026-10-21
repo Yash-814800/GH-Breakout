@@ -16,6 +16,12 @@ const legends: Record<string, { label: string; kind: 'line' | 'dash' | 'square';
   lead_time_distribution: [{ label: 'Flagged before Trending', kind: 'square', color: 'accent' }, { label: 'Flagged on or after Trending', kind: 'square', color: 'ink-3' }],
   suspicion_prevalence: [{ label: 'All candidates', kind: 'line', color: 'accent' }, { label: 'Repos that broke out', kind: 'dash', color: 'ink-3' }],
 };
+const chartTitles: Record<string, string> = {
+  retention_comparison: 'Follow-up activity by horizon',
+  ai_share_trend: 'AI-related share of breakouts by year',
+  lead_time_distribution: 'Days between our first flag and GitHub Trending',
+  suspicion_prevalence: 'Share of candidates with a high unusual-pattern signal',
+};
 const captions: Record<string, string> = {
   retention_comparison: 'Share of stargazers who forked, opened an issue, sent a pull request or commented within 30, 60 and 90 days.',
   ai_share_trend: 'AI-related is a rough match on repo names (such as "ai", "gpt", "llm" or "agent"), so it over- and under-counts.',
@@ -47,7 +53,7 @@ const summaries: Record<string, string> = {
         <h2 class="t-h2 story-title">{s.title.replace(/:.*$/, '')}</h2>
         <p class="t-prose story-text">{s.summary}</p>
         <div class="wide">
-          <ChartFigure id={`chart-${s.id}`} title={s.title} level="h3" legend={legends[s.chart_type]} caption={captions[s.chart_type]} summary={summaries[s.chart_type] ?? s.title} height={300} />
+          <ChartFigure id={`chart-${s.id}`} title={chartTitles[s.chart_type] ?? 'Chart'} level="h3" legend={legends[s.chart_type]} caption={captions[s.chart_type]} summary={summaries[s.chart_type] ?? s.title} height={300} />
         </div>
         <div class="sql">
           <Disclosure summary="Show the SQL">

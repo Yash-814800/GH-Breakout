@@ -77,16 +77,13 @@ const hasFeed = existsSync('public/feed.xml');
     </div>
   </div>
 
-  <p class="foot-note t-caption faint">
-    Each momentum strip scales to its own repo, so the shape matters, not the height. Star totals come from GitHub; the strip shows stars seen in GH Archive, which undercounts since May 2025.
-  </p>
-
   <Fragment slot="rail">
     <Panel title="How to read this list">
       <ul class="how">
         <li><strong>Breakout chance</strong> is the model's estimate that a repo breaks out in the next 30 days.</li>
         <li>The smaller line gives the same number as odds.</li>
-        <li>The strip shows stars per day for 28 days, with the last 7 days in color.</li>
+        <li>The strip shows stars per day for 28 days, with the last 7 days in color. Each strip uses its own scale, so the shape matters, not the height.</li>
+        <li>Star totals come from GitHub. The strip counts stars GH Archive captured, which undercounts since May 2025.</li>
       </ul>
       <a class="more" href={url('/methodology/')}>Read the methodology</a>
     </Panel>
@@ -314,10 +311,6 @@ const hasFeed = existsSync('public/feed.xml');
     background: var(--raised);
     border: 1px solid var(--line);
     border-radius: var(--r-lg);
-  }
-  .foot-note {
-    margin-top: 16px;
-    max-width: 72ch;
   }
   .how {
     display: flex;

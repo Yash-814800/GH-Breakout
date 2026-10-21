@@ -2,8 +2,9 @@
 // Usage: node scripts/screenshot.mjs --out ../reports/design/before [--port 4321] [--routes /,/track-record/]
 import { chromium } from '@playwright/test';
 import { spawn } from 'node:child_process';
-import { mkdirSync, readdirSync, readFileSync } from 'node:fs';
+import { mkdirSync, readdirSync, readFileSync, renameSync, statSync, unlinkSync } from 'node:fs';
 import { join } from 'node:path';
+import sharp from 'sharp';
 
 const args = Object.fromEntries(
   process.argv.slice(2).reduce((acc, a, i, all) => (a.startsWith('--') ? [...acc, [a.slice(2), all[i + 1]]] : acc), []),
@@ -21,6 +22,26 @@ const routes = args.routes
   : ['/', `/repo/${firstRepo}/`, '/track-record/', '/backtest/', '/explore/', '/methodology/', '/status/', '/about/', '/insights/'];
 
 mkdirSync(out, { recursive: true });
+
+// Files in reports/ must stay under 500 KB: lower the JPEG quality first, then crop very tall pages.
+const MAX = Number(args['max-kb'] ?? 480) * 1024;
+async function capSize(file) {
+  if (statSync(file).size <= MAX) return;
+  const buf = readFileSync(file);
+  const meta = await sharp(buf).metadata();
+  for (const height of [meta.height, 6000, 4500, 3000]) {
+    for (const quality of [70, 55, 40]) {
+      const img = sharp(buf).extract({ left: 0, top: 0, width: meta.width, height: Math.min(height, meta.height) });
+      const out = file.replace(/\.png$/, '.jpg');
+      await img.jpeg({ quality }).toFile(out + '.tmp');
+      if (statSync(out + '.tmp').size <= MAX) {
+        renameSync(out + '.tmp', out);
+        if (out !== file) unlinkSync(file);
+        return;
+      }
+    }
+  }
+}
 const server = spawn('npx', ['astro', 'preview', '--port', String(port), '--host', '127.0.0.1'], { stdio: 'ignore' });
 const origin = `http://127.0.0.1:${port}`;
 for (let i = 0; i < 60; i++) {
@@ -40,7 +61,9 @@ try {
         await page.evaluate(() => document.fonts.ready);
         const slug = route === '/' ? 'home' : route.replace(/^\/|\/$/g, '').replace(/\//g, '_');
         const jpeg = args.format === 'jpeg';
-        await page.screenshot({ path: join(out, `${slug}-${width}-${theme}.${jpeg ? 'jpg' : 'png'}`), fullPage: true, ...(jpeg ? { type: 'jpeg', quality: 80 } : {}) });
+        const file = join(out, `${slug}-${width}-${theme}.${jpeg ? 'jpg' : 'png'}`);
+        await page.screenshot({ path: file, fullPage: true, ...(jpeg ? { type: 'jpeg', quality: 80 } : {}) });
+        await capSize(file);
         await page.close();
       }
       await ctx.close();

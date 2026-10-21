@@ -1,10 +1,12 @@
-import { readFileSync, readdirSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import type { Page } from '@playwright/test';
 
-const dataDir = join(process.cwd(), 'test-data');
+// Fixture data by default; the daily deploy sets QA_DATA_DIR=public/data to check the real data before publishing.
+const dataDir = join(process.cwd(), process.env.QA_DATA_DIR ?? 'test-data');
 const board = JSON.parse(readFileSync(join(dataDir, 'leaderboard.json'), 'utf8')) as { repo_id: number }[];
-const digests = JSON.parse(readFileSync(join(dataDir, 'digests/index.json'), 'utf8')) as { week: string }[];
+const digestIndex = join(dataDir, 'digests/index.json');
+const digests = existsSync(digestIndex) ? (JSON.parse(readFileSync(digestIndex, 'utf8')) as { week: string }[]) : [];
 const detailIds = new Set(readdirSync(join(dataDir, 'repos')).map((f) => f.replace('.json', '')));
 
 /** Every route that exists in the fixture build. Repo pages: the six edge-case repos plus one ordinary one. */

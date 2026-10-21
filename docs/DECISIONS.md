@@ -839,3 +839,24 @@ event-based numbers, which are what the model saw; the page says so. Ledger rows
 - Weekly reference indexing fits well within GitHub Actions execution budgets (~1.2 min runtime, ~91 MB artifact).
 - Static export bundle size remains lightweight while delivering rich interactive visualizations.
 
+
+
+## ADR-031: Phase 14 front-end redesign: design system, QA suite and deploy gate (2026-10-21)
+
+**Context:** The Phase 10 site had page-level overflow at 375 px, raw floats and ISO timestamps on screen, hand-typed metrics (two wrong), a system-font stack and no shared layouts or tests
+(`reports/design/audit_before.md`). Phase 14 asks for one cohesive design and automated proof of it.
+
+**Decision:**
+1. **Design system.** Tokens in `site/src/styles/tokens.css` are the only place with color literals; light and dark are token swaps. Tailwind v4 with its default palette disabled; all numbers, dates and
+   text go through `src/lib/format.ts`; data is loaded and validated with zod (`src/lib/data.ts`), so a malformed file fails the build naming the file and field.
+2. **Signature element.** The signal column (large condensed percentage plus a 28-day momentum strip, server-rendered SVG) is the same component on the leaderboard, backtest, digest and repo pages.
+3. **Self-hosting.** Fonts and DuckDB-WASM come from the site itself. The remaining third-party request is DuckDB fetching its Parquet extension at runtime (no cookies, no user data).
+4. **QA as code.** Playwright specs for layout (four widths), content (no raw values), axe (light and dark) and visual snapshots made in a pinned container; token lint; base-path and link checks; Lighthouse CI with the
+   budgets from the phase file. All run in the `site-qa` CI job.
+5. **Deploy gate.** The daily deploy runs the content check on real data before publishing. If it fails, the deploy is skipped, yesterday's site stays, and a warning is logged.
+6. **Numbers come from reports, not text.** The methodology table reads `reports/metrics/*.json` at build time; the track-record sentence is generated in `breakout publish site-data`.
+7. **Exporter changes** are limited to what the phase file allows: `owner_id` and `owner_type`, plus the track-record headline.
+8. Deviations and their reasons are listed in `reports/design/decisions.md`.
+
+**Consequences:** Visual changes now show up as snapshot diffs (regenerate with the `update-visual-snapshots` workflow). The dist folder is about 45 MB because of the DuckDB-WASM binary, well under the Pages limit. Phase 12
+(feeds, badges, digest data) fills layouts that already exist. Four data problems found in earlier phases are listed in `docs/PROGRESS.md`.

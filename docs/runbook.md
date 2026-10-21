@@ -173,3 +173,26 @@ If deploying to Cloudflare Pages:
 3. Deploy with Wrangler CLI: `wrangler pages deploy site/dist --project-name gh-breakout` (requires free Cloudflare API token).
 
 
+
+## Front-end QA (Phase 14)
+
+Run from `site/`:
+
+| Task | Command |
+|---|---|
+| Unit tests (formatters, tokens, chart theme) | `npm test` |
+| Token lint (no stray colors, palette classes, pixel font sizes) | `npm run lint:tokens` |
+| Build on fixture data (adds OG images, checks base paths) | `npm run build:fx` |
+| Layout, content, a11y and visual tests | `npx playwright test` (serves `dist-fx`) |
+| Internal link check | `npm run check:links` |
+| Lighthouse (desktop and mobile) | `npm run lh` (set `CHROME_PATH` to a Chromium) |
+| Screenshots of every route, widths and themes | `node scripts/screenshot.mjs --out ../reports/design/after --format jpeg` |
+| Contact sheets | `node scripts/contact-sheet.mjs --dir ../reports/design/after` |
+
+- **Visual snapshots** must be made in the pinned image, never on the host (fonts differ):
+  `podman run --rm --ipc=host --security-opt label=disable -v "$PWD":/work -w /work/site -e CI=1 mcr.microsoft.com/playwright:v1.64.1-noble npx playwright test tests/visual.spec.ts --update-snapshots`
+  (from the repo root, after `npm --prefix site run build:fx`), or run the `update-visual-snapshots` workflow, which opens a PR. Keep the image tag equal to the `@playwright/test` version.
+- **Fixtures** (`site/test-data/`) hold the edge cases of the phase file (60-character name, CJK and Arabic descriptions, probabilities 0.004 to 0.97, ...). Regenerate with `npm run fixtures`;
+  `node scripts/make-fixtures.mjs --track-days 60 --out /tmp/track_record.json` writes a longer track record for manual checks.
+- **Brand name and tagline** live in `config/project.yaml` (`site.brand_name`, `site.tagline`). After a change run `npm run brand` (favicons, manifest) and rebuild; OG images regenerate on their own.
+- **Daily deploy gate:** if the content check fails on real data, `daily.yml` skips the deploy and writes a warning to the run summary; fix the data or the formatter and re-run the workflow.

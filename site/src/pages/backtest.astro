@@ -48,8 +48,8 @@ const blank: Repo = {
     <p id="fail" class="fail t-body-sm muted" hidden></p>
   </div>
 
-  <template id="tpl-hit"><RepoRow repo={blank} mode="compact" outcome={{ hit: true, gain: 0 }} /></template>
-  <template id="tpl-miss"><RepoRow repo={blank} mode="compact" outcome={{ hit: false, gain: 0 }} /></template>
+  <template id="tpl-hit"><RepoRow repo={blank} mode="compact" href="#" outcome={{ hit: true, gain: 0 }} /></template>
+  <template id="tpl-miss"><RepoRow repo={blank} mode="compact" href="#" outcome={{ hit: false, gain: 0 }} /></template>
   <script type="application/json" id="bt-data" set:html={JSON.stringify({ dates, summaries })} />
 </AppLayout>
 

@@ -1,0 +1,21 @@
+{
+  "name": "Breakout Radar",
+  "short_name": "Breakout Radar",
+  "description": "GitHub repos likely to break out in the next 30 days. Updated daily.",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#ffffff",
+  "icons": [
+    {
+      "src": "favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    },
+    {
+      "src": "apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    }
+  ]
+}
