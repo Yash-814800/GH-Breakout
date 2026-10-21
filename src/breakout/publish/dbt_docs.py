@@ -38,6 +38,12 @@ def _target() -> Path:
     return DBT_DIR / "target"
 
 
+def ensure_deps(cfg: Config) -> None:
+    """``dbt deps`` when the packages are not installed (a clean runner or checkout)."""
+    if not (DBT_DIR / "dbt_packages").exists() and (rc := run_dbt(cfg, ["deps"])) != 0:
+        raise RuntimeError(f"dbt deps failed with exit code {rc}")
+
+
 def generate(cfg: Config) -> None:
     """``dbt docs generate --empty-catalog`` against an empty scratch lake and warehouse.
 
@@ -46,6 +52,7 @@ def generate(cfg: Config) -> None:
     needed for lineage and descriptions.
     """
     scratch = P.TMP_DIR / "dbt_docs"
+    ensure_deps(cfg)
     shutil.rmtree(scratch, ignore_errors=True)
     (scratch / "lake").mkdir(parents=True)
     try:
@@ -242,6 +249,7 @@ def write_data_dictionary(
 ) -> Path:
     """Render the dictionary; with ``cfg`` the manifest is refreshed first (``dbt parse``)."""
     if cfg is not None:
+        ensure_deps(cfg)
         rc = run_dbt(cfg, ["parse"])
         if rc != 0:
             raise RuntimeError(f"dbt parse failed with exit code {rc}")

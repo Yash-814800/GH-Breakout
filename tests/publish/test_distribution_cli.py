@@ -211,3 +211,15 @@ def test_manifest_summary_counts():
         }
     }
     assert dbt_docs.manifest_summary(m) == {"models": 2, "tests": 1, "columns": 2}
+
+
+def test_ensure_deps_runs_only_when_packages_are_missing(env, monkeypatch, tmp_path):
+    cfg, _ = env
+    calls = []
+    monkeypatch.setattr(dbt_docs, "run_dbt", lambda c, args, **k: calls.append(args) or 0)
+    monkeypatch.setattr(dbt_docs, "DBT_DIR", tmp_path / "dbt")
+    dbt_docs.ensure_deps(cfg)
+    assert calls == [["deps"]]
+    (tmp_path / "dbt" / "dbt_packages").mkdir(parents=True)
+    dbt_docs.ensure_deps(cfg)
+    assert calls == [["deps"]]  # present: nothing to do
