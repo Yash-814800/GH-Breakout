@@ -66,7 +66,7 @@ phase file's command).
 | daily run, first attempt | **failed**: `--no-upload` skipped the bootstrap, so a clean checkout had no manifest, enrichment tables, state or champion and step 5 died on missing files |
 | fix | `--no-upload` now only stops writes; the bootstrap still reads what is missing (idempotent). New option `--skip-bootstrap` for the old behaviour |
 | daily run, second attempt | success in about 13 minutes (bootstrap pull, five dbt invocations, all models pass; scoring): 1,033 candidates, the same count as the live run of that date |
-| bit-for-bit reproduction | **not met**: the regenerated predictions file differs from the frozen one, so the run reports a ledger conflict for 2026-10-20 (the frozen snapshot is immutable and is never overwritten). The candidate count agrees; the bytes do not (Parquet metadata or late-arriving source hours). A same-day re-run of `daily.yml` has the same effect and sets the heartbeat to `unhealthy` until the next regular run (documented in the runbook; this opened health issue #3, which closes itself) |
+| bit-for-bit reproduction | **not met**: the regenerated predictions file differs from the frozen one, so the run reported a ledger conflict for 2026-10-20 (the frozen snapshot is immutable and is never overwritten). The candidate count agrees; the bytes do not (Parquet metadata or late-arriving source hours). A same-day re-run of `daily.yml` had the same effect and set the heartbeat to `unhealthy` (health issue #3). **Fixed after the audit:** a re-run of a frozen date now keeps the frozen snapshot and publishes from it (`adopt_frozen_snapshot`), so it is idempotent and stays healthy |
 
 ## Correctness
 

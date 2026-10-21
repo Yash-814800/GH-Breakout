@@ -231,6 +231,4 @@ Everything below is built from frozen prediction snapshots and needs no extra se
 
 - Every column of every dbt model needs a description (`tests/test_dbt_project.py` fails otherwise).
 - `dbt docs generate` locally lists thousands of lake files unless pointed at an empty lake; `publish dbt-docs` does that for you.
-- A same-day re-run of `daily.yml` regenerates predictions that are not byte-identical with the frozen snapshot, so the run reports
-  `freeze_conflict` and the heartbeat says `unhealthy` until the next regular run succeeds (the alert issue closes itself). Do not re-run
-  the daily workflow for a date that already has a ledger row unless you mean to publish the site data only.
+- A re-run of `daily.yml` for a date that is already frozen regenerates predictions that are not byte-identical with the frozen snapshot. Since 2026-10-21 the run keeps the frozen snapshot (`reused_frozen_snapshot` in `data/run/status.json`), publishes from it and stays healthy; the ledger never changes. Before that fix such a re-run reported `freeze_conflict` and set the heartbeat to `unhealthy` (health issue #3).
