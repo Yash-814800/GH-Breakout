@@ -19,7 +19,7 @@ measured (row counts, sizes, runtimes, metrics). Future sessions rely on it.
 | 11 | Fake-star detector, similar repos, cohort retention | ☑ | 2026-10-21 | Suspicious-growth score (6 signals, robust z-score, empirical CDF [0, 100], Low/Med/High). Validated vs StarScout ICSE 2026 dataset (0.51% historical breakout prevalence). Item-item co-star similarity (80,965 repos, 17.25M pairs indexed in 71.7s, 90.9 MB). Stargazer cohort retention benchmarks. 4-story /insights/ page with DuckDB SQL. 344 pytest pass. See ADR-030 and "Phase 11 status". |
 | 12 | Distribution (RSS, badges, digest, Bluesky) | ☐ | | |
 | 13 | Portfolio polish, dbt docs, ClickHouse benchmark, final audit | ☐ | | |
-| 14 | Frontend redesign: design system, every page, pixel-level QA | ☑ (human checkpoints A and B pending) | 2026-10-21 | New design system (tokens, Tailwind v4, Instrument Sans self-hosted, 40 components), 15 routes rebuilt, light/dark, 360-1920 px. Fixture build: Lighthouse desktop 100 / 100 / 96 / 100, mobile 99-100 / 100 / 96 / 100, CLS 0.000. 136 Playwright + 34 Vitest + 347 pytest pass; content check passes on real data. See "Phase 14 status" and ADR-031. |
+| 14 | Frontend redesign: design system, every page, pixel-level QA | ☑ (merged and deployed; checkpoints A and B were not asked) | 2026-10-21 | New design system (tokens, Tailwind v4, Instrument Sans self-hosted, 40 components), 15 routes rebuilt, light/dark, 360-1920 px. Fixture build: Lighthouse desktop 100 / 100 / 96 / 100, mobile 99-100 / 100 / 96 / 100, CLS 0.000. 136 Playwright + 34 Vitest + 347 pytest pass; content check passes on real data. See "Phase 14 status" and ADR-031. |
 
 ## Amendments after Phase 1 (ADR-009, ADR-010, 2026-10-12)
 
@@ -58,8 +58,8 @@ measured (row counts, sizes, runtimes, metrics). Future sessions rely on it.
   Before and after contact sheets: `reports/design/before/contact_sheet_{light,dark}.jpg` and `reports/design/after/contact_sheet_{light,dark}.jpg`.
 - **CI:** `ci.yml` job `site-qa` (Vitest, token lint, fixture build, Playwright, link check, Lighthouse CI) in the pinned container; workflow
   `update-visual-snapshots.yml` (manual, opens a PR); `daily.yml` runs the content check on real data and skips the deploy, keeping yesterday's site, when it fails.
-  PR #2: `site-build`, `site-qa` (150 Playwright tests including the 16 visual snapshots, Vitest 34, token lint, link check, Lighthouse CI; 10 min) and `test` are green. The daily
-  content gate and the snapshot-update workflow are written and YAML-valid but have **not been run** yet; the site is **not deployed** from this branch until the PR is merged.
+  PR #2 was merged on 2026-10-21 (`site-build`, `site-qa` with 150 Playwright tests incl. 16 visual snapshots, and `test` were green). After the merge: `site.yml` deployed; `daily.yml` (run 39585954866) passed with the content check on
+  real data and deployed; `update-visual-snapshots.yml` ran with no diff. The first daily run after the merge had failed because the Phase 11 insights step needs warehouse marts that a clean runner lacks; that step is now non-fatal (`/insights/` keeps its last data).
 - **Found while building (not fixed here, owners are earlier phases):**
   - `export_track_record` writes `realized_avg = predicted_avg` with `count = 0` once any list has matured. The page hides the diagram without counts, but the exporter should write
     real calibration bins.
