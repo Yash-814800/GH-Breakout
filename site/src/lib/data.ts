@@ -4,6 +4,8 @@ import { z } from 'zod';
 import { cleanText, repoName, sentence } from './format';
 import {
   Backtest,
+  Digest,
+  DigestMeta,
   Insights,
   Leaderboard,
   Meta,
@@ -121,4 +123,9 @@ export function apiGain(
   if (!first || first.date === last.date) return null;
   const days = Math.round((new Date(`${last.date}T00:00:00Z`).getTime() - new Date(`${first.date}T00:00:00Z`).getTime()) / 864e5);
   return { gain: Math.max(0, last.stars - first.stars), days };
+}
+
+export const getDigestIndex = () => (loadOptional('digests/index.json', z.array(DigestMeta)) ?? []).sort((a, b) => b.week.localeCompare(a.week));
+export function getDigests() {
+  return getDigestIndex().map((m) => load(`digests/${m.week}.json`, Digest));
 }

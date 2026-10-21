@@ -1,0 +1,21 @@
+---
+import AppLayout from '../layouts/AppLayout.astro';
+import EmptyState from '../components/ui/EmptyState.astro';
+import Button from '../components/ui/Button.astro';
+import { url } from '../lib/url';
+---
+
+<AppLayout title="Page not found" noindex>
+  <div class="nf">
+    <EmptyState title="This page doesn't exist." icon="search">
+      Repo pages stay up for 90 days after a repo leaves the list.
+      <Button slot="action" variant="primary" size="md" href={url('/')}>Go to today's list</Button>
+    </EmptyState>
+  </div>
+</AppLayout>
+
+<style>
+  .nf {
+    padding-block: 96px;
+  }
+</style>

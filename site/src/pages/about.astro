@@ -1,0 +1,125 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import PageHeader from '../components/layout/PageHeader.astro';
+import Band from '../components/layout/Band.astro';
+import Table from '../components/ui/Table.astro';
+import Button from '../components/ui/Button.astro';
+import ExternalLink from '../components/ui/ExternalLink.astro';
+import { BRAND } from '../lib/site';
+import { url, abs, GITHUB_REPO, HF_EVENTS, HF_DERIVED, HF_SNAPSHOTS } from '../lib/url';
+
+const site = Astro.site;
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'Dataset',
+  name: `${BRAND} event lake and daily prediction snapshots`,
+  description: 'Slim GitHub event data from GH Archive (2015 onward) and the daily breakout predictions, as Parquet.',
+  url: abs('/about/', site),
+  license: 'https://opensource.org/license/mit',
+  isAccessibleForFree: true,
+  distribution: [HF_EVENTS, HF_DERIVED, HF_SNAPSHOTS].map((u) => ({ '@type': 'DataDownload', contentUrl: u, encodingFormat: 'application/vnd.apache.parquet' })),
+};
+const sources = [
+  { name: 'GH Archive', by: 'Ilya Grigorik', use: 'Hourly public GitHub events, 2015 to today', terms: 'Public data', href: 'https://www.gharchive.org' },
+  { name: 'GitHub API', by: 'GitHub, Inc.', use: 'Repo names, languages, owner types and star totals', terms: 'GitHub API terms', href: 'https://docs.github.com/en/graphql' },
+  { name: 'Hacker News search', by: 'Algolia and Y Combinator', use: 'Stories that link to github.com', terms: 'Public HN API', href: 'https://hn.algolia.com/api' },
+  { name: 'GitHub Trending archives', by: 'Anton Komarev, Lars Bijl and others', use: 'Daily trending lists, to measure how early we flag repos', terms: 'MIT', href: 'https://github.com/antonkomarev' },
+  { name: 'StarScout dataset', by: 'He et al., ICSE 2026', use: 'Reference for checking the unusual-star-pattern signal', terms: 'Apache 2.0', href: 'https://github.com/hehao98/StarScout' },
+  { name: 'Hugging Face Hub', by: 'Hugging Face', use: 'Hosting for the public datasets', terms: 'Free community tier', href: 'https://huggingface.co' },
+];
+---
+
+<BaseLayout title="About" description="What Breakout Radar does, how it works, where the data comes from, and how maintainers can ask for a review or opt out.">
+  <script slot="head" type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
+
+  <div class="container">
+    <PageHeader size="display" center title={`About ${BRAND}`} lead="An open project that spots young GitHub repos before they take off, and keeps an honest record of every call." />
+  </div>
+
+  <Band id="what">
+    <div class="prose">
+      <h2>What it is</h2>
+      <p>Every day thousands of new open-source repos appear. Fewer than 1 in 200 will gain hundreds or thousands of stars in their next month.</p>
+      <p>{BRAND} reads the public GitHub event stream (stars, forks, issues, pull requests and who is starring) and ranks the young repos most likely to be among them. Each daily list is frozen when it is published and judged 30 days later, so the <a href={url('/track-record/')}>track record</a> shows misses as clearly as hits.</p>
+    </div>
+  </Band>
+
+  <Band alt id="how">
+    <div class="prose">
+      <h2>How it works</h2>
+      <ol class="steps">
+        <li><strong>Collect.</strong> Each morning the previous day's GitHub events are downloaded from GH Archive and added to a public Parquet dataset.</li>
+        <li><strong>Score.</strong> Repos that are young, small and starting to move get a breakout chance from a LightGBM model, with the signals that drove it.</li>
+        <li><strong>Freeze and judge.</strong> The list is hashed into a public ledger, then checked against what really happened 30 days later.</li>
+      </ol>
+      <p>The whole thing runs on free services: GitHub Actions, GitHub Pages and Hugging Face. See the <a href={url('/methodology/')}>methodology</a> for details.</p>
+    </div>
+  </Band>
+
+  <Band id="data">
+    <div class="prose"><h2>Data and credits</h2><p>This project depends on public data other people maintain.</p></div>
+    <div class="wide tbl">
+      <Table caption="Data sources" captionHidden stickyFirst>
+        <thead><tr><th>Source</th><th>By</th><th>Used for</th><th>Terms</th></tr></thead>
+        <tbody>
+          {sources.map((s) => <tr><td><ExternalLink href={s.href}>{s.name}</ExternalLink></td><td>{s.by}</td><td>{s.use}</td><td>{s.terms}</td></tr>)}
+        </tbody>
+      </Table>
+    </div>
+  </Band>
+
+  <Band alt id="audit">
+    <div class="prose">
+      <h2>Reviews and opt-out</h2>
+      <h3>Unusual star patterns</h3>
+      <p>The list marks some repos with a neutral "Unusual star pattern" label, based on measures such as a share of accounts under 30 days old, bursts within a single hour, or groups of accounts starring the same repos together. It is a statistical signal, <strong>not an accusation</strong>: a post in a popular newsletter can look the same.</p>
+      <p>If you maintain a flagged repo and the growth was organic, open a review request with any public links that explain it (a launch post, a talk, a newsletter). We check the stargazer network and add a note or an exception where it fits.</p>
+      <p><Button variant="secondary" href={`${GITHUB_REPO}/issues/new?template=review-request.md`} external>Request a review</Button></p>
+      <h3>Remove a repo</h3>
+      <p>Owners and lead maintainers can ask for a repo to be removed. Open an issue titled <code>Opt-out request: owner/repo</code>. The repo is added to <code>config/hidden_repos.yaml</code> and disappears from the list, its page and the data exports on the next daily run.</p>
+      <p><Button variant="secondary" href={`${GITHUB_REPO}/issues/new?title=Opt-out+request`} external>Open an opt-out issue</Button></p>
+    </div>
+  </Band>
+
+  <Band id="legal">
+    <div class="prose">
+      <h2>Legal</h2>
+      <p>{BRAND} is an independent research project. It is not affiliated with, endorsed by or sponsored by GitHub, Inc. or Microsoft Corporation. "GitHub" and the Octocat logo are trademarks of GitHub, Inc. Predictions are statistical estimates, not investment or hiring advice.</p>
+      <p>Source code and data are on <ExternalLink href={GITHUB_REPO}>GitHub</ExternalLink>.</p>
+    </div>
+  </Band>
+</BaseLayout>
+
+<style>
+  .steps {
+    padding-left: 0 !important;
+    list-style: none !important;
+    counter-reset: s;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .steps li {
+    counter-increment: s;
+    position: relative;
+    padding-left: 40px;
+  }
+  .steps li::before {
+    content: counter(s);
+    position: absolute;
+    left: 0;
+    top: 2px;
+    width: 26px;
+    height: 26px;
+    display: grid;
+    place-items: center;
+    border-radius: var(--r-pill);
+    background: var(--accent-soft);
+    color: var(--accent);
+    font-size: 14px;
+    font-weight: 600;
+  }
+  .tbl {
+    margin-top: 32px;
+  }
+</style>

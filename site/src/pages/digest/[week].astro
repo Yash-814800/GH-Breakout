@@ -1,0 +1,133 @@
+---
+import LongformLayout from '../../layouts/LongformLayout.astro';
+import PageHeader from '../../components/layout/PageHeader.astro';
+import Section from '../../components/layout/Section.astro';
+import RepoRow from '../../components/data/RepoRow.astro';
+import Callout from '../../components/ui/Callout.astro';
+import { getDigests, toRepo } from '../../lib/data';
+import { LeaderboardRow, type DigestRepoData } from '../../lib/types';
+import { dateRange, isoWeekLabel, delta } from '../../lib/format';
+import { url } from '../../lib/url';
+
+export function getStaticPaths() {
+  return getDigests().map((d) => ({ params: { week: d.week }, props: { d } }));
+}
+const { d } = Astro.props;
+const title = isoWeekLabel(d.start);
+
+const asRepo = (r: DigestRepoData, rank: number) =>
+  toRepo(
+    LeaderboardRow.parse({
+      rank,
+      repo_id: r.repo_id,
+      repo_name: r.repo_name,
+      html_url: `https://github.com/${r.repo_name}`,
+      description: null,
+      owner_id: r.owner_id ?? null,
+      owner_type: r.owner_type ?? null,
+      language: r.language ?? null,
+      age_days: r.age_days ?? null,
+      stars_total_observed: r.stars_total ?? null,
+      stars_total_source: 'github_api',
+      spark_stars_28d: [],
+      prob: r.prob ?? 0,
+      explanation: r.explanation ?? null,
+      first_flagged_date: null,
+      days_on_board: 2,
+      rank_change: 'same',
+    }),
+  );
+---
+
+<LongformLayout title={`Digest, ${title}`} description={d.summary.slice(0, 155)} wide>
+  <PageHeader slot="header" size="display" center title={title} lead={d.summary}>
+    <Fragment slot="meta"><span>{dateRange(d.start, d.end)}</span></Fragment>
+  </PageHeader>
+
+  {
+    d.new_on_board.length > 0 && (
+      <Section id="new" title="New on the list">
+        <ol class="list">{d.new_on_board.map((r, i) => <RepoRow repo={asRepo(r, i + 1)} mode="list" />)}</ol>
+      </Section>
+    )
+  }
+
+  {
+    d.movers.length > 0 && (
+      <Section id="movers" title="Biggest movers">
+        <ul class="movers">
+          {d.movers.map((r) => (
+            <li>
+              <a href={url(`/repo/${r.repo_id}/`)} class="nm">{r.repo_name}</a>
+              <span class="num mv">{r.from_rank != null && r.to_rank != null ? `#${r.from_rank} to #${r.to_rank} (${delta(r.from_rank - r.to_rank)} places)` : ''}</span>
+            </li>
+          ))}
+        </ul>
+      </Section>
+    )
+  }
+
+  {
+    d.matured.length > 0 && (
+      <Section id="matured" title="Predictions that matured">
+        <p class="t-body-sm muted lead-in">Lists from 30 days ago, judged. Misses are included.</p>
+        <ol class="list">
+          {d.matured.map((r, i) => <RepoRow repo={asRepo(r, i + 1)} mode="compact" outcome={{ hit: r.hit === true, gain: r.gain_30d ?? null }} />)}
+        </ol>
+      </Section>
+    )
+  }
+
+  {
+    d.notes.length > 0 && (
+      <Section id="notes" title="Model and pipeline notes">
+        <ul class="notes">{d.notes.map((n) => <li>{n}</li>)}</ul>
+      </Section>
+    )
+  }
+
+  <p class="back t-body-sm"><a href={url('/digest/')}>All digests</a></p>
+</LongformLayout>
+
+<style>
+  .list {
+    background: var(--raised);
+    border: 1px solid var(--line);
+    border-radius: var(--r-lg);
+    overflow: hidden;
+  }
+  .list :global(.row + .row) {
+    border-top: 1px solid var(--line);
+  }
+  .movers li {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 4px 16px;
+    padding: 12px 0;
+    border-top: 1px solid var(--line);
+  }
+  .nm {
+    font-weight: 500;
+    overflow-wrap: anywhere;
+  }
+  .mv {
+    color: var(--ink-2);
+    font-size: 14px;
+  }
+  .notes {
+    padding-left: 20px;
+    list-style: disc;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    font-size: 15px;
+  }
+  .lead-in {
+    margin-bottom: 12px;
+  }
+  .back {
+    margin-top: 48px;
+    color: var(--accent);
+  }
+</style>

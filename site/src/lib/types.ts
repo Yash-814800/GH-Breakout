@@ -262,3 +262,33 @@ export const SimilarRepos = z.array(
     html_url: z.string(),
   }),
 );
+
+/**
+ * Weekly digest (Phase 12). Provisional shape, chosen here so the layout exists before the data does:
+ * `digests/index.json` is an array of DigestMeta, `digests/<week>.json` is a Digest.
+ */
+export const DigestMeta = z.looseObject({ week: z.string(), start: z.string(), end: z.string(), summary: z.string() });
+const DigestRepo = z.looseObject({
+  repo_id: z.number(),
+  repo_name: z.string(),
+  prob: z.number().nullish(),
+  explanation: str,
+  language: str,
+  age_days: num,
+  stars_total: num,
+  owner_id: z.number().nullish(),
+  owner_type: z.enum(['User', 'Organization']).nullish(),
+  from_rank: num,
+  to_rank: num,
+  hit: z.boolean().nullish(),
+  gain_30d: num,
+  predicted_on: str,
+});
+export const Digest = DigestMeta.extend({
+  new_on_board: z.array(DigestRepo),
+  movers: z.array(DigestRepo),
+  matured: z.array(DigestRepo),
+  notes: z.array(z.string()),
+});
+export type DigestData = z.infer<typeof Digest>;
+export type DigestRepoData = z.infer<typeof DigestRepo>;

@@ -1,6 +1,6 @@
 // Patches site/test-data with the edge cases of Phase 14 §10.4 (idempotent).
 // Usage: node scripts/make-fixtures.mjs
-import { readFileSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 
 const path = new URL('../test-data/leaderboard.json', import.meta.url);
 const rows = JSON.parse(readFileSync(path, 'utf8'));
@@ -142,4 +142,39 @@ if (arg('--track-days')) {
 } else {
   writeFileSync(new URL('../test-data/track_record.json', import.meta.url), JSON.stringify(trackRecord(3), null, 2) + '\n');
   console.log('track record fixture: 3 matured days');
+}
+
+// ---- status: steps, drift and ingest rows so the page renders every section ----
+{
+  const p = new URL('../test-data/status.json', import.meta.url);
+  const st = JSON.parse(readFileSync(p, 'utf8'));
+  st.step_durations = { ingest: 61.2, 'build features': 84.5, score: 12.1, freeze: 3.4, 'export site data': 40.8, 'upload to hub': 22.7 };
+  st.rows_ingested_last_14d = [
+    { event_type: 'WatchEvent', latest_event: '2026-10-20T23:59:41Z', rows_24h: 8571, missing_hours: 0 },
+    { event_type: 'PullRequestEvent', latest_event: '2026-10-20T23:59:58Z', rows_24h: 40445, missing_hours: 0 },
+    { event_type: 'IssuesEvent', latest_event: '2026-10-20T23:59:12Z', rows_24h: 17140, missing_hours: 1 },
+  ];
+  st.model = { version: '20261019-b5ff585', promoted_at: '2026-10-19T18:00:00+00:00', cv_pooled_pr_auc: 0.108, holdout_pr_auc: 0.158 };
+  st.drift = { as_of: '2026-10-20', high_drift_threshold: 0.25, psi_by_feature: { stars_3d: 0.04, actor_days_14d: 0.12, primary_language: 0.31, stars_7d: 0.08, sg_tm_max_14d: 0.02, age_days: 0.55 } };
+  writeFileSync(p, JSON.stringify(st, null, 2) + '\n');
+  console.log('status fixture patched');
+}
+
+// ---- digest fixture (Phase 12 data does not exist yet; this is the provisional shape) ----
+{
+  const dir = new URL('../test-data/digests/', import.meta.url);
+  mkdirSync(dir, { recursive: true });
+  const pick = (r, extra = {}) => ({ repo_id: r.repo_id, repo_name: r.repo_name, prob: r.prob, explanation: r.explanation, language: r.language, age_days: r.age_days, stars_total: r.stars_total_observed, owner_id: r.owner_id, owner_type: r.owner_type, ...extra });
+  const issue = (week, start, end) => ({
+    week, start, end,
+    summary: 'Six repos joined the list, two climbed more than ten places, and 3 of last month\u2019s top 25 broke out.',
+    new_on_board: rows.slice(0, 5).map((r) => pick(r)),
+    movers: rows.slice(5, 8).map((r, i) => pick(r, { from_rank: 30 - i * 4, to_rank: 8 - i })),
+    matured: rows.slice(8, 12).map((r, i) => pick(r, { hit: i % 3 === 0, gain_30d: i % 3 === 0 ? 640 : 40 + i * 9, predicted_on: '2026-09-14' })),
+    notes: ['Model 20261019-b5ff585 stayed the champion.', 'One feature, primary language, showed a large drift (PSI 0.31).'],
+  });
+  const issues = [issue('2026-W42', '2026-10-12', '2026-10-18'), issue('2026-W41', '2026-10-05', '2026-10-11')];
+  issues.forEach((d) => writeFileSync(new URL(`${d.week}.json`, dir), JSON.stringify(d, null, 2) + '\n'));
+  writeFileSync(new URL('index.json', dir), JSON.stringify(issues.map(({ week, start, end, summary }) => ({ week, start, end, summary })), null, 2) + '\n');
+  console.log('digest fixtures written');
 }
