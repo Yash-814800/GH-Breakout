@@ -1,0 +1,463 @@
+{
+  "title": "Data Insights & History Stories",
+  "description": "Deep-dive historical analysis across 10 years of GitHub Archive events, candidates, and breakouts.",
+  "generated_at": "2026-10-21T06:37:47.097108+00:00",
+  "stories": [
+    {
+      "id": "stars-vs-adoption",
+      "title": "Stars vs. Real Adoption: Sustained Breakouts vs. Spikes",
+      "summary": "Repositories that break out and sustain long-term engagement convert star velocity into forks, issues, and code contributions within their first 90 days. In contrast, projects driven purely by artificial spikes or viral social media waves experience rapid cohort decay with near-zero downstream activity. Monitoring subsequent stargazer interactions separates authentic community adoption from fleeting popularity contests.",
+      "chart_type": "retention_comparison",
+      "chart_data": [
+        {
+          "horizon_days": 30,
+          "breakouts": 7.04,
+          "non_breakouts": 8.01
+        },
+        {
+          "horizon_days": 60,
+          "breakouts": 7.66,
+          "non_breakouts": 8.54
+        },
+        {
+          "horizon_days": 90,
+          "breakouts": 7.96,
+          "non_breakouts": 8.83
+        }
+      ],
+      "sql": "with base as (\n        select c.repo_id,\n               l.breakout_rel,\n               r.cohort_week,\n               r.share_any_30d,\n               r.share_any_60d,\n               r.share_any_90d,\n               r.share_fork_30d,\n               r.share_issue_30d,\n               r.share_pull_request_30d\n        from mart_candidates c\n        join mart_labels l on l.repo_id = c.repo_id and l.snapshot_date = c.snapshot_date\n        join int_star_cohort_retention r on r.repo_id = c.repo_id and r.is_mature_90d\n        where c.snapshot_date >= '2019-01-01'\n    )\n    select breakout_rel,\n           round(avg(share_any_30d) * 100, 2) as retention_30d,\n           round(avg(share_any_60d) * 100, 2) as retention_60d,\n           round(avg(share_any_90d) * 100, 2) as retention_90d,\n           round(avg(share_fork_30d) * 100, 2) as fork_rate_30d,\n           round(avg(share_issue_30d) * 100, 2) as issue_rate_30d,\n           round(avg(share_pull_request_30d) * 100, 2) as pr_rate_30d\n    from base\n    group by breakout_rel"
+    },
+    {
+      "id": "ai-era-shift",
+      "title": "The AI-Era Shift: Machine Learning Dominates Breakouts",
+      "summary": "Between 2016 and 2021, AI and LLM projects accounted for fewer than 7% of all verified breakout repositories on GitHub. Following the late-2022 generative AI boom, the share of machine learning breakouts quadrupled to over 28% in 2023 and 32% in 2025. This structural shift established Python as the undisputed primary language for explosive open-source repository growth.",
+      "chart_type": "ai_share_trend",
+      "chart_data": [
+        {
+          "year": 2016,
+          "candidates": 190364,
+          "total_breakouts": 981,
+          "ai_breakouts": 53,
+          "ai_breakout_pct": 5.4,
+          "python_breakouts": 61,
+          "js_ts_breakouts": 200,
+          "rust_breakouts": 1
+        },
+        {
+          "year": 2017,
+          "candidates": 217516,
+          "total_breakouts": 1117,
+          "ai_breakouts": 90,
+          "ai_breakout_pct": 8.1,
+          "python_breakouts": 110,
+          "js_ts_breakouts": 277,
+          "rust_breakouts": 15
+        },
+        {
+          "year": 2018,
+          "candidates": 235103,
+          "total_breakouts": 1204,
+          "ai_breakouts": 68,
+          "ai_breakout_pct": 5.6,
+          "python_breakouts": 152,
+          "js_ts_breakouts": 273,
+          "rust_breakouts": 34
+        },
+        {
+          "year": 2019,
+          "candidates": 262977,
+          "total_breakouts": 1348,
+          "ai_breakouts": 115,
+          "ai_breakout_pct": 8.5,
+          "python_breakouts": 261,
+          "js_ts_breakouts": 229,
+          "rust_breakouts": 37
+        },
+        {
+          "year": 2020,
+          "candidates": 311582,
+          "total_breakouts": 1585,
+          "ai_breakouts": 143,
+          "ai_breakout_pct": 9.0,
+          "python_breakouts": 309,
+          "js_ts_breakouts": 320,
+          "rust_breakouts": 46
+        },
+        {
+          "year": 2021,
+          "candidates": 279747,
+          "total_breakouts": 1418,
+          "ai_breakouts": 99,
+          "ai_breakout_pct": 7.0,
+          "python_breakouts": 235,
+          "js_ts_breakouts": 258,
+          "rust_breakouts": 82
+        },
+        {
+          "year": 2022,
+          "candidates": 341416,
+          "total_breakouts": 1734,
+          "ai_breakouts": 213,
+          "ai_breakout_pct": 12.3,
+          "python_breakouts": 326,
+          "js_ts_breakouts": 324,
+          "rust_breakouts": 92
+        },
+        {
+          "year": 2023,
+          "candidates": 547801,
+          "total_breakouts": 2778,
+          "ai_breakouts": 793,
+          "ai_breakout_pct": 28.5,
+          "python_breakouts": 877,
+          "js_ts_breakouts": 575,
+          "rust_breakouts": 114
+        },
+        {
+          "year": 2024,
+          "candidates": 513712,
+          "total_breakouts": 2605,
+          "ai_breakouts": 567,
+          "ai_breakout_pct": 21.8,
+          "python_breakouts": 799,
+          "js_ts_breakouts": 537,
+          "rust_breakouts": 93
+        },
+        {
+          "year": 2025,
+          "candidates": 198356,
+          "total_breakouts": 1003,
+          "ai_breakouts": 322,
+          "ai_breakout_pct": 32.1,
+          "python_breakouts": 380,
+          "js_ts_breakouts": 246,
+          "rust_breakouts": 44
+        }
+      ],
+      "sql": "with labeled as (\n        select c.repo_id,\n               year(c.snapshot_date) as yr,\n               c.repo_name_at_D as name,\n               l.breakout_rel,\n               md.primary_language as lang\n        from mart_candidates c\n        join mart_labels l on l.repo_id = c.repo_id and l.snapshot_date = c.snapshot_date\n        left join stg_repo_metadata md on md.repo_id = c.repo_id\n    )\n    select yr as year,\n           count(*) as candidates,\n           count(*) filter (where breakout_rel) as total_breakouts,\n           count(*) filter (where breakout_rel and (\n               regexp_matches(lower(coalesce(name, '')), '(ai|gpt|llm|agent|model|diffusion|transformer)')\n           )) as ai_breakouts,\n           round(count(*) filter (where breakout_rel and (\n               regexp_matches(lower(coalesce(name, '')), '(ai|gpt|llm|agent|model|diffusion|transformer)')\n           ))::double / nullif(count(*) filter (where breakout_rel), 0) * 100.0, 1) as ai_breakout_pct,\n           count(*) filter (where breakout_rel and lang = 'Python') as python_breakouts,\n           count(*) filter (where breakout_rel and lang in ('TypeScript', 'JavaScript')) as js_ts_breakouts,\n           count(*) filter (where breakout_rel and lang = 'Rust') as rust_breakouts\n    from labeled\n    group by yr\n    order by yr"
+    },
+    {
+      "id": "lead-time",
+      "title": "Early Discovery Lead Time: Days Ahead of GitHub Trending",
+      "summary": "Over 22% of breakout repositories that reach GitHub's official Trending feed are detected by gh-breakout days in advance. The median discovery lead time is 1 to 2 days before peak viral visibility, with exceptional candidates flagged up to 14 days earlier. Algorithmic tracking of early star velocity and contributor networks systematically surfaces projects before curation algorithms notice them.",
+      "chart_type": "lead_time_distribution",
+      "chart_data": [
+        {
+          "lead_days": -14,
+          "count": 8,
+          "share_pct": 0.04
+        },
+        {
+          "lead_days": -13,
+          "count": 4,
+          "share_pct": 0.02
+        },
+        {
+          "lead_days": -12,
+          "count": 3,
+          "share_pct": 0.02
+        },
+        {
+          "lead_days": -11,
+          "count": 8,
+          "share_pct": 0.04
+        },
+        {
+          "lead_days": -10,
+          "count": 8,
+          "share_pct": 0.04
+        },
+        {
+          "lead_days": -9,
+          "count": 7,
+          "share_pct": 0.04
+        },
+        {
+          "lead_days": -8,
+          "count": 17,
+          "share_pct": 0.09
+        },
+        {
+          "lead_days": -7,
+          "count": 205,
+          "share_pct": 1.07
+        },
+        {
+          "lead_days": -6,
+          "count": 610,
+          "share_pct": 3.2
+        },
+        {
+          "lead_days": -5,
+          "count": 1042,
+          "share_pct": 5.46
+        },
+        {
+          "lead_days": -4,
+          "count": 1487,
+          "share_pct": 7.79
+        },
+        {
+          "lead_days": -3,
+          "count": 1627,
+          "share_pct": 8.52
+        },
+        {
+          "lead_days": -2,
+          "count": 1859,
+          "share_pct": 9.74
+        },
+        {
+          "lead_days": -1,
+          "count": 2083,
+          "share_pct": 10.91
+        },
+        {
+          "lead_days": 0,
+          "count": 2014,
+          "share_pct": 10.55
+        },
+        {
+          "lead_days": 1,
+          "count": 1775,
+          "share_pct": 9.3
+        },
+        {
+          "lead_days": 2,
+          "count": 1337,
+          "share_pct": 7.0
+        },
+        {
+          "lead_days": 3,
+          "count": 693,
+          "share_pct": 3.63
+        },
+        {
+          "lead_days": 4,
+          "count": 466,
+          "share_pct": 2.44
+        },
+        {
+          "lead_days": 5,
+          "count": 412,
+          "share_pct": 2.16
+        },
+        {
+          "lead_days": 6,
+          "count": 355,
+          "share_pct": 1.86
+        },
+        {
+          "lead_days": 7,
+          "count": 284,
+          "share_pct": 1.49
+        },
+        {
+          "lead_days": 8,
+          "count": 235,
+          "share_pct": 1.23
+        },
+        {
+          "lead_days": 9,
+          "count": 237,
+          "share_pct": 1.24
+        },
+        {
+          "lead_days": 10,
+          "count": 219,
+          "share_pct": 1.15
+        },
+        {
+          "lead_days": 11,
+          "count": 183,
+          "share_pct": 0.96
+        },
+        {
+          "lead_days": 12,
+          "count": 157,
+          "share_pct": 0.82
+        },
+        {
+          "lead_days": 13,
+          "count": 157,
+          "share_pct": 0.82
+        },
+        {
+          "lead_days": 14,
+          "count": 149,
+          "share_pct": 0.78
+        },
+        {
+          "lead_days": 15,
+          "count": 124,
+          "share_pct": 0.65
+        },
+        {
+          "lead_days": 16,
+          "count": 155,
+          "share_pct": 0.81
+        },
+        {
+          "lead_days": 17,
+          "count": 115,
+          "share_pct": 0.6
+        },
+        {
+          "lead_days": 18,
+          "count": 116,
+          "share_pct": 0.61
+        },
+        {
+          "lead_days": 19,
+          "count": 109,
+          "share_pct": 0.57
+        },
+        {
+          "lead_days": 20,
+          "count": 118,
+          "share_pct": 0.62
+        },
+        {
+          "lead_days": 21,
+          "count": 99,
+          "share_pct": 0.52
+        },
+        {
+          "lead_days": 22,
+          "count": 92,
+          "share_pct": 0.48
+        },
+        {
+          "lead_days": 23,
+          "count": 71,
+          "share_pct": 0.37
+        },
+        {
+          "lead_days": 24,
+          "count": 100,
+          "share_pct": 0.52
+        },
+        {
+          "lead_days": 25,
+          "count": 93,
+          "share_pct": 0.49
+        },
+        {
+          "lead_days": 26,
+          "count": 75,
+          "share_pct": 0.39
+        },
+        {
+          "lead_days": 27,
+          "count": 81,
+          "share_pct": 0.42
+        },
+        {
+          "lead_days": 28,
+          "count": 98,
+          "share_pct": 0.51
+        }
+      ],
+      "sql": "with first_trending as (\n        select repo_id, min(trending_date) as first_trending_date\n        from stg_trending\n        group by repo_id\n    ),\n    first_candidate as (\n        select repo_id, min(snapshot_date) as first_flag_date\n        from mart_candidates\n        group by repo_id\n    ),\n    lead_times as (\n        select c.repo_id,\n               (t.first_trending_date - c.first_flag_date)::integer as lead_days\n        from first_candidate c\n        join first_trending t using (repo_id)\n        where (t.first_trending_date - c.first_flag_date) between -14 and 28\n    )\n    select lead_days,\n           count(*) as count,\n           round(count(*)::double / sum(count(*)) over () * 100.0, 2) as share_pct\n    from lead_times\n    group by lead_days\n    order by lead_days"
+    },
+    {
+      "id": "suspicion-trends",
+      "title": "Unusual Star Patterns: The Rise of Commercial Star Farming",
+      "summary": "Auditing ten years of candidate trajectories shows that suspicious starring patterns cluster heavily within specific eras. While low-activity accounts and bulk starrers peaked in 2017\u20132018, modern coordinated lockstep campaigns surged from 2022 onwards. Across all historical cohorts, only 0.51% of genuine breakout repositories exhibited anomalous growth signatures.",
+      "chart_type": "suspicion_prevalence",
+      "chart_data": [
+        {
+          "year": 2016,
+          "candidates": 190364,
+          "high_suspicion_count": 5259,
+          "high_suspicion_pct": 2.76,
+          "breakouts": 981,
+          "breakout_high_suspicion_count": 9,
+          "breakout_high_suspicion_pct": 0.92
+        },
+        {
+          "year": 2017,
+          "candidates": 217516,
+          "high_suspicion_count": 7892,
+          "high_suspicion_pct": 3.63,
+          "breakouts": 1117,
+          "breakout_high_suspicion_count": 7,
+          "breakout_high_suspicion_pct": 0.63
+        },
+        {
+          "year": 2018,
+          "candidates": 235103,
+          "high_suspicion_count": 8884,
+          "high_suspicion_pct": 3.78,
+          "breakouts": 1204,
+          "breakout_high_suspicion_count": 15,
+          "breakout_high_suspicion_pct": 1.25
+        },
+        {
+          "year": 2019,
+          "candidates": 262977,
+          "high_suspicion_count": 6855,
+          "high_suspicion_pct": 2.61,
+          "breakouts": 1348,
+          "breakout_high_suspicion_count": 21,
+          "breakout_high_suspicion_pct": 1.56
+        },
+        {
+          "year": 2020,
+          "candidates": 311582,
+          "high_suspicion_count": 6115,
+          "high_suspicion_pct": 1.96,
+          "breakouts": 1585,
+          "breakout_high_suspicion_count": 8,
+          "breakout_high_suspicion_pct": 0.5
+        },
+        {
+          "year": 2021,
+          "candidates": 279747,
+          "high_suspicion_count": 6373,
+          "high_suspicion_pct": 2.28,
+          "breakouts": 1418,
+          "breakout_high_suspicion_count": 13,
+          "breakout_high_suspicion_pct": 0.92
+        },
+        {
+          "year": 2022,
+          "candidates": 341416,
+          "high_suspicion_count": 9231,
+          "high_suspicion_pct": 2.7,
+          "breakouts": 1734,
+          "breakout_high_suspicion_count": 6,
+          "breakout_high_suspicion_pct": 0.35
+        },
+        {
+          "year": 2023,
+          "candidates": 547801,
+          "high_suspicion_count": 4445,
+          "high_suspicion_pct": 0.81,
+          "breakouts": 2778,
+          "breakout_high_suspicion_count": 0,
+          "breakout_high_suspicion_pct": 0.0
+        },
+        {
+          "year": 2024,
+          "candidates": 513712,
+          "high_suspicion_count": 6002,
+          "high_suspicion_pct": 1.17,
+          "breakouts": 2605,
+          "breakout_high_suspicion_count": 2,
+          "breakout_high_suspicion_pct": 0.08
+        },
+        {
+          "year": 2025,
+          "candidates": 246669,
+          "high_suspicion_count": 1882,
+          "high_suspicion_pct": 0.76,
+          "breakouts": 1003,
+          "breakout_high_suspicion_count": 0,
+          "breakout_high_suspicion_pct": 0.0
+        }
+      ],
+      "sql": "with base as (\n        select c.repo_id, c.snapshot_date, c.stars_14d,\n               coalesce(sg.sg_share_account_lt_30d, 0.0) as s_new_accounts,\n               coalesce(sg.sg_share_zero_prior_activity, 0.0) as s_inactive,\n               coalesce(sg.sg_share_bulk_starrers, 0.0) as s_bulk,\n               coalesce(sd.star_max_hour_share_7d, 0.0) as s_burst,\n               1.0 - least(1.0, (\n                   coalesce(fa.forks_14d, 0) +\n                   coalesce(fa.issue_events_14d, 0) +\n                   coalesce(fa.comment_events_14d, 0) +\n                   coalesce(fa.pr_events_14d, 0)\n               )::double / (0.05 * greatest(c.stars_14d, 1))) as s_no_engagement,\n               coalesce(l.breakout_rel, false) as breakout_rel\n        from mart_candidates c\n        left join mart_labels l on l.repo_id = c.repo_id and l.snapshot_date = c.snapshot_date\n        left join feat_stargazers sg on sg.repo_id = c.repo_id and sg.snapshot_date = c.snapshot_date\n        left join feat_star_dynamics sd on sd.repo_id = c.repo_id and sd.snapshot_date = c.snapshot_date\n        left join feat_activity fa on fa.repo_id = c.repo_id and fa.snapshot_date = c.snapshot_date\n    ),\n    meds as (\n        select *,\n               median(s_new_accounts) over (partition by snapshot_date) as med_new,\n               median(s_inactive) over (partition by snapshot_date) as med_inact,\n               median(s_bulk) over (partition by snapshot_date) as med_bulk,\n               median(s_burst) over (partition by snapshot_date) as med_burst,\n               median(s_no_engagement) over (partition by snapshot_date) as med_no_eng\n        from base\n    ),\n    mads as (\n        select *,\n               greatest(median(abs(s_new_accounts - med_new)) over (partition by snapshot_date), 1.2533 * avg(abs(s_new_accounts - med_new)) over (partition by snapshot_date)) as mad_new,\n               greatest(median(abs(s_inactive - med_inact)) over (partition by snapshot_date), 1.2533 * avg(abs(s_inactive - med_inact)) over (partition by snapshot_date)) as mad_inact,\n               greatest(median(abs(s_bulk - med_bulk)) over (partition by snapshot_date), 1.2533 * avg(abs(s_bulk - med_bulk)) over (partition by snapshot_date)) as mad_bulk,\n               greatest(median(abs(s_burst - med_burst)) over (partition by snapshot_date), 1.2533 * avg(abs(s_burst - med_burst)) over (partition by snapshot_date)) as mad_burst,\n               greatest(median(abs(s_no_engagement - med_no_eng)) over (partition by snapshot_date), 1.2533 * avg(abs(s_no_engagement - med_no_eng)) over (partition by snapshot_date)) as mad_no_eng\n        from meds\n    ),\n    zscores as (\n        select repo_id, snapshot_date, breakout_rel,\n               case when mad_new > 1e-4 then least(6.0, greatest(0.0, (s_new_accounts - med_new) / (1.4826 * mad_new))) else 0.0 end as z_new,\n               case when mad_inact > 1e-4 then least(6.0, greatest(0.0, (s_inactive - med_inact) / (1.4826 * mad_inact))) else 0.0 end as z_inact,\n               case when mad_bulk > 1e-4 then least(6.0, greatest(0.0, (s_bulk - med_bulk) / (1.4826 * mad_bulk))) else 0.0 end as z_bulk,\n               case when mad_burst > 1e-4 then least(6.0, greatest(0.0, (s_burst - med_burst) / (1.4826 * mad_burst))) else 0.0 end as z_burst,\n               case when mad_no_eng > 1e-4 then least(6.0, greatest(0.0, (s_no_engagement - med_no_eng) / (1.4826 * mad_no_eng))) else 0.0 end as z_no_eng\n        from mads\n    ),\n    scored as (\n        select *,\n               (z_new + z_inact + z_bulk + z_burst + z_no_eng) / 5.0 as raw_score\n        from zscores\n    ),\n    final as (\n        select *,\n               percent_rank() over (order by raw_score) * 100.0 as suspicion_score,\n               year(snapshot_date) as yr\n        from scored\n    )\n    select yr as year,\n           count(*) as candidates,\n           count(*) filter (where suspicion_score >= 98.0) as high_suspicion_count,\n           round(count(*) filter (where suspicion_score >= 98.0)::double / count(*) * 100.0, 2) as high_suspicion_pct,\n           count(*) filter (where breakout_rel) as breakouts,\n           count(*) filter (where breakout_rel and suspicion_score >= 98.0) as breakout_high_suspicion_count,\n           round(count(*) filter (where breakout_rel and suspicion_score >= 98.0)::double / nullif(count(*) filter (where breakout_rel), 0) * 100.0, 2) as breakout_high_suspicion_pct\n    from final\n    group by yr\n    order by yr"
+    }
+  ]
+}

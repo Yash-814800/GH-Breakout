@@ -1,10 +1,17 @@
 {
   "repo_id": 1168827461,
-  "repo_name": "repo_id=1168827461",
-  "html_url": "https://github.com/repo_id=1168827461",
-  "description": null,
-  "metadata": {},
+  "repo_name": "dickwu/apple-design-skill",
+  "html_url": "https://github.com/dickwu/apple-design-skill",
+  "description": "Cross-platform UI/UX design reviewer based on Apple HIG. Works with Flutter, Tauri, Electron, React Native. Compatible with Claude Code, Cursor, Codex.",
+  "metadata": {
+    "name_with_owner": "dickwu/apple-design-skill",
+    "description": "Cross-platform UI/UX design reviewer based on Apple HIG. Works with Flutter, Tauri, Electron, React Native. Compatible with Claude Code, Cursor, Codex.",
+    "primary_language": "JavaScript"
+  },
   "daily_stars": [],
+  "stars_total": 1722,
+  "stars_total_source": "github_api",
+  "star_count_history": [],
   "prediction_history": [
     {
       "date": "2026-10-20",
@@ -19,7 +26,28 @@
   "realized_outcome": null,
   "trending_appearances": [],
   "hn_stories": [],
-  "cohort_retention": null,
-  "similar_repos": null,
-  "suspicion_breakdown": null
+  "cohort_retention": {
+    "cohorts": [],
+    "reference_comparison": null
+  },
+  "similar_repos": [],
+  "suspicion_breakdown": {
+    "score": null,
+    "level": "low",
+    "reasons": [],
+    "signals": {
+      "s_new_accounts": 0.0,
+      "s_inactive": 0.0,
+      "s_bulk": 0.0,
+      "s_burst": 0.0,
+      "s_no_engagement": 0.0
+    },
+    "medians": {
+      "s_new_accounts": 0.15,
+      "s_inactive": 0.2,
+      "s_bulk": 0.0,
+      "s_burst": 0.35,
+      "s_no_engagement": 0.5
+    }
+  }
 }

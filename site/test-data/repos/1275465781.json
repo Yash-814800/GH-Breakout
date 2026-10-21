@@ -1,10 +1,17 @@
 {
   "repo_id": 1275465781,
-  "repo_name": "repo_id=1275465781",
-  "html_url": "https://github.com/repo_id=1275465781",
-  "description": null,
-  "metadata": {},
+  "repo_name": "derv82/wifit3",
+  "html_url": "https://github.com/derv82/wifit3",
+  "description": "Wifite but USB-only & cross-platform.",
+  "metadata": {
+    "name_with_owner": "derv82/wifit3",
+    "description": "Wifite but USB-only & cross-platform.",
+    "primary_language": "Python"
+  },
   "daily_stars": [],
+  "stars_total": 2601,
+  "stars_total_source": "github_api",
+  "star_count_history": [],
   "prediction_history": [
     {
       "date": "2026-10-20",
@@ -38,15 +45,15 @@
     },
     {
       "date": "2026-09-27",
-      "rank": 13,
-      "language": "python",
-      "source": "antonkomarev"
-    },
-    {
-      "date": "2026-09-27",
       "rank": 7,
       "language": "python",
       "source": "larsbijl"
+    },
+    {
+      "date": "2026-09-27",
+      "rank": 13,
+      "language": "python",
+      "source": "antonkomarev"
     },
     {
       "date": "2026-09-26",
@@ -74,7 +81,28 @@
     }
   ],
   "hn_stories": [],
-  "cohort_retention": null,
-  "similar_repos": null,
-  "suspicion_breakdown": null
+  "cohort_retention": {
+    "cohorts": [],
+    "reference_comparison": null
+  },
+  "similar_repos": [],
+  "suspicion_breakdown": {
+    "score": null,
+    "level": "low",
+    "reasons": [],
+    "signals": {
+      "s_new_accounts": 0.0,
+      "s_inactive": 0.0,
+      "s_bulk": 0.0,
+      "s_burst": 0.0,
+      "s_no_engagement": 0.0
+    },
+    "medians": {
+      "s_new_accounts": 0.15,
+      "s_inactive": 0.2,
+      "s_bulk": 0.0,
+      "s_burst": 0.35,
+      "s_no_engagement": 0.5
+    }
+  }
 }

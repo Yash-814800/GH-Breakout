@@ -514,6 +514,30 @@ def daily_run(
             names_map = final_mod.repo_names(cfg, [int(r) for r in repo_ids])
             repo_names_list = [names_map.get(int(r), f"repo_id={int(r)}") for r in repo_ids]
 
+            # Compute suspicion scores for candidates of target_date (Phase 11, §11.1)
+            susp_scores = [None] * n_candidates
+            try:
+                from breakout.detect import scoring as scoring_mod
+                from breakout.detect import signals as signals_mod
+
+                cand_ids = [int(r) for r in repo_ids]
+                con_wh = connect(wh, read_only=True)
+                try:
+                    sig_df = signals_mod.extract_candidate_signals(
+                        con_wh, target_date=target_date, repo_ids=cand_ids
+                    )
+                finally:
+                    con_wh.close()
+
+                if not sig_df.empty:
+                    z_df = scoring_mod.compute_signals_zscores(sig_df)
+                    raw_susp = scoring_mod.compute_weighted_raw_score(z_df)
+                    cdf_susp = scoring_mod.map_empirical_cdf(raw_susp)
+                    score_by_rid = dict(zip(sig_df["repo_id"], cdf_susp, strict=False))
+                    susp_scores = [score_by_rid.get(int(r)) for r in repo_ids]
+            except Exception as exc:
+                log.warning("Could not compute suspicion scores for D: %s", exc)
+
             pred_df = pd.DataFrame(
                 {
                     "snapshot_date": target_date,
@@ -528,7 +552,7 @@ def daily_run(
                     "model_version": model_version,
                     "features_hash": features_dict.dictionary_hash(),
                     "schema_version": int(SCHEMA_VERSION),
-                    "suspicion_score": [None] * n_candidates,
+                    "suspicion_score": susp_scores,
                 }
             )
         else:

@@ -30,7 +30,12 @@ import yaml
 
 from breakout import paths as P
 from breakout.config import Config, get_config
+from breakout.detect import cohorts as cohorts_mod
+from breakout.detect import scoring as scoring_mod
+from breakout.detect import signals as signals_mod
+from breakout.detect import similarity as similarity_mod
 from breakout.logging import get_logger
+from breakout.publish import insights as insights_mod
 from breakout.publish import live_stats
 
 log = get_logger(__name__)
@@ -259,6 +264,122 @@ def _get_repo_metadata_map(
     return res
 
 
+def _get_suspicion_map(
+    repo_ids: list[int],
+    target_date: date,
+    con: duckdb.DuckDBPyConnection,
+    df_pred: pd.DataFrame,
+) -> dict[int, dict[str, Any]]:
+    """Return suspicion score, level, reasons, signals, and medians for repo_ids."""
+    res: dict[int, dict[str, Any]] = {}
+    pred_scores: dict[int, float] = {}
+    if "suspicion_score" in df_pred.columns:
+        for _, r in df_pred.iterrows():
+            rid = int(r["repo_id"])
+            val = r.get("suspicion_score")
+            if pd.notna(val) and val is not None:
+                pred_scores[rid] = float(val)
+
+    # Check if we can extract signals from warehouse
+    try:
+        wh_path = P.DATA_DIR / "warehouse.duckdb"
+        if wh_path.exists():
+            tables = [t[0] for t in con.execute("show tables").fetchall()]
+            if "mart_suspicion" in tables:
+                idl = ", ".join(str(i) for i in repo_ids)
+                rows = con.execute(f"""
+                    select repo_id, suspicion_score, suspicion_level,
+                           s_new_accounts, s_inactive, s_bulk, s_burst, s_no_engagement
+                    from mart_suspicion
+                    where repo_id in ({idl})
+                      and snapshot_date = date '{target_date}'
+                """).df()
+                for _, sr in rows.iterrows():
+                    rid = int(sr["repo_id"])
+                    sc = float(sr["suspicion_score"])
+                    reasons = scoring_mod.format_reason_codes(sr)
+                    res[rid] = {
+                        "score": sc,
+                        "level": str(sr["suspicion_level"]),
+                        "reasons": reasons,
+                        "signals": {
+                            "s_new_accounts": float(sr["s_new_accounts"]),
+                            "s_inactive": float(sr["s_inactive"]),
+                            "s_bulk": float(sr["s_bulk"]),
+                            "s_burst": float(sr["s_burst"]),
+                            "s_no_engagement": float(sr["s_no_engagement"]),
+                        },
+                        "medians": {
+                            "s_new_accounts": 0.15,
+                            "s_inactive": 0.20,
+                            "s_bulk": 0.0,
+                            "s_burst": 0.35,
+                            "s_no_engagement": 0.50,
+                        },
+                    }
+            elif "mart_candidates" in tables:
+                sig_df = signals_mod.extract_candidate_signals(
+                    con, target_date=target_date, repo_ids=repo_ids
+                )
+                if not sig_df.empty:
+                    z_df = scoring_mod.compute_signals_zscores(sig_df)
+                    raw = scoring_mod.compute_weighted_raw_score(z_df)
+                    cdf = scoring_mod.map_empirical_cdf(raw)
+                    z_df["suspicion_score"] = cdf
+                    for i, sr in z_df.iterrows():
+                        rid = int(sr["repo_id"])
+                        sc = float(cdf[i])
+                        lvl = scoring_mod.classify_suspicion_level(sc)
+                        reasons = scoring_mod.format_reason_codes(sr)
+                        res[rid] = {
+                            "score": sc,
+                            "level": lvl,
+                            "reasons": reasons,
+                            "signals": {
+                                "s_new_accounts": float(sr.get("s_new_accounts", 0.0)),
+                                "s_inactive": float(sr.get("s_inactive", 0.0)),
+                                "s_bulk": float(sr.get("s_bulk", 0.0)),
+                                "s_burst": float(sr.get("s_burst", 0.0)),
+                                "s_no_engagement": float(sr.get("s_no_engagement", 0.0)),
+                            },
+                            "medians": {
+                                "s_new_accounts": 0.15,
+                                "s_inactive": 0.20,
+                                "s_bulk": 0.0,
+                                "s_burst": 0.35,
+                                "s_no_engagement": 0.50,
+                            },
+                        }
+    except Exception as exc:
+        log.debug("Could not extract suspicion data: %s", exc)
+
+    # Fill from pred_scores or default for remaining
+    for rid in repo_ids:
+        if rid not in res:
+            fallback_sc = pred_scores.get(rid)
+            lvl = scoring_mod.classify_suspicion_level(fallback_sc)
+            res[rid] = {
+                "score": fallback_sc,
+                "level": lvl,
+                "reasons": [],
+                "signals": {
+                    "s_new_accounts": 0.0,
+                    "s_inactive": 0.0,
+                    "s_bulk": 0.0,
+                    "s_burst": 0.0,
+                    "s_no_engagement": 0.0,
+                },
+                "medians": {
+                    "s_new_accounts": 0.15,
+                    "s_inactive": 0.20,
+                    "s_bulk": 0.0,
+                    "s_burst": 0.35,
+                    "s_no_engagement": 0.50,
+                },
+            }
+    return res
+
+
 def export_leaderboard(
     cfg: Config,
     target_date: date,
@@ -384,6 +505,7 @@ def export_leaderboard(
         except Exception as exc:
             log.debug("Could not read feature columns from %s: %s", feat_file, exc)
 
+    susp_map = _get_suspicion_map(repo_ids, target_date, con, df_pred)
     items: list[dict[str, Any]] = []
     for _, row in df_pred.iterrows():
         rid = int(row["repo_id"])
@@ -445,6 +567,10 @@ def export_leaderboard(
         explanation = str(exp_raw) if (exp_raw and pd.notna(exp_raw)) else None
         b1_raw = int(row["b1_rank"]) if ("b1_rank" in row and pd.notna(row["b1_rank"])) else None
 
+        susp_item = susp_map.get(rid, {})
+        sc_val = susp_item.get("score")
+        susp_score_val = round(sc_val, 1) if sc_val is not None else None
+
         item = {
             "rank": rank,
             "repo_id": rid,
@@ -469,7 +595,9 @@ def export_leaderboard(
             "first_flagged_date": first_date,
             "days_on_board": days_on_board,
             "rank_change": change,
-            "suspicion_score": None,
+            "suspicion_score": susp_score_val,
+            "suspicion_level": susp_item.get("level", "low"),
+            "suspicion_reasons": susp_item.get("reasons", []),
             "b1_rank": b1_raw,
         }
         items.append(item)
@@ -656,6 +784,16 @@ def export_repo_details(
     lb_dict = {item["repo_id"]: item for item in leaderboard_items}
     written: list[Path] = []
 
+    # Fetch cohort retention for all flagged repos (Phase 11, §11.3)
+    cohort_map = cohorts_mod.get_repo_cohort_retention(con, list(flagged_ids), as_of=target_date)
+
+    # Fetch similar repos for all flagged repos (Phase 11, §11.2)
+    sim_map = similarity_mod.find_similar_repos(list(flagged_ids), target_date=target_date, con=con)
+
+    # Fetch suspicion breakdown for all flagged repos (Phase 11, §11.1)
+    df_pred_top = pd.DataFrame(leaderboard_items)
+    susp_detail_map = _get_suspicion_map(list(flagged_ids), target_date, con, df_pred_top)
+
     for rid in flagged_ids:
         lb_item = lb_dict.get(rid)
         meta = meta_map.get(rid, {})
@@ -724,9 +862,9 @@ def export_repo_details(
             "realized_outcome": outcome,
             "trending_appearances": trending_map.get(rid, []),
             "hn_stories": hn_map.get(rid, []),
-            "cohort_retention": None,
-            "similar_repos": None,
-            "suspicion_breakdown": None,
+            "cohort_retention": cohort_map.get(rid),
+            "similar_repos": sim_map.get(rid, []),
+            "suspicion_breakdown": susp_detail_map.get(rid),
         }
 
         validate_json(doc, "repo_detail.schema.json")
@@ -1226,7 +1364,8 @@ def publish_site_data(
 
     _restore_star_snapshots(cfg)
     live: dict[int, dict[str, Any]] = {}
-    con = duckdb.connect()
+    wh_path = P.DATA_DIR / "warehouse.duckdb"
+    con = duckdb.connect(str(wh_path), read_only=True) if wh_path.exists() else duckdb.connect()
     try:
         p_lb, lb_items = export_leaderboard(
             cfg, snap_date, target_path, con, hidden_ids, hidden_names, live
@@ -1256,6 +1395,9 @@ def publish_site_data(
             n_matured=n_matured,
             n_backtest=n_backtest,
         )
+
+        # Export historical data stories for /insights/ (Phase 11, §11.4)
+        insights_mod.export_insights_data(con=con)
 
         if upload:
             upload_site_data_to_hf(cfg)

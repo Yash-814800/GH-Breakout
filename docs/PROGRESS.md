@@ -16,7 +16,7 @@ measured (row counts, sizes, runtimes, metrics). Future sessions rely on it.
 | 08 | LightGBM, calibration, SHAP, model registry | ☑ (HF upload pending approval) | 2026-10-19 | Model beats B1 in all 29 folds: pooled PR-AUC **0.108** [0.101, 0.113] vs 0.029, P@25 **0.241** [0.229, 0.255] vs 0.109; holdout (26 weeks to 2025-04-21) 0.158 / 0.338 vs B1 0.032 / 0.106. Sanity checks pass; calibrated ECE 0.0002. Champion `20261019-b5ff585` (local registry). Daily check: calibration over-predicts on non-Mondays (ADR-025). 310 tests pass. See "Phase 8 status". |
 | 09 | Daily pipeline, weekly retrain, health checks | ☑ (live enrichment not wired) | 2026-10-20 | Validated on GitHub Actions: `daily.yml` succeeds (203 s, 1,033 candidates, ledger row, snapshot on HF); a same-day re-run ingests nothing and adds no ledger row; `weekly.yml` retrains and keeps the champion; `monthly.yml` passes (`lake verify-remote`); `health.yml` opens and closes the alert issue. Parity PASS (2024-06-03). CI green again. See ADR-027 and "Phase 9 status". |
 | 10 | Website (Astro) + deploy | ☑ | 2026-10-20 | Astro static site (105 pages, 8 routes) deployed to GitHub Pages via GitHub Actions ($0 cost). Leaderboard: 50 candidates, sparklines, language & probability filters, raw 185 KB (< 200 KB cap), Lighthouse Performance 100, Accessibility 96. Detail pages: 98 repos. DuckDB-WASM SQL explorer with HTTP 206 range requests. 332 pytest pass. Screenshots in reports/site_screenshots/. See "Phase 10 status" and ADR-028. |
-| 11 | Fake-star detector, similar repos, cohort retention | ☐ | | |
+| 11 | Fake-star detector, similar repos, cohort retention | ☑ | 2026-10-21 | Suspicious-growth score (6 signals, robust z-score, empirical CDF [0, 100], Low/Med/High). Validated vs StarScout ICSE 2026 dataset (0.51% historical breakout prevalence). Item-item co-star similarity (80,965 repos, 17.25M pairs indexed in 71.7s, 90.9 MB). Stargazer cohort retention benchmarks. 4-story /insights/ page with DuckDB SQL. 344 pytest pass. See ADR-030 and "Phase 11 status". |
 | 12 | Distribution (RSS, badges, digest, Bluesky) | ☐ | | |
 | 13 | Portfolio polish, dbt docs, ClickHouse benchmark, final audit | ☐ | | |
 
@@ -37,6 +37,36 @@ measured (row counts, sizes, runtimes, metrics). Future sessions rely on it.
 | Source test from a GitHub Actions runner | ☑ NO-GO | OpenDigger ~0.01 MB/s from the runner (needs >= 1), manifests 404; gharchive 54 MB/s. `reports/source_validation.md`, run 38194688025 |
 | Stargazers API for per-repo ground truth | ✖ not available | GitHub restricted it to admins/collaborators in July 2026 (ADR-010) |
 | Live-source gate / item 5 | ☐ not started | waits for your review of the source test |
+
+## Phase 11 status (2026-10-21)
+
+- **Deliverables & Verification:**
+  - **Suspicious-Growth Detector (`src/breakout/detect/`, dbt `mart_suspicion`):**
+    - 6 point-in-time signals over candidate stargazers in `[D-14, D)` (`s_new_accounts`, `s_inactive`, `s_bulk`, `s_burst` + CV regularity, `s_lockstep` ring detection, `s_no_engagement`).
+    - Robust z-scores with fallback for zero-MAD distributions, documented equal weights (1/6 each), empirical CDF percentile mapping to $[0, 100]$, and Low (< 90), Medium (90-98), High ($\ge 98$) classifications with non-accusatory reason codes.
+    - Daily pipeline integration in Step 9 filling the reserved `suspicion_score` column on `pred_df`. Display-side only (never fed to model).
+  - **Validation & Ablation Report (`reports/suspicion.md`):**
+    - StarScout academic dataset (He et al., ICSE 2026, Socket / CMU / NC State, Apache 2.0).
+    - Historical prevalence: 81 of 15,773 historical `breakout_rel` positives (0.51%) exhibited high suspicion.
+    - Model ablation: relabeling high-suspicion positives as negatives yields negligible change on holdout PR-AUC (0.1407 vs 0.1396) and P@25 (0.3338 vs 0.3200). Training labels preserved unchanged.
+  - **Item-Item Co-star Similarity (`mart_similar_repos`, `src/breakout/detect/similarity.py`):**
+    - Reference index built in 71.7s via DuckDB native Parquet export indexing 80,965 repos and 17,251,385 stargazer pairs into `reference_stargazers.parquet` (90.9 MB) and `reference_repo_sizes.parquet` (471 KB).
+    - Daily candidate lookup joining candidate stargazers against the reference index in ~3s, returning top 5 similar repos with overlap $\ge 5$, cosine $\in (0, 1]$, excluding self and forks.
+    - Weekly workflow integration added to `.github/workflows/weekly.yml`.
+  - **Cohort Retention (`src/breakout/detect/cohorts.py`):**
+    - Precomputed median and IQR reference bands across repo age buckets for historical breakouts (`retention_reference.parquet`, 0.15s).
+    - Repo detail pages render weekly cohort retention heatmap matrix (action type $\times$ elapsed weeks) benchmarked against historical median bands.
+  - **Insights Page (`site/src/pages/insights.astro`, `src/breakout/publish/insights.py`):**
+    - 4 rich data stories rendered with Observable Plot, 3-sentence takeaways, and collapsible DuckDB SQL blocks (`/insights/`).
+    - Exported by `breakout publish insights` to `site/public/data/insights.json` (and `site/test-data/insights.json`).
+  - **UI & Maintainer Experience:**
+    - Leaderboard badge `⚠️ Unusual pattern` with tooltip reasons and "Hide unusual star patterns" checkbox toggle.
+    - Repo detail sections: Growth Integrity & Star Audit, Similar Repositories ("People who starred this also starred..."), Stargazer Cohort Retention Heatmap.
+    - About page audit policy and `.github/ISSUE_TEMPLATE/review-request.md` for maintainer review requests.
+  - **Tests & Quality:**
+    - 344 pytest passing across full suite (100% green), including 7 new detect tests and 16 CLI tests.
+    - `npm run build` static site compilation succeeds with 103 pages and 0 base path issues.
+    - `ruff check .` clean, `ruff format --check .` clean. ADR-030 recorded in `docs/DECISIONS.md`.
 
 ## Phase 10 status (2026-10-20)
 

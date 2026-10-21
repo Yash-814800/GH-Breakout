@@ -89,7 +89,7 @@ const languages = Array.from(new Set(leaderboard.map((r) => r.language).filter(B
       <div class="filter-group checkbox-group">
         <label class="checkbox-label">
           <input type="checkbox" id="hide-suspicious" />
-          <span>Hide suspicious (Phase 11)</span>
+          <span>Hide unusual star patterns</span>
         </label>
       </div>
     </div>
@@ -123,7 +123,7 @@ const languages = Array.from(new Set(leaderboard.map((r) => r.language).filter(B
                 data-name={item.repo_name.toLowerCase()}
                 data-lang={item.language || ''}
                 data-prob={item.prob}
-                data-suspicious={item.suspicion_score ? 'true' : 'false'}
+                data-suspicious={item.suspicion_score != null && item.suspicion_score >= 90.0 ? 'true' : 'false'}
               >
                 <td class="num">
                   <div class="rank-badge">
@@ -136,9 +136,21 @@ const languages = Array.from(new Set(leaderboard.map((r) => r.language).filter(B
                 </td>
                 <td>
                   <div class="repo-cell">
-                    <a href={`${base}/repo/${item.repo_id}/`} class="repo-title">
-                      {item.repo_name}
-                    </a>
+                    <div class="repo-title-wrapper" style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+                      <a href={`${base}/repo/${item.repo_id}/`} class="repo-title">
+                        {item.repo_name}
+                      </a>
+                      {item.suspicion_score != null && item.suspicion_score >= 90.0 && (
+                        <span
+                          class="badge badge-warning suspicious-badge"
+                          title={item.suspicion_reasons && item.suspicion_reasons.length > 0
+                            ? `Unusual pattern: ${item.suspicion_reasons.join('; ')}`
+                            : 'Unusual star pattern detected: growth metrics deviate from typical breakout cohorts'}
+                        >
+                          ⚠️ Unusual pattern
+                        </span>
+                      )}
+                    </div>
                     {item.description && <div class="repo-desc">{item.description}</div>}
                   </div>
                 </td>
@@ -190,15 +202,27 @@ const languages = Array.from(new Set(leaderboard.map((r) => r.language).filter(B
           data-name={item.repo_name.toLowerCase()}
           data-lang={item.language || ''}
           data-prob={item.prob}
-          data-suspicious={item.suspicion_score ? 'true' : 'false'}
+          data-suspicious={item.suspicion_score != null && item.suspicion_score >= 90.0 ? 'true' : 'false'}
         >
           <div class="mobile-card-top">
             <span class="badge badge-accent">Rank #{item.rank}</span>
             <span class="prob-pct">{(item.prob * 100).toFixed(1)}% ({item.prob_label})</span>
           </div>
-          <a href={`${base}/repo/${item.repo_id}/`} class="repo-title" style="margin: 0.5rem 0;">
-            {item.repo_name}
-          </a>
+          <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; margin: 0.5rem 0;">
+            <a href={`${base}/repo/${item.repo_id}/`} class="repo-title">
+              {item.repo_name}
+            </a>
+            {item.suspicion_score != null && item.suspicion_score >= 90.0 && (
+              <span
+                class="badge badge-warning suspicious-badge"
+                title={item.suspicion_reasons && item.suspicion_reasons.length > 0
+                  ? `Unusual pattern: ${item.suspicion_reasons.join('; ')}`
+                  : 'Unusual star pattern detected'}
+              >
+                ⚠️ Unusual pattern
+              </span>
+            )}
+          </div>
           {item.description && <p class="repo-desc">{item.description}</p>}
           <div class="mobile-meta">
             <span class="badge badge-neutral">{item.language || 'Unknown'}</span>

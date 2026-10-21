@@ -2,8 +2,12 @@
   "repo_id": 1323332140,
   "repo_name": "AhmadHassan-BTed/MotionShot",
   "html_url": "https://github.com/AhmadHassan-BTed/MotionShot",
-  "description": null,
-  "metadata": {},
+  "description": "Camera app that freezes fast motion sequences into a single stroboscopic photo; powered by on-device computer vision, 2D stabilization, and manual exposure controls",
+  "metadata": {
+    "name_with_owner": "AhmadHassan-BTed/MotionShot",
+    "description": "Camera app that freezes fast motion sequences into a single stroboscopic photo; powered by on-device computer vision, 2D stabilization, and manual exposure controls",
+    "primary_language": "Kotlin"
+  },
   "daily_stars": [
     {
       "date": "2026-09-30",
@@ -16,6 +20,14 @@
     {
       "date": "2026-10-13",
       "stars": 1
+    }
+  ],
+  "stars_total": 1940,
+  "stars_total_source": "github_api",
+  "star_count_history": [
+    {
+      "date": "2026-10-20",
+      "stars": 1940
     }
   ],
   "prediction_history": [
@@ -32,7 +44,28 @@
   "realized_outcome": null,
   "trending_appearances": [],
   "hn_stories": [],
-  "cohort_retention": null,
-  "similar_repos": null,
-  "suspicion_breakdown": null
+  "cohort_retention": {
+    "cohorts": [],
+    "reference_comparison": null
+  },
+  "similar_repos": [],
+  "suspicion_breakdown": {
+    "score": null,
+    "level": "low",
+    "reasons": [],
+    "signals": {
+      "s_new_accounts": 0.0,
+      "s_inactive": 0.0,
+      "s_bulk": 0.0,
+      "s_burst": 0.0,
+      "s_no_engagement": 0.0
+    },
+    "medians": {
+      "s_new_accounts": 0.15,
+      "s_inactive": 0.2,
+      "s_bulk": 0.0,
+      "s_burst": 0.35,
+      "s_no_engagement": 0.5
+    }
+  }
 }

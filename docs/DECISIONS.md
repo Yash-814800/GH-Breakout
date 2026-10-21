@@ -789,3 +789,53 @@ real gain over up to 7 days (null on a repo's first day). The captured-stars spa
 of the real total.
 **Consequences:** the gain column is empty on the first day and fills in from the second daily run. The explanation text still quotes
 event-based numbers, which are what the model saw; the page says so. Ledger rows and model scores are untouched.
+
+## ADR-030: Phase 11 suspicious-growth detector, similar repos, cohort retention, and insights (2026-10-21)
+
+**Context:** Phase 11 (`docs/phases/PHASE_11_fake_stars_similarity_cohorts.md`) implements game-resistance and deep repository analysis:
+1. A transparent, non-accusatory suspicious-growth score protecting the leaderboard from farmed stars.
+2. Item-item co-star similarity ("People who starred this also starred...").
+3. Stargazer cohort retention benchmarks comparing new repos against past breakouts.
+4. A static `/insights/` page highlighting four core data stories with reproducible DuckDB SQL.
+
+**Decision:**
+1. **Suspicious-Growth Detector Architecture (`src/breakout/detect/`, `mart_suspicion`):**
+   - **Six Core Signals:** Computed over candidate first stars in `[D-14, D)`:
+     - `s_new_accounts`: Share of stargazers with estimated account age < 30 days (and < 7 days).
+     - `s_inactive`: Share of stargazers with 0 events in the 90 days prior to starring.
+     - `s_bulk`: Share of stargazers starring $\ge 50$ repositories on that UTC day.
+     - `s_burst`: Maximum single-hour star share and inter-arrival coefficient of variation (regularity).
+     - `s_lockstep`: Share of stargazers co-starring $\ge 3$ of the same repositories within $\pm 24$ hours (capped at 5,000 recent stargazers).
+     - `s_no_engagement`: $1 - \min(1, \text{engagement} / (0.05 \times \text{stars}_{14d}))$.
+   - **Scoring & Calibration:** Robust z-score per signal: $(x - \text{med}) / (1.4826 \times \text{MAD})$, with fallback to interquartile range or zero for degenerate zero-MAD distributions, clipped to $[0, 6]$. Signals combined with equal weights ($1/6$ each) into a raw score and mapped to $[0, 100]$ via the empirical CDF of historical scores.
+   - **Classification & Reason Codes:** Low (< 90), Medium (90–98), High ($\ge 98$). Up to 3 factual, non-accusatory reason codes emitted per flagged repo.
+   - **Display-Side Only:** `suspicion_score` is strictly display-side and is **never** fed as a feature into the LightGBM model.
+   - **Neutrality & Maintainer Recourse:** Leaderboard presents a neutral `⚠️ Unusual pattern` badge with a reasons tooltip and a toggle checkbox to "Hide unusual star patterns". The `/about/` page outlines audit methodology and links to `.github/ISSUE_TEMPLATE/review-request.md` for maintainer review requests.
+
+2. **Academic Validation & Relabeling Ablation (`reports/suspicion.md`):**
+   - Ground truth comparison performed against the StarScout academic dataset (He et al., ICSE 2026, Socket Inc. / CMU / NC State, Apache 2.0 license).
+   - Out of 15,773 historical `breakout_rel` positives from 2016–2025, only **81 (0.51%)** exhibited high suspicion.
+   - Retraining ablation: relabeling high-suspicion positives as negatives yields negligible change on holdout PR-AUC (0.1407 vs 0.1396) and P@25 (0.3338 vs 0.3200).
+   - **Decision:** Keep the training label definition unchanged to avoid label corruption from heuristic detectors; display suspicion score as a display-side audit indicator.
+
+3. **Item-Item Co-star Similarity (`mart_similar_repos`, `similarity.py`):**
+   - **Weekly Reference Index:** Precomputed in weekly workflow over repositories with $\ge 50$ stars in the past 365 days, retaining up to 2,000 most recent stargazers (excluding bots and bulk starrers). Optimized using DuckDB native `COPY (...) TO ... (FORMAT PARQUET, COMPRESSION ZSTD)`: indexes 80,965 repositories (17,251,385 stargazer pairs) in **71.7s**, producing a **90.9 MB** `reference_stargazers.parquet` and **471 KB** `reference_repo_sizes.parquet`.
+   - **Daily Candidate Lookup:** Candidate stargazers joined on `actor_id` directly against `reference_stargazers.parquet` (with fast fallback to `int_early_stars` for young repos), computing cosine similarity $\text{overlap} / \sqrt{n_a \times n_b}$. Returns top 5 similar repos with $\text{overlap} \ge 5$ and $\text{cosine} \in (0, 1]$, excluding self and forks.
+
+4. **Stargazer Cohort Retention (`cohorts.py`):**
+   - Historical benchmark: precomputes median and IQR downstream engagement rates (forks, issues, PRs, comments within 30 days) across repo age buckets for historical `breakout_rel` positives, stored in `derived/reference/retention_reference.parquet` (4 rows, 0.15s build time).
+   - Repo detail pages render a cohort retention heatmap matrix (cohort week $\times$ action type) benchmarked against historical median bands.
+
+5. **Insights Page (`site/src/pages/insights.astro`, `publish/insights.py`):**
+   - Published via `breakout publish insights` to `site/public/data/insights.json` (and `site/test-data/insights.json`).
+   - Four data stories featuring narrative text, Observable Plot visualizations, and collapsible DuckDB SQL queries:
+     1. Stars vs. Real Adoption: Cohort retention trajectories of durable breakouts vs. faded spikes.
+     2. The AI-Era Shift: Proportion of breakout repositories classified as AI/ML/LLM tooling (2016–2025).
+     3. Lead Time Distribution: Backtest early flag detection advantage relative to GitHub Trending.
+     4. Unusual Star Patterns Over Time: Longitudinal prevalence of high-suspicion candidate repositories.
+
+**Consequences:**
+- Leaderboard maintains high integrity without silencing genuine viral repositories.
+- Weekly reference indexing fits well within GitHub Actions execution budgets (~1.2 min runtime, ~91 MB artifact).
+- Static export bundle size remains lightweight while delivering rich interactive visualizations.
+

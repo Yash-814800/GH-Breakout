@@ -24,6 +24,9 @@ const { repo } = Astro.props;
 const base = import.meta.env.BASE_URL.replace(/\/+$/, '');
 const meta = repo.metadata || {};
 const outcome = repo.realized_outcome;
+const susp = repo.suspicion_breakdown || null;
+const similar = repo.similar_repos || [];
+const retention = repo.cohort_retention || null;
 ---
 
 <Layout title={`${repo.repo_name} · gh-breakout`}>
@@ -219,15 +222,191 @@ const outcome = repo.realized_outcome;
       </div>
     </div>
 
-    <!-- Reserved Slot for Phase 11 -->
-    <div class="card" style="margin-top: 1.5rem; opacity: 0.85;">
-      <h2>Growth Integrity & Network Patterns</h2>
-      <div class="phase11-placeholder">
-        <span class="badge badge-neutral">Phase 11: Fake-Star Detector & Cohorts</span>
-        <p style="margin-top: 0.5rem;">
-          Advanced star-cohort retention, stargazer account age distributions, and fake-star heuristic audits will be rendered in this section in Phase 11.
-        </p>
+    <!-- Suspicious-Growth Audit & Integrity (Phase 11, §11.1) -->
+    <div class="card" style="margin-top: 1.5rem;">
+      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+        <h2>Growth Integrity &amp; Star Audit</h2>
+        {susp && (
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <span class={`badge ${susp.level === 'high' ? 'badge-danger' : susp.level === 'medium' ? 'badge-warning' : 'badge-success'}`}>
+              Suspicion Level: {susp.level ? susp.level.toUpperCase() : 'LOW'}
+            </span>
+            <span class="num text-muted">Score: {susp.score ?? 0}/100</span>
+          </div>
+        )}
       </div>
+
+      {susp ? (
+        <div style="margin-top: 1rem;">
+          {susp.reasons && susp.reasons.length > 0 && (
+            <div style="background: var(--bg-subtle); padding: 0.75rem 1rem; border-radius: var(--radius-sm); margin-bottom: 1rem; border-left: 3px solid var(--warning);">
+              <strong style="font-size: 0.875rem;">Detected Growth Signatures:</strong>
+              <ul style="margin: 0.5rem 0 0 1.25rem; font-size: 0.8125rem; color: var(--text-secondary);">
+                {susp.reasons.map((r: string) => <li>{r}</li>)}
+              </ul>
+            </div>
+          )}
+
+          <div class="table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th>Signal Metric</th>
+                  <th>Observed Value</th>
+                  <th>Typical Candidate Median</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>New Accounts (&lt; 30d old)</td>
+                  <td class="num">{susp.signals?.s_new_accounts != null ? `${(susp.signals.s_new_accounts * 100).toFixed(1)}%` : '—'}</td>
+                  <td class="num text-muted">{susp.medians?.s_new_accounts != null ? `${(susp.medians.s_new_accounts * 100).toFixed(1)}%` : '~15%'}</td>
+                  <td>{susp.signals?.s_new_accounts > 0.4 ? <span class="badge badge-warning">Elevated</span> : <span class="badge badge-neutral">Normal</span>}</td>
+                </tr>
+                <tr>
+                  <td>Inactive Accounts (0 events in 90d)</td>
+                  <td class="num">{susp.signals?.s_inactive != null ? `${(susp.signals.s_inactive * 100).toFixed(1)}%` : '—'}</td>
+                  <td class="num text-muted">{susp.medians?.s_inactive != null ? `${(susp.medians.s_inactive * 100).toFixed(1)}%` : '~20%'}</td>
+                  <td>{susp.signals?.s_inactive > 0.5 ? <span class="badge badge-warning">Elevated</span> : <span class="badge badge-neutral">Normal</span>}</td>
+                </tr>
+                <tr>
+                  <td>Bulk Starrers (50+ stars/day)</td>
+                  <td class="num">{susp.signals?.s_bulk != null ? `${(susp.signals.s_bulk * 100).toFixed(1)}%` : '—'}</td>
+                  <td class="num text-muted">{susp.medians?.s_bulk != null ? `${(susp.medians.s_bulk * 100).toFixed(1)}%` : '~0%'}</td>
+                  <td>{susp.signals?.s_bulk > 0.1 ? <span class="badge badge-warning">Elevated</span> : <span class="badge badge-neutral">Normal</span>}</td>
+                </tr>
+                <tr>
+                  <td>Single-Hour Burst Share</td>
+                  <td class="num">{susp.signals?.s_burst != null ? `${(susp.signals.s_burst * 100).toFixed(1)}%` : '—'}</td>
+                  <td class="num text-muted">{susp.medians?.s_burst != null ? `${(susp.medians.s_burst * 100).toFixed(1)}%` : '~35%'}</td>
+                  <td>{susp.signals?.s_burst > 0.6 ? <span class="badge badge-warning">Elevated</span> : <span class="badge badge-neutral">Normal</span>}</td>
+                </tr>
+                <tr>
+                  <td>Star Velocity without Code Engagement</td>
+                  <td class="num">{susp.signals?.s_no_engagement != null ? `${(susp.signals.s_no_engagement * 100).toFixed(1)}%` : '—'}</td>
+                  <td class="num text-muted">{susp.medians?.s_no_engagement != null ? `${(susp.medians.s_no_engagement * 100).toFixed(1)}%` : '~50%'}</td>
+                  <td>{susp.signals?.s_no_engagement > 0.85 ? <span class="badge badge-warning">Elevated</span> : <span class="badge badge-neutral">Normal</span>}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <p style="font-size: 0.8125rem; color: var(--text-muted); margin-top: 1rem; margin-bottom: 0;">
+            <em>Transparency Notice:</em> A high suspicion score reflects statistical divergence from organic candidate baselines (e.g., tight burst timing or account freshness clusters) and is not an accusation of manipulation. Maintainers can request a human audit via our <a href={`${base}/about/`}>review policy</a>.
+          </p>
+        </div>
+      ) : (
+        <p class="text-muted" style="margin-top: 0.5rem;">Audit metrics for this repository are within normal organic parameter ranges.</p>
+      )}
+    </div>
+
+    <!-- Similar Repositories (Phase 11, §11.2) -->
+    <div class="card" style="margin-top: 1.5rem;">
+      <h2>People Who Starred This Also Starred…</h2>
+      <p class="text-muted" style="font-size: 0.8125rem;">
+        Top co-starred open-source projects discovered via item-item collaborative filtering (overlap &ge; 5 shared stargazers).
+      </p>
+
+      {similar && similar.length > 0 ? (
+        <div class="table-wrapper" style="margin-top: 1rem;">
+          <table>
+            <thead>
+              <tr>
+                <th>Related Repository</th>
+                <th>Language</th>
+                <th>Shared Stargazers</th>
+                <th>Co-Starring Cosine</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {similar.map((sim: any) => (
+                <tr>
+                  <td>
+                    <a href={sim.html_url} target="_blank" rel="noopener noreferrer" class="repo-title">
+                      {sim.repo_name}
+                    </a>
+                  </td>
+                  <td><span class="badge badge-neutral">{sim.language || 'Unknown'}</span></td>
+                  <td class="num">{sim.overlap}</td>
+                  <td class="num">{sim.cosine != null ? sim.cosine.toFixed(3) : '—'}</td>
+                  <td>
+                    <a href={sim.html_url} target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-github">
+                      View ↗
+                    </a>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <p class="text-muted" style="margin-top: 0.5rem;">
+          No sufficiently dense co-starring clusters (overlap &ge; 5) detected in the current reference index.
+        </p>
+      )}
+    </div>
+
+    <!-- Cohort Retention Heatmap (Phase 11, §11.3) -->
+    <div class="card" style="margin-top: 1.5rem;">
+      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+        <h2>Stargazer Cohort Retention &amp; Real Adoption</h2>
+        {retention?.reference_comparison && (
+          <span class="badge badge-neutral" style="font-size: 0.8125rem;">
+            {retention.reference_comparison}
+          </span>
+        )}
+      </div>
+
+      <p class="text-muted" style="font-size: 0.8125rem; margin-top: 0.25rem;">
+        Tracks the percentage of weekly stargazers who subsequently engaged in code adoption (forked, opened issues, PRs, or commented) within 30 days of starring.
+      </p>
+
+      {retention?.cohorts && retention.cohorts.length > 0 ? (
+        <div class="table-wrapper" style="margin-top: 1rem;">
+          <table class="cohort-table">
+            <thead>
+              <tr>
+                <th>Cohort Week</th>
+                <th>Stargazers</th>
+                <th>Forked (30d)</th>
+                <th>Issues (30d)</th>
+                <th>PRs (30d)</th>
+                <th>Comments (30d)</th>
+                <th>Any Action (30d)</th>
+              </tr>
+            </thead>
+            <tbody>
+              {retention.cohorts.map((c: any) => (
+                <tr>
+                  <td class="num">{c.cohort_week}</td>
+                  <td class="num">★ {c.n_stargazers}</td>
+                  <td class="num cohort-cell" style={`background: rgba(46, 160, 67, ${Math.min((c.share_fork_30d || 0) * 8, 0.4)});`}>
+                    {c.share_fork_30d != null ? `${(c.share_fork_30d * 100).toFixed(1)}%` : '0.0%'}
+                  </td>
+                  <td class="num cohort-cell" style={`background: rgba(56, 139, 253, ${Math.min((c.share_issue_30d || 0) * 8, 0.4)});`}>
+                    {c.share_issue_30d != null ? `${(c.share_issue_30d * 100).toFixed(1)}%` : '0.0%'}
+                  </td>
+                  <td class="num cohort-cell" style={`background: rgba(137, 87, 229, ${Math.min((c.share_pull_request_30d || 0) * 8, 0.4)});`}>
+                    {c.share_pull_request_30d != null ? `${(c.share_pull_request_30d * 100).toFixed(1)}%` : '0.0%'}
+                  </td>
+                  <td class="num cohort-cell" style={`background: rgba(210, 153, 34, ${Math.min((c.share_comment_30d || 0) * 8, 0.4)});`}>
+                    {c.share_comment_30d != null ? `${(c.share_comment_30d * 100).toFixed(1)}%` : '0.0%'}
+                  </td>
+                  <td class="num cohort-cell" style={`background: rgba(46, 160, 67, ${Math.min((c.share_any_30d || 0) * 5, 0.5)}); font-weight: 600;`}>
+                    {c.share_any_30d != null ? `${(c.share_any_30d * 100).toFixed(1)}%` : '0.0%'}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <p class="text-muted" style="margin-top: 0.5rem;">
+          Cohort tracking activates once stargazer cohorts have matured through their 30-day follow-up window.
+        </p>
+      )}
     </div>
   </div>
 </Layout>
