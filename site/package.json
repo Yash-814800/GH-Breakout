@@ -12,9 +12,31 @@
     "check-base-paths": "node scripts/check-base-paths.mjs"
   },
   "dependencies": {
+    "@astrojs/sitemap": "^3.7.4",
+    "@codemirror/commands": "^6.11.1",
+    "@codemirror/lang-sql": "^6.10.0",
+    "@codemirror/state": "^6.7.6",
+    "@codemirror/view": "^6.43.15",
     "@duckdb/duckdb-wasm": "^1.29.0",
+    "@fontsource-variable/instrument-sans": "^5.3.0",
+    "@fontsource/instrument-sans": "^5.3.0",
     "@observablehq/plot": "^0.6.16",
+    "@resvg/resvg-js": "^2.6.2",
+    "@tailwindcss/vite": "^4.3.3",
     "apache-arrow": "^18.1.0",
-    "astro": "^5.4.2"
+    "astro": "^5.4.2",
+    "lucide-static": "^1.61.0",
+    "satori": "^0.63.2",
+    "sharp": "^0.35.5",
+    "tailwindcss": "^4.3.3",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "^4.14.0",
+    "@lhci/cli": "^0.15.1",
+    "@playwright/test": "^1.64.1",
+    "linkinator": "^8.1.0",
+    "typescript": "^5.9.3",
+    "vitest": "^5.0.5"
   }
 }
