@@ -322,3 +322,21 @@ def test_placeholder_names_use_the_published_name(env):
     assert dist.display_name(5, "repo_id=5", facts) == "real/name"
     assert dist.display_name(6, "repo_id=6", facts) == "repo_id=6"
     assert dist.display_name(7, "ok/one", facts) == "ok/one"
+
+
+def test_upload_bundle_skips_hub_client_cache(tmp_path, monkeypatch):
+    from breakout.publish import site_data
+
+    (tmp_path / ".cache" / "huggingface").mkdir(parents=True)
+    (tmp_path / ".cache" / "huggingface" / "CACHEDIR.TAG").write_text("x")
+    (tmp_path / "leaderboard.json").write_text("[]")
+    monkeypatch.setattr(site_data, "SITE_DATA_DIR", tmp_path)
+    seen = []
+    from breakout.lake import hf as hf_mod
+
+    monkeypatch.setattr(hf_mod, "get_api", lambda: None)
+    monkeypatch.setattr(
+        hf_mod, "upload_files", lambda api, cfg, key, items, msg: seen.extend(items)
+    )
+    site_data.upload_site_data_to_hf(get_config(None))
+    assert [i.path_in_repo for i in seen] == ["site_data/latest/leaderboard.json"]
