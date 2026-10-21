@@ -6,8 +6,10 @@ interface Props {
   description?: string;
   ogImage?: string;
   noindex?: boolean;
+  /** Keep the right column in view while the main column scrolls (repo page). */
+  stickyRail?: boolean;
 }
-const props = Astro.props;
+const { stickyRail, ...props } = Astro.props;
 const hasRail = Astro.slots.has('rail');
 ---
 
@@ -17,7 +19,7 @@ const hasRail = Astro.slots.has('rail');
     <slot name="header" />
     <div class:list={['app-grid', hasRail && 'with-rail']}>
       <div class="app-main"><slot /></div>
-      {hasRail && <aside class="app-rail" aria-label="Sidebar"><slot name="rail" /></aside>}
+      {hasRail && <aside class:list={['app-rail', stickyRail && 'sticky']} aria-label="Sidebar"><slot name="rail" /></aside>}
     </div>
   </div>
 </BaseLayout>
@@ -50,6 +52,13 @@ const hasRail = Astro.slots.has('rail');
     }
     .app-rail {
       grid-template-columns: minmax(0, 1fr);
+    }
+  }
+  @media (min-width: 1024px) {
+    .app-rail.sticky {
+      position: sticky;
+      top: calc(var(--nav-h) + 24px);
+      align-self: start;
     }
   }
   @media (min-width: 1280px) {

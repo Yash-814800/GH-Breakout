@@ -1,9 +1,13 @@
 {
   "repo_id": 1423101235,
-  "repo_name": "repo_id=1423101235",
-  "html_url": "https://github.com/repo_id=1423101235",
+  "repo_name": "quiet-dev/no-description",
+  "html_url": "https://github.com/quiet-dev/no-description",
   "description": null,
-  "metadata": {},
+  "metadata": {
+    "name_with_owner": "quiet-dev/no-description",
+    "owner_id": null,
+    "owner_type": null
+  },
   "daily_stars": [],
   "prediction_history": [
     {
@@ -21,5 +25,7 @@
   "hn_stories": [],
   "cohort_retention": null,
   "similar_repos": null,
-  "suspicion_breakdown": null
+  "suspicion_breakdown": null,
+  "stars_total": 0,
+  "stars_total_source": "github_api"
 }

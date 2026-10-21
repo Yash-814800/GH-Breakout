@@ -24,6 +24,7 @@ dbt/logs/
 site/.astro/
 site/node_modules/
 site/dist/
+site/dist-fx/
 site/public/data/
 
 # Python & virtual environment

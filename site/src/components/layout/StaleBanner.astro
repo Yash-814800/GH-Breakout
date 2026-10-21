@@ -1,0 +1,30 @@
+---
+import { date } from '../../lib/format';
+import Callout from '../ui/Callout.astro';
+
+interface Props {
+  /** Time of the last successful daily run (ISO). */
+  lastSuccess: string;
+  /** Last day the data covers. */
+  dataThrough: string;
+}
+const { lastSuccess, dataThrough } = Astro.props;
+---
+
+<!-- Shown by the script when the last successful run is more than 30 hours old (the page itself is static). -->
+<div class="stale" data-stale-banner data-ts={lastSuccess} hidden>
+  <Callout variant="caution">Today's update is late. Showing data through {date(dataThrough)}.</Callout>
+</div>
+
+<script>
+  document.querySelectorAll<HTMLElement>('[data-stale-banner]').forEach((el) => {
+    const hours = (Date.now() - new Date(el.dataset.ts!).getTime()) / 3.6e6;
+    if (!(hours <= 30)) el.hidden = false;
+  });
+</script>
+
+<style>
+  .stale {
+    margin-bottom: 16px;
+  }
+</style>

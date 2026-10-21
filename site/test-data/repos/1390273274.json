@@ -1,9 +1,13 @@
 {
   "repo_id": 1390273274,
-  "repo_name": "yihui-dev/awesome-opus5-5-videos",
-  "html_url": "https://github.com/yihui-dev/awesome-opus5-5-videos",
-  "description": null,
-  "metadata": {},
+  "repo_name": "rtl-lab/arabic-notes",
+  "html_url": "https://github.com/rtl-lab/arabic-notes",
+  "description": "مكتبة مفتوحة المصدر لتحليل النصوص العربية ومعالجتها بسرعة وكفاءة عالية",
+  "metadata": {
+    "name_with_owner": "rtl-lab/arabic-notes",
+    "owner_id": 4096,
+    "owner_type": "Organization"
+  },
   "daily_stars": [
     {
       "date": "2026-09-27",
@@ -90,5 +94,7 @@
   "hn_stories": [],
   "cohort_retention": null,
   "similar_repos": null,
-  "suspicion_breakdown": null
+  "suspicion_breakdown": null,
+  "stars_total": 1000,
+  "stars_total_source": "github_api"
 }

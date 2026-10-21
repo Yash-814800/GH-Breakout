@@ -40,12 +40,18 @@ function loadOptional<T extends z.ZodType>(file: string, schema: T): z.infer<T> 
   return existsSync(join(DATA_DIR, file)) ? load(file, schema) : null;
 }
 
+/** Splits `owner/name`; repos GitHub has no name for (stored as `repo_id=123`) get a neutral label. */
+export function nameParts(fullName: string, id: number) {
+  const hasName = fullName.includes('/') && !fullName.includes('=');
+  const { owner, name } = hasName ? repoName(fullName) : { owner: '', name: `Repo ${id}` };
+  return { hasName, owner, name };
+}
+
 const GH_URL = /^https:\/\/github\.com\/[^/=]+\/[^/=]+$/;
 
 /** Map one leaderboard row (or repo page) to the display model. */
 export function toRepo(r: LeaderboardRowRaw): Repo {
-  const hasName = r.repo_name.includes('/') && !r.repo_name.includes('=');
-  const { owner, name } = hasName ? repoName(r.repo_name) : { owner: '', name: `Repo ${r.repo_id}` };
+  const { hasName, owner, name } = nameParts(r.repo_name, r.repo_id);
   return {
     rank: r.rank,
     id: r.repo_id,
@@ -99,4 +105,20 @@ export function isStale(lastSuccess: string | null | undefined, now: Date, limit
   if (!lastSuccess) return true;
   const t = new Date(lastSuccess).getTime();
   return Number.isNaN(t) || (now.getTime() - t) / 3.6e6 > limitHours;
+}
+
+/** Gain in API star counts between the oldest history entry within `window` days of `end` and `end`. */
+export function apiGain(
+  history: { date: string; stars: number }[] | null | undefined,
+  end: string,
+  window = 7,
+): { gain: number; days: number } | null {
+  if (!history || history.length < 2) return null;
+  const sorted = [...history].sort((a, b) => a.date.localeCompare(b.date));
+  const last = sorted.at(-1)!;
+  const endMs = new Date(`${end}T00:00:00Z`).getTime();
+  const first = sorted.find((h) => (endMs - new Date(`${h.date}T00:00:00Z`).getTime()) / 864e5 <= window);
+  if (!first || first.date === last.date) return null;
+  const days = Math.round((new Date(`${last.date}T00:00:00Z`).getTime() - new Date(`${first.date}T00:00:00Z`).getTime()) / 864e5);
+  return { gain: Math.max(0, last.stars - first.stars), days };
 }

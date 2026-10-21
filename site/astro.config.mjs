@@ -21,6 +21,7 @@ export default defineConfig({
   site,
   base,
   output: 'static',
+  outDir: process.env.OUT_DIR || 'dist',
   trailingSlash: 'always',
   integrations: [styleguide, sitemap({ filter: (page) => !page.includes('/_styleguide/') })],
   vite: {

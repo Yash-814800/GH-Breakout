@@ -58,8 +58,8 @@ export function baseOptions(t: Tokens, width: number, height: number = HEIGHTS.s
       background: 'transparent',
       overflow: 'visible',
     },
-    x: { tickSize: 0, ticks: 5 },
-    y: { grid: true, tickSize: 0, ticks: 4, tickFormat: (d: number) => count(d, { compact: true }) },
+    x: { tickSize: 0, ticks: 5, label: null },
+    y: { grid: true, tickSize: 0, ticks: 4, label: null, tickFormat: (d: number) => count(d, { compact: true }) },
   };
 }
 

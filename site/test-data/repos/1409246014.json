@@ -1,9 +1,13 @@
 {
   "repo_id": 1409246014,
-  "repo_name": "bherbruck/solidcraft",
-  "html_url": "https://github.com/bherbruck/solidcraft",
-  "description": null,
-  "metadata": {},
+  "repo_name": "zhongwen/agent-tools",
+  "html_url": "https://github.com/zhongwen/agent-tools",
+  "description": "让你的智能体一键连接数百个工具的开源框架，支持本地与云端部署，并提供完整的中文文档与示例。",
+  "metadata": {
+    "name_with_owner": "zhongwen/agent-tools",
+    "owner_id": 2048,
+    "owner_type": "User"
+  },
   "daily_stars": [
     {
       "date": "2026-10-09",
@@ -45,7 +49,7 @@
   "trending_appearances": [],
   "hn_stories": [
     {
-      "title": "Show HN: SolidCraft \u2013 Open-Source Parametric CAD in Rust (With MCP Support)",
+      "title": "Show HN: SolidCraft – Open-Source Parametric CAD in Rust (With MCP Support)",
       "url": "https://github.com/bherbruck/solidcraft",
       "hn_url": "https://news.ycombinator.com/item?id=50064840",
       "created_at": "2026-10-13T00:11:04",
@@ -55,5 +59,7 @@
   ],
   "cohort_retention": null,
   "similar_repos": null,
-  "suspicion_breakdown": null
+  "suspicion_breakdown": null,
+  "stars_total": 999,
+  "stars_total_source": "github_api"
 }

@@ -232,3 +232,33 @@ export interface Repo {
   rankChange: 'new' | 'up' | 'down' | 'same';
   suspicion: { level: 'low' | 'medium' | 'high'; score: number | null; reasons: string[]; flagged: boolean };
 }
+
+/** Phase 11 sections of a repo page. Parsed leniently: a section that fails to parse is omitted. */
+export const CohortRetention = z.looseObject({
+  cohorts: z.array(
+    z.looseObject({
+      cohort_week: z.string(),
+      n_stargazers: z.number(),
+      share_fork_30d: num,
+      share_issue_30d: num,
+      share_pull_request_30d: num,
+      share_comment_30d: num,
+      share_any_30d: num,
+    }),
+  ),
+  summary: z.looseObject({ avg_interaction_rate: num, n_mature_cohorts: num }).nullish(),
+  reference_comparison: str,
+  reference_band: z.looseObject({ any_median: num, any_q1: num, any_q3: num }).nullish(),
+});
+export type CohortRetentionData = z.infer<typeof CohortRetention>;
+
+export const SimilarRepos = z.array(
+  z.looseObject({
+    repo_id: z.number(),
+    repo_name: z.string(),
+    overlap: z.number(),
+    cosine: z.number(),
+    language: str,
+    html_url: z.string(),
+  }),
+);

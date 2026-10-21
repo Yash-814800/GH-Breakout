@@ -14,7 +14,7 @@ const base = process.env.BASE_PATH ?? '/GH-Breakout';
 const widths = (args.widths ?? '375,768,1280,1440').split(',').map(Number);
 const themes = (args.themes ?? 'light,dark').split(',');
 
-const repoDir = process.env.DATA_DIR ?? 'public/data/repos';
+const repoDir = join(process.env.DATA_DIR ?? 'public/data', 'repos');
 const firstRepo = readdirSync(repoDir).filter((f) => f.endsWith('.json')).sort()[0]?.replace('.json', '');
 const routes = args.routes
   ? args.routes.split(',')

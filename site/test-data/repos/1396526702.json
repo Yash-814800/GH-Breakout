@@ -1,9 +1,13 @@
 {
   "repo_id": 1396526702,
-  "repo_name": "KnifeLemon/Filee",
-  "html_url": "https://github.com/KnifeLemon/Filee",
-  "description": null,
-  "metadata": {},
+  "repo_name": "wordy/four-hundred-characters",
+  "html_url": "https://github.com/wordy/four-hundred-characters",
+  "description": "This description is deliberately very long so that the two-line clamp has to cut it. This description is deliberately very long so that the two-line clamp has to cut it. This description is deliberately very long so that the two-line clamp has to cut it. This description is deliberately very long so that the two-line clamp has to cut it. This description is deliberately very long so that the two-line clamp has to cut it.",
+  "metadata": {
+    "name_with_owner": "wordy/four-hundred-characters",
+    "owner_id": 1024,
+    "owner_type": "User"
+  },
   "daily_stars": [
     {
       "date": "2026-10-03",
@@ -45,10 +49,18 @@
   ],
   "latest_shap": [],
   "explanation": "Flagged because 23 stars yesterday, 88 stars in the last 3 days and 105 stars in the last week. Held back by: recent stargazers have a good track record of finding breakouts early and owner type unknown.",
-  "realized_outcome": null,
+  "realized_outcome": {
+    "matured": true,
+    "horizon_date": "2026-11-19",
+    "gain_30d": 2340,
+    "hit": true,
+    "label": true
+  },
   "trending_appearances": [],
   "hn_stories": [],
   "cohort_retention": null,
   "similar_repos": null,
-  "suspicion_breakdown": null
+  "suspicion_breakdown": null,
+  "stars_total": 7,
+  "stars_total_source": "github_api"
 }

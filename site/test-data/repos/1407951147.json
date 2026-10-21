@@ -1,25 +1,334 @@
 {
   "repo_id": 1407951147,
-  "repo_name": "repo_id=1407951147",
-  "html_url": "https://github.com/repo_id=1407951147",
-  "description": null,
-  "metadata": {},
-  "daily_stars": [],
-  "prediction_history": [
+  "repo_name": "some-org/an-extremely-long-repository-name-without-any-breaks-at-all",
+  "html_url": "https://github.com/some-org/an-extremely-long-repository-name-without-any-breaks-at-all",
+  "description": "A repository whose name has no natural break points, used to check wrapping.",
+  "metadata": {
+    "name_with_owner": "some-org/an-extremely-long-repository-name-without-any-breaks-at-all",
+    "owner_id": 9919,
+    "owner_type": "Organization",
+    "primary_language": "Python",
+    "created_at": "2026-10-07T09:12:00Z",
+    "license_spdx": "MIT",
+    "topics": [
+      "agents"
+    ]
+  },
+  "daily_stars": [
+    {
+      "date": "2026-09-23",
+      "stars": 2
+    },
+    {
+      "date": "2026-09-24",
+      "stars": 3
+    },
+    {
+      "date": "2026-09-25",
+      "stars": 4
+    },
+    {
+      "date": "2026-09-26",
+      "stars": 2
+    },
+    {
+      "date": "2026-09-27",
+      "stars": 3
+    },
+    {
+      "date": "2026-09-28",
+      "stars": 4
+    },
+    {
+      "date": "2026-09-29",
+      "stars": 2
+    },
+    {
+      "date": "2026-09-30",
+      "stars": 3
+    },
+    {
+      "date": "2026-10-01",
+      "stars": 4
+    },
+    {
+      "date": "2026-10-02",
+      "stars": 2
+    },
+    {
+      "date": "2026-10-03",
+      "stars": 3
+    },
+    {
+      "date": "2026-10-04",
+      "stars": 4
+    },
+    {
+      "date": "2026-10-05",
+      "stars": 2
+    },
+    {
+      "date": "2026-10-06",
+      "stars": 3
+    },
+    {
+      "date": "2026-10-07",
+      "stars": 4
+    },
+    {
+      "date": "2026-10-08",
+      "stars": 2
+    },
+    {
+      "date": "2026-10-09",
+      "stars": 3
+    },
+    {
+      "date": "2026-10-10",
+      "stars": 4
+    },
+    {
+      "date": "2026-10-11",
+      "stars": 2
+    },
+    {
+      "date": "2026-10-12",
+      "stars": 3
+    },
+    {
+      "date": "2026-10-13",
+      "stars": 4
+    },
+    {
+      "date": "2026-10-14",
+      "stars": 20
+    },
+    {
+      "date": "2026-10-15",
+      "stars": 45
+    },
+    {
+      "date": "2026-10-16",
+      "stars": 70
+    },
+    {
+      "date": "2026-10-17",
+      "stars": 95
+    },
+    {
+      "date": "2026-10-18",
+      "stars": 120
+    },
+    {
+      "date": "2026-10-19",
+      "stars": 145
+    },
     {
       "date": "2026-10-20",
-      "rank": 1,
-      "prob": 0.3042,
-      "raw_score": 0.8363,
-      "b1_rank": 1
+      "stars": 170
     }
   ],
-  "latest_shap": [],
-  "explanation": "Flagged because 60 stars yesterday, 182 stars in the last 3 days and already has 192 stars. Held back by: few recent pushes and stargazers have accounts that are 2,974 days old.",
+  "prediction_history": [
+    {
+      "date": "2026-10-17",
+      "rank": 18,
+      "prob": 0.12,
+      "raw_score": 0.2,
+      "b1_rank": 40
+    },
+    {
+      "date": "2026-10-18",
+      "rank": 9,
+      "prob": 0.2,
+      "raw_score": 0.3,
+      "b1_rank": 22
+    },
+    {
+      "date": "2026-10-19",
+      "rank": 6,
+      "prob": 0.29,
+      "raw_score": 0.4,
+      "b1_rank": 12
+    },
+    {
+      "date": "2026-10-20",
+      "rank": 4,
+      "prob": 0.34,
+      "raw_score": 0.5,
+      "b1_rank": 7
+    }
+  ],
+  "latest_shap": [
+    {
+      "feature": "stars_3d",
+      "value": 182,
+      "contribution": 0.62,
+      "sentence": "182 stars in the last 3 days"
+    },
+    {
+      "feature": "actor_days_14d",
+      "value": 0.72,
+      "contribution": 0.41,
+      "sentence": "72% of recent stars come from experienced accounts"
+    },
+    {
+      "feature": "issue_response",
+      "value": 3,
+      "contribution": 0.2,
+      "sentence": "Issues get a first response in about 3 hours"
+    },
+    {
+      "feature": "age_days",
+      "value": 332,
+      "contribution": -0.12,
+      "sentence": "The repo is 332 days old"
+    },
+    {
+      "feature": "pushes_14d",
+      "value": 2,
+      "contribution": -0.34,
+      "sentence": "Few recent pushes"
+    }
+  ],
+  "explanation": "Flagged because 182 stars in the last 3 days and 72% of recent stars come from experienced accounts. Held back by: few recent pushes",
   "realized_outcome": null,
-  "trending_appearances": [],
-  "hn_stories": [],
-  "cohort_retention": null,
-  "similar_repos": null,
-  "suspicion_breakdown": null
+  "trending_appearances": [
+    {
+      "date": "2026-10-18",
+      "rank": 7,
+      "source": "hf_top_projects"
+    },
+    {
+      "date": "2026-10-19",
+      "rank": 5,
+      "source": "hf_top_projects"
+    }
+  ],
+  "hn_stories": [
+    {
+      "title": "Show HN: Harness, a long-named repository for testing",
+      "url": "https://example.com/a",
+      "hn_url": "https://news.ycombinator.com/item?id=1",
+      "created_at": "2026-10-18T10:00:00Z",
+      "points": 412,
+      "num_comments": 120
+    }
+  ],
+  "cohort_retention": {
+    "cohorts": [
+      {
+        "cohort_week": "2026-09-15",
+        "n_stargazers": 120,
+        "share_fork_30d": 0.06,
+        "share_issue_30d": 0.03,
+        "share_pull_request_30d": 0.012,
+        "share_comment_30d": 0.08,
+        "share_any_30d": 0.11
+      },
+      {
+        "cohort_week": "2026-09-08",
+        "n_stargazers": 100,
+        "share_fork_30d": 0.049999999999999996,
+        "share_issue_30d": 0.03,
+        "share_pull_request_30d": 0.012,
+        "share_comment_30d": 0.06,
+        "share_any_30d": 0.11
+      },
+      {
+        "cohort_week": "2026-09-01",
+        "n_stargazers": 80,
+        "share_fork_30d": 0.039999999999999994,
+        "share_issue_30d": 0.03,
+        "share_pull_request_30d": 0.012,
+        "share_comment_30d": 0.04,
+        "share_any_30d": 0.11
+      },
+      {
+        "cohort_week": "2026-08-25",
+        "n_stargazers": 60,
+        "share_fork_30d": 0.03,
+        "share_issue_30d": 0.03,
+        "share_pull_request_30d": 0.012,
+        "share_comment_30d": 0.020000000000000004,
+        "share_any_30d": 0.11
+      }
+    ],
+    "summary": {
+      "avg_interaction_rate": 0.11,
+      "n_mature_cohorts": 4
+    },
+    "reference_comparison": "30-day interaction rate is 11.0% (within the historical breakout IQR of 3.0%–12.0%, median 5.0%).",
+    "reference_band": {
+      "any_median": 0.05,
+      "any_q1": 0.03,
+      "any_q3": 0.12
+    }
+  },
+  "similar_repos": [
+    {
+      "repo_id": 1,
+      "repo_name": "langchain-ai/langgraph",
+      "overlap": 41,
+      "cosine": 0.21,
+      "language": "Python",
+      "html_url": "https://github.com/langchain-ai/langgraph"
+    },
+    {
+      "repo_id": 2,
+      "repo_name": "crewAIInc/crewAI",
+      "overlap": 33,
+      "cosine": 0.17,
+      "language": "Python",
+      "html_url": "https://github.com/crewAIInc/crewAI"
+    }
+  ],
+  "suspicion_breakdown": {
+    "score": 96.2,
+    "level": "medium",
+    "reasons": [
+      "38% of new stars are from accounts younger than 30 days"
+    ],
+    "signals": {
+      "s_new_accounts": 0.38,
+      "s_inactive": 0.31,
+      "s_bulk": 0.04,
+      "s_burst": 0.4,
+      "s_no_engagement": 0.7
+    },
+    "medians": {
+      "s_new_accounts": 0.15,
+      "s_inactive": 0.2,
+      "s_bulk": 0,
+      "s_burst": 0.35,
+      "s_no_engagement": 0.5
+    }
+  },
+  "stars_total": 12345,
+  "stars_total_source": "github_api",
+  "star_count_history": [
+    {
+      "date": "2026-10-15",
+      "stars": 9000
+    },
+    {
+      "date": "2026-10-16",
+      "stars": 9560
+    },
+    {
+      "date": "2026-10-17",
+      "stars": 10120
+    },
+    {
+      "date": "2026-10-18",
+      "stars": 10680
+    },
+    {
+      "date": "2026-10-19",
+      "stars": 11240
+    },
+    {
+      "date": "2026-10-20",
+      "stars": 11800
+    }
+  ]
 }

@@ -1,9 +1,13 @@
 {
   "repo_id": 1416386910,
-  "repo_name": "Arekejoker/qwen21-nsfw-pose-skill",
-  "html_url": "https://github.com/Arekejoker/qwen21-nsfw-pose-skill",
-  "description": null,
-  "metadata": {},
+  "repo_name": "emoji-fan/sparkly",
+  "html_url": "https://github.com/emoji-fan/sparkly",
+  "description": ":sparkles: Sparkly CLI :rocket: with [docs](https://example.com/docs) and 🎉 emoji",
+  "metadata": {
+    "name_with_owner": "emoji-fan/sparkly",
+    "owner_id": 8192,
+    "owner_type": "User"
+  },
   "daily_stars": [
     {
       "date": "2026-10-13",
@@ -30,5 +34,7 @@
   "hn_stories": [],
   "cohort_retention": null,
   "similar_repos": null,
-  "suspicion_breakdown": null
+  "suspicion_breakdown": null,
+  "stars_total": 1250000,
+  "stars_total_source": "github_api"
 }

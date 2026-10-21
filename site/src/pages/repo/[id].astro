@@ -1,0 +1,513 @@
+---
+import AppLayout from '../../layouts/AppLayout.astro';
+import Avatar from '../../components/ui/Avatar.astro';
+import Button from '../../components/ui/Button.astro';
+import Callout from '../../components/ui/Callout.astro';
+import Panel from '../../components/ui/Panel.astro';
+import Pill from '../../components/ui/Pill.astro';
+import Table from '../../components/ui/Table.astro';
+import Tooltip from '../../components/ui/Tooltip.astro';
+import ExternalLink from '../../components/ui/ExternalLink.astro';
+import SegmentedControl from '../../components/ui/SegmentedControl.astro';
+import Section from '../../components/layout/Section.astro';
+import FactStrip from '../../components/data/FactStrip.astro';
+import ShapBars from '../../components/data/ShapBars.astro';
+import OutcomeBanner from '../../components/data/OutcomeBanner.astro';
+import ChartFigure from '../../components/data/ChartFigure.astro';
+import RepoRow from '../../components/data/RepoRow.astro';
+import LanguageDot from '../../components/data/LanguageDot.astro';
+import { apiGain, getLeaderboard, getMeta, getRepoDetails, nameParts } from '../../lib/data';
+import { CohortRetention, SimilarRepos, type Repo } from '../../lib/types';
+import { age, cleanText, count, date, delta, odds, pct, plural, sentence, shortDate } from '../../lib/format';
+import { url, repoUrl } from '../../lib/url';
+
+export function getStaticPaths() {
+  const board = new Map(getLeaderboard().map((r) => [r.id, r]));
+  return getRepoDetails().map((d) => ({ params: { id: String(d.repo_id) }, props: { d, row: board.get(d.repo_id) ?? null } }));
+}
+const { d, row } = Astro.props;
+const meta = getMeta();
+const end = meta.data_through;
+
+const { hasName, owner, name } = nameParts(d.repo_name, d.repo_id);
+const ghUrl = hasName ? `https://github.com/${d.repo_name}` : null;
+const description = cleanText(d.description ?? d.metadata.description ?? null, 400);
+const language = d.metadata.primary_language && d.metadata.primary_language !== 'Unknown' ? d.metadata.primary_language : null;
+const ownerType = d.metadata.owner_type === 'Organization' ? 'Organization' : d.metadata.owner_type === 'User' ? 'User' : null;
+const ownerId = d.metadata.owner_id ?? row?.ownerId ?? null;
+
+const preds = [...d.prediction_history].sort((a, b) => a.date.localeCompare(b.date));
+const latest = preds.at(-1) ?? null;
+const prob = latest?.prob ?? row?.prob ?? null;
+const firstFlagged = row?.firstFlagged ?? preds[0]?.date ?? null;
+const onBoardToday = latest?.date === end && latest.rank <= 50;
+
+const created = d.metadata.created_at ? new Date(d.metadata.created_at) : null;
+const ageDays = created ? Math.max(0, Math.floor((new Date(`${end}T00:00:00Z`).getTime() - created.getTime()) / 864e5)) : (row?.ageDays ?? null);
+const gain = apiGain(d.star_count_history, end) ?? (row?.weekGain != null ? { gain: row.weekGain, days: row.gainDays ?? 7 } : null);
+const stars = d.stars_total ?? row?.starsTotal ?? null;
+const starsObserved = d.stars_total_source === 'gh_archive';
+
+const cells: { label: string; value: string; xl?: boolean; hint?: string }[] = [];
+if (prob != null) cells.push({ label: 'Breakout chance', value: pct(prob), xl: true, hint: odds(prob) });
+if (latest) cells.push({ label: onBoardToday ? 'Rank today' : `Rank on ${shortDate(latest.date)}`, value: onBoardToday ? `${latest.rank} of 50` : `#${count(latest.rank)}` });
+if (ageDays != null) cells.push({ label: 'Age', value: age(ageDays).replace(' old', '') });
+if (gain) cells.push({ label: gain.days === 7 ? 'Stars, last 7 days' : `Stars, last ${plural(gain.days, 'day')}`, value: delta(gain.gain) });
+if (stars != null) cells.push({ label: starsObserved ? 'Stars observed' : 'Stars', value: count(stars) });
+
+const outcome = d.realized_outcome?.matured ? d.realized_outcome : null;
+const why = sentence(d.explanation);
+const shapRows = d.latest_shap.map((s) => ({ feature: s.feature, contribution: s.contribution, sentence: s.sentence }));
+
+const cohort = CohortRetention.safeParse(d.cohort_retention);
+const cohortData = cohort.success && cohort.data.cohorts.length > 0 ? cohort.data : null;
+const similarParsed = SimilarRepos.safeParse(d.similar_repos);
+const similar = similarParsed.success ? similarParsed.data : [];
+const susp = d.suspicion_breakdown;
+const isNew = row?.rankChange === 'new' && (row?.daysOnBoard ?? 99) < 2;
+const flagged = (susp?.score ?? row?.suspicion.score ?? 0) >= 90;
+const reasons = susp?.reasons ?? row?.suspicion.reasons ?? [];
+
+const daily = d.daily_stars.map((x) => ({ date: x.date, stars: x.stars }));
+const hasApiHistory = (d.star_count_history?.length ?? 0) >= 2;
+const chartData = {
+  daily,
+  cumulative: hasApiHistory ? d.star_count_history! : null,
+  flagged: preds.length ? [preds[0]!.date] : [],
+  horizon: outcome?.horizon_date ?? null,
+  preds: preds.map((p) => ({ date: p.date, prob: p.prob })),
+};
+const dailyTotal = daily.reduce((a, b) => a + b.stars, 0);
+
+const hn = d.hn_stories.slice(0, 3);
+const trendDays = new Set(d.trending_appearances.map((t) => t.date)).size;
+const heat = (v: number | null | undefined) => (v == null ? 0 : Math.min(60, Math.round((v / 0.2) * 60)));
+const title = hasName ? d.repo_name : `Repo ${d.repo_id}`;
+const metaDesc = `${title}: breakout chance ${prob != null ? pct(prob) : 'not available'}${description ? `. ${description}` : ''}`.slice(0, 155);
+---
+
+<AppLayout stickyRail title={title} description={metaDesc} ogImage={`/og/${d.repo_id}.png`}>
+  <div slot="header" class="head">
+    <nav class="crumbs" aria-label="Breadcrumb">
+      <a href={url('/')}>Today</a><span aria-hidden="true">/</span><span aria-current="page">{title}</span>
+    </nav>
+    <div class="title-row">
+      <Avatar ownerId={ownerId} login={owner || name} type={ownerType} size={56} eager />
+      <div class="title-main">
+        <h1 class="t-h1 name">{owner && <span class="owner">{owner}/<wbr /></span>}<span class="repo">{name}</span></h1>
+        <p class:list={['desc', !description && 'none']} dir="auto">{description ?? 'No description'}</p>
+        <div class="pills">
+          {isNew && <Pill variant="accent">New</Pill>}
+          {
+            flagged && (
+              <Tooltip text="An unusual share of recent stars came from new or inactive accounts. This may or may not mean the stars are inauthentic. See details.">
+                <Pill variant="caution">Unusual star pattern</Pill>
+              </Tooltip>
+            )
+          }
+        </div>
+      </div>
+      <div class="actions">
+        {ghUrl && <Button variant="secondary" href={ghUrl} external icon="github">Open on GitHub</Button>}
+      </div>
+    </div>
+    {cells.length > 0 && <FactStrip cells={cells} />}
+  </div>
+
+  {outcome && (
+    <Section>
+      <OutcomeBanner hit={outcome.hit === true} gain={outcome.gain_30d ?? null} />
+    </Section>
+  )}
+
+  {
+    (why || shapRows.length > 0) && (
+      <Section id="why" title="Why it's flagged">
+        {why && <p class="t-prose why-text" dir="auto">{why}</p>}
+        {shapRows.length > 0 && <ShapBars rows={shapRows} />}
+        <p class="t-caption faint note">
+          The sentence quotes the numbers the model saw, which come from GH Archive and can differ from GitHub's own counts.
+        </p>
+      </Section>
+    )
+  }
+
+  {
+    daily.length > 0 && (
+      <Section id="momentum" title="Star momentum">
+        <Fragment slot="action">
+          <SegmentedControl name="mode" legend="Chart mode" options={[{ value: 'daily', label: 'Daily' }, { value: 'cumulative', label: 'Cumulative' }]} value="daily" />
+        </Fragment>
+        <ChartFigure
+          id="chart-momentum"
+          title="Stars per day"
+          level="h3"
+          summary={`Stars per day over the last ${daily.length} days, ${count(dailyTotal)} in total.`}
+          caption={starsObserved || !hasApiHistory ? 'Stars seen in GH Archive. It undercounts since May 2025, so GitHub’s own total can be higher.' : 'Stars per day from GH Archive; the cumulative view uses GitHub counts.'}
+          legend={[{ label: 'Earlier days', kind: 'square', color: 'ink-3' }, { label: 'Last 7 days', kind: 'square', color: 'accent' }]}
+        />
+      </Section>
+    )
+  }
+
+  {
+    preds.length > 0 && (
+      <Section id="history" title="Prediction history">
+        {preds.length >= 2 && (
+          <ChartFigure id="chart-history" title="Breakout chance by day" level="h3" height={200} summary={`Breakout chance on ${preds.length} days, from ${pct(preds[0]!.prob)} to ${pct(preds.at(-1)!.prob)}.`} />
+        )}
+        <Table caption="Predictions by day" captionHidden class="hist">
+          <thead><tr><th>Date</th><th class="r">Rank</th><th class="r">Breakout chance</th></tr></thead>
+          <tbody>
+            {[...preds].reverse().slice(0, 10).map((p) => (
+              <tr><td>{date(p.date)}</td><td class="r">{count(p.rank)}</td><td class="r">{pct(p.prob)}</td></tr>
+            ))}
+          </tbody>
+        </Table>
+      </Section>
+    )
+  }
+
+  {
+    susp?.signals && susp.score != null && (
+      <Section id="who" title="Who's starring">
+        <dl class="stat3">
+          <div><dt>New accounts</dt><dd class="num">{pct(susp.signals.s_new_accounts ?? 0)}</dd><p>of recent stars came from accounts under 30 days old (typical {pct(susp.medians?.s_new_accounts ?? 0.15)}).</p></div>
+          <div><dt>Inactive accounts</dt><dd class="num">{pct(susp.signals.s_inactive ?? 0)}</dd><p>of stargazers had no activity in the 90 days before starring (typical {pct(susp.medians?.s_inactive ?? 0.2)}).</p></div>
+          <div><dt>Stars with follow-up</dt><dd class="num">{pct(1 - (susp.signals.s_no_engagement ?? 0))}</dd><p>of what we expect from engaged stargazers (typical {pct(1 - (susp.medians?.s_no_engagement ?? 0.5))}).</p></div>
+        </dl>
+      </Section>
+    )
+  }
+
+  {
+    cohortData && (
+      <Section id="adoption" title="Stars vs adoption">
+        <p class="t-body-sm muted lead-in">Share of each week's new stargazers who did something else on GitHub within 30 days. Darker cells mean more follow-up.</p>
+        <Table caption="Follow-up activity by star cohort" captionHidden class="heat">
+          <thead><tr><th>Week of first stars</th><th class="r">Stargazers</th><th class="r">Forks</th><th class="r">Issues</th><th class="r">Pull requests</th><th class="r">Comments</th></tr></thead>
+          <tbody>
+            {cohortData.cohorts.map((c) => (
+              <tr>
+                <td class="nowrap">{shortDate(c.cohort_week)}</td>
+                <td class="r">{count(c.n_stargazers)}</td>
+                {[c.share_fork_30d, c.share_issue_30d, c.share_pull_request_30d, c.share_comment_30d].map((v) => (
+                  <td class="r heat-cell" style={`--p:${heat(v)}%`}>{v == null ? '—' : pct(v, { digits: 1 })}</td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </Table>
+        {cohortData.reference_comparison && <p class="t-caption faint note">{cohortData.reference_comparison}</p>}
+      </Section>
+    )
+  }
+
+  {
+    similar.length > 0 && (
+      <Section id="similar" title="Similar repos">
+        <p class="t-body-sm muted lead-in">People who starred this repo also starred these.</p>
+        <ul class="sim">
+          {similar.map((s) => (
+            <li>
+              <ExternalLink href={s.html_url.includes('=') ? `https://github.com/${s.repo_name}` : s.html_url}>{s.repo_name}</ExternalLink>
+              {s.language && <span class="faint t-caption"><LanguageDot language={s.language} /></span>}
+              <span class="faint t-caption num">{plural(s.overlap, 'shared stargazer')}</span>
+            </li>
+          ))}
+        </ul>
+      </Section>
+    )
+  }
+
+  {
+    flagged && (
+      <Section id="pattern" title="Unusual star pattern">
+        <p class="t-body-sm">
+          This does not say the stars are fake. It says a share of recent stars looks different from other young repos. The signals below are what we measured.
+        </p>
+        {reasons.length > 0 && <ul class="reasons">{reasons.map((r) => <li>{sentence(r)}</li>)}</ul>}
+        <p class="t-caption faint note">
+          Maintainers can ask for a review through the <a class="inline" href={url('/about/#audit')}>review request process</a>.
+        </p>
+      </Section>
+    )
+  }
+
+  <Fragment slot="rail">
+    <Panel title="Details" headingLevel="h2">
+      <dl class="kv">
+        {language && <div><dt>Language</dt><dd><LanguageDot language={language} /></dd></div>}
+        {ownerType && <div><dt>Owner</dt><dd>{ownerType === 'Organization' ? 'Organization' : 'User'}</dd></div>}
+        {created && <div><dt>Created</dt><dd>{date(created)}</dd></div>}
+        {firstFlagged && <div><dt>First flagged</dt><dd>{date(firstFlagged)}</dd></div>}
+        {d.metadata.license_spdx && <div><dt>License</dt><dd>{d.metadata.license_spdx}</dd></div>}
+        {trendDays > 0 && <div><dt>GitHub Trending</dt><dd>{plural(trendDays, 'day')}</dd></div>}
+      </dl>
+    </Panel>
+    {
+      (ghUrl || hn.length > 0) && (
+        <Panel title="Links" headingLevel="h2">
+          <ul class="links">
+            {ghUrl && <li><ExternalLink href={ghUrl}>GitHub</ExternalLink></li>}
+            {d.metadata.homepage_url && <li><ExternalLink href={d.metadata.homepage_url}>Project homepage</ExternalLink></li>}
+            {hn.map((h) => <li><ExternalLink href={h.hn_url ?? h.url}>{cleanText(h.title, 70)}</ExternalLink>{h.points != null && <span class="faint t-caption num"> {count(h.points)} points</span>}</li>)}
+          </ul>
+        </Panel>
+      )
+    }
+  </Fragment>
+
+  <script type="application/json" id="repo-data" set:html={JSON.stringify(chartData)} />
+</AppLayout>
+
+<script>
+  import * as Plot from '@observablehq/plot';
+  import { baseOptions, observeWidth, resolveTokens, type Tokens } from '../../lib/plot-theme';
+  import { count, date, pct, shortDate } from '../../lib/format';
+
+  type Pt = { date: string; stars: number };
+  const data = JSON.parse(document.getElementById('repo-data')!.textContent!) as {
+    daily: Pt[];
+    cumulative: Pt[] | null;
+    flagged: string[];
+    horizon: string | null;
+    preds: { date: string; prob: number }[];
+  };
+  const day = (s: string) => new Date(`${s}T00:00:00Z`);
+  const plus1 = (s: string) => new Date(day(s).getTime() + 864e5);
+  const form = document.querySelector<HTMLElement>('[data-seg="mode"]');
+  let mode: 'daily' | 'cumulative' = 'daily';
+
+  function momentum(host: HTMLElement, w: number, t: Tokens) {
+    const o = baseOptions(t, w);
+    const flags = data.flagged.map((f) => ({ x: day(f) }));
+    const band = data.horizon && data.flagged[0] ? [{ x1: day(data.flagged[0]), x2: day(data.horizon) }] : [];
+    const cum = mode === 'cumulative' && data.cumulative ? data.cumulative : null;
+    const n = data.daily.length;
+    const marks: Plot.Markish[] = [];
+    if (band.length) marks.push(Plot.rectX(band, { x1: 'x1', x2: 'x2', fill: t.accentSoft }));
+    if (cum) {
+      const rows = cum.map((p) => ({ x: day(p.date), y: p.stars }));
+      marks.push(Plot.lineY(rows, { x: 'x', y: 'y', stroke: t.accent, strokeWidth: 2 }), Plot.dot(rows, { x: 'x', y: 'y', fill: t.accent, r: 3 }));
+      marks.push(Plot.tip(rows, Plot.pointerX({ x: 'x', y: 'y', fill: t.raised, stroke: t.line, format: { x: (d: Date) => date(d), y: (v: number) => count(v) } })));
+    } else {
+      const rows = data.daily.map((p, i) => ({ x1: day(p.date), x2: plus1(p.date), y: p.stars, hot: i >= n - 7 }));
+      marks.push(Plot.rectY(rows, { x1: 'x1', x2: 'x2', y: 'y', fill: (r: { hot: boolean }) => (r.hot ? t.accent : t.ink3), fillOpacity: (r: { hot: boolean }) => (r.hot ? 1 : 0.35), inset: 0.5, rx: 2 }));
+      marks.push(Plot.tip(rows, Plot.pointerX({ x: 'x1', y: 'y', fill: t.raised, stroke: t.line, format: { x: (d: Date) => date(d), y: (v: number) => `${count(v)} stars` } })));
+    }
+    marks.push(Plot.ruleY([0], { stroke: t.line }));
+    if (flags.length) marks.push(Plot.dot(flags, { x: 'x', y: 0, r: 4, fill: t.accent, stroke: t.bg, strokeWidth: 1.5 }));
+    host.replaceChildren(Plot.plot({ ...o, x: { ...o.x, type: 'utc', tickFormat: (d: Date) => shortDate(d), ticks: Math.min(6, Math.max(2, Math.floor(w / 110))) }, y: { ...o.y, nice: true }, marks }));
+  }
+
+  const mHost = document.getElementById('chart-momentum');
+  if (mHost) {
+    observeWidth(mHost, (w) => momentum(mHost, w, resolveTokens()));
+    form?.addEventListener('change', (e) => {
+      mode = (e.target as HTMLInputElement).value as typeof mode;
+      if (mode === 'cumulative' && !data.cumulative) {
+        // No GitHub history yet: build the cumulative curve from the daily counts.
+        let run = 0;
+        data.cumulative = data.daily.map((p) => ({ date: p.date, stars: (run += p.stars) }));
+      }
+      momentum(mHost, mHost.clientWidth, resolveTokens());
+    });
+  }
+
+  const hHost = document.getElementById('chart-history');
+  if (hHost && data.preds.length >= 2) {
+    observeWidth(hHost, (w) => {
+      const t = resolveTokens();
+      const o = baseOptions(t, w, 200);
+      const rows = data.preds.map((p) => ({ x: day(p.date), y: p.prob }));
+      hHost.replaceChildren(
+        Plot.plot({
+          ...o,
+          x: { ...o.x, type: 'utc', tickFormat: (d: Date) => shortDate(d), ...(rows.length <= 6 ? { ticks: rows.map((r) => r.x) } : { ticks: Math.min(6, Math.floor(w / 110)) }) },
+          y: { ...o.y, tickFormat: (v: number) => pct(v), nice: true, zero: true },
+          marks: [
+            Plot.lineY(rows, { x: 'x', y: 'y', stroke: t.accent, strokeWidth: 2 }),
+            Plot.dot(rows, { x: 'x', y: 'y', fill: t.accent, r: 3 }),
+            Plot.tip(rows, Plot.pointerX({ x: 'x', y: 'y', fill: t.raised, stroke: t.line, format: { x: (d: Date) => date(d), y: (v: number) => pct(v) } })),
+          ],
+        }),
+      );
+    });
+  }
+</script>
+
+<style>
+  .head {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    padding-top: 24px;
+    padding-bottom: 32px;
+  }
+  .crumbs {
+    display: flex;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--ink-3);
+    min-width: 0;
+  }
+  .crumbs a:hover {
+    color: var(--ink);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+  .crumbs [aria-current] {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .title-row {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 16px;
+    align-items: start;
+  }
+  .title-main {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .name {
+    overflow-wrap: anywhere;
+  }
+  .owner {
+    font-weight: 400;
+    color: var(--ink-2);
+  }
+  .desc {
+    font-size: 17px;
+    line-height: 1.5;
+    color: var(--ink-2);
+    max-width: 68ch;
+    overflow-wrap: anywhere;
+  }
+  .desc.none {
+    color: var(--ink-3);
+  }
+  .pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .pills:empty {
+    display: none;
+  }
+  .actions {
+    grid-column: 1 / -1;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  @media (min-width: 768px) {
+    .title-row {
+      grid-template-columns: auto minmax(0, 1fr) auto;
+    }
+    .actions {
+      grid-column: auto;
+    }
+  }
+  .why-text {
+    max-width: 68ch;
+    margin-bottom: 20px;
+  }
+  .note {
+    margin-top: 12px;
+    max-width: 68ch;
+  }
+  .lead-in {
+    margin-bottom: 12px;
+    max-width: 68ch;
+  }
+  :global(.hist) {
+    margin-top: 16px;
+  }
+  .stat3 {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 20px;
+  }
+  .stat3 dt {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--ink-3);
+  }
+  .stat3 dd {
+    font-size: 28px;
+    line-height: 1.2;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    margin-top: 4px;
+  }
+  .stat3 p {
+    margin-top: 4px;
+    font-size: 13px;
+    color: var(--ink-2);
+  }
+  @media (min-width: 768px) {
+    .stat3 {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+  :global(.heat .heat-cell) {
+    background: color-mix(in srgb, var(--accent) var(--p), transparent);
+  }
+  .sim {
+    display: flex;
+    flex-direction: column;
+  }
+  .sim li {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 4px 16px;
+    padding: 10px 0;
+    border-top: 1px solid var(--line);
+    font-size: 15px;
+  }
+  .reasons {
+    margin-top: 12px;
+    padding-left: 20px;
+    list-style: disc;
+    font-size: 14px;
+    color: var(--ink-2);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .inline {
+    color: var(--accent);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+  .kv {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    font-size: 14px;
+  }
+  .kv div {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+  }
+  .kv dt {
+    color: var(--ink-3);
+  }
+  .kv dd {
+    text-align: right;
+    font-weight: 500;
+  }
+  .links {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    font-size: 14px;
+  }
+</style>
