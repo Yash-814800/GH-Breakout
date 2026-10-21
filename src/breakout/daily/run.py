@@ -100,8 +100,13 @@ def daily_run(
     skip_deploy_data: bool = False,
     no_commit: bool = False,
     no_upload: bool = False,
+    skip_bootstrap: bool = False,
 ) -> int:
-    """Run the 15-step daily pipeline for target date d (default today UTC)."""
+    """Run the 15-step daily pipeline for target date d (default today UTC).
+
+    ``no_upload`` only stops writes to Hugging Face; the bootstrap still reads what a clean
+    checkout lacks (it never refetches present, verified files). ``skip_bootstrap`` skips that too.
+    """
     cfg = cfg or get_config(None)
     target_date = d or datetime.now(UTC).date()
     start_time = datetime.now(UTC)
@@ -132,8 +137,8 @@ def daily_run(
     # Step 0: Bootstrap (clean runner: manifest, window events, enrichment, state, champion)
     # -------------------------------------------------------------------------
     t0 = time.perf_counter()
-    if no_upload:
-        record_step("0_bootstrap", "skipped", 0.0, {"reason": "no_upload_flag"})
+    if skip_bootstrap:
+        record_step("0_bootstrap", "skipped", 0.0, {"reason": "skip_bootstrap_flag"})
     else:
         try:
             log.info("[Step 0/15] Bootstrapping working set from Hugging Face...")

@@ -106,7 +106,7 @@ def render(cfg: Config, metrics: dict[str, Any], cv: dict[str, Any] | None) -> s
         "- After 2025-05-23 GH Archive star capture collapsed (ADR-009). The training and evaluation data end there; live scoring on later data depends on the live source decision (ADR-010) and on metadata (language, owner type) that is 'Unknown' until fetched.",
         "- Left-censoring: repository history before the first observed event is unknown; `age_days` is measured from the first observed activity.",
         "- The label is relative (top 0.5% on each snapshot) with a floor of 100 stars; the base rate of true breakouts changes over time and between years.",
-        "- Weekly snapshots (Mondays) were used for training; daily scoring is checked for weekday effects in `reports/model_cv.md`.",
+        "- Weekly snapshots (Mondays) were used for training; daily scoring is checked for weekday effects in `reports/model_cv.md`. The calibration over-predicts on non-Monday days (observed over expected positives about 0.73, against 0.90 on Mondays); ranking is unaffected.",
         "",
         "## Ethical notes",
         "",

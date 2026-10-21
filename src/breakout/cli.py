@@ -1171,7 +1171,10 @@ def daily_run_cmd(
         bool, typer.Option("--no-commit", help="skip git commit of ledger and status")
     ] = False,
     no_upload: Annotated[
-        bool, typer.Option("--no-upload", help="skip Hugging Face uploads")
+        bool, typer.Option("--no-upload", help="skip Hugging Face uploads (reads still happen)")
+    ] = False,
+    skip_bootstrap: Annotated[
+        bool, typer.Option("--skip-bootstrap", help="do not pull missing inputs from the Hub")
     ] = False,
 ) -> None:
     """Run the 15-step daily pipeline."""
@@ -1187,6 +1190,7 @@ def daily_run_cmd(
         skip_deploy_data=skip_deploy_data,
         no_commit=no_commit,
         no_upload=no_upload,
+        skip_bootstrap=skip_bootstrap,
     )
     if rc != 0:
         raise typer.Exit(rc)

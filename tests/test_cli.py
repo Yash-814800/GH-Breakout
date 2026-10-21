@@ -157,3 +157,8 @@ def test_ops_group_lists_commands():
     assert result.exit_code == 0
     for cmd in ("verify-ledger", "parity", "drift"):
         assert cmd in result.output
+
+
+def test_daily_run_documents_that_no_upload_still_reads_and_has_skip_bootstrap():
+    out = runner.invoke(app, ["daily", "run", "--help"]).output
+    assert "--skip-bootstrap" in out and "reads still happen" in out

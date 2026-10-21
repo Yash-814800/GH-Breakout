@@ -136,16 +136,16 @@ Detailed limits and a dated check against the official documentation are in
   with "Flagged because ... Held back by ..." built from the feature dictionary.
 - **Immutable track record.** Each day's predictions are frozen on Hugging Face and one row is appended to
   `ledger/predictions.csv`; each row hashes the previous one, and `breakout ops verify-ledger` checks the chain.
-- **Suspicious-growth detector.** Five transparent signals on a candidate's recent stargazers (new accounts,
-  no prior activity, bulk starring, one-hour bursts, no later engagement) give a neutral "unusual star
-  pattern" label. It never changes the score and never says "fake".
+- **Suspicious-growth detector.** Six transparent signals on a candidate's recent stargazers (new accounts,
+  no prior activity, bulk starring, one-hour bursts, lockstep co-starring, no later engagement) give a
+  neutral "unusual star pattern" label. It never changes the score and never says "fake".
 - **Distribution for free:** RSS and JSON feeds, shields.io badges for flagged repos, a weekly digest and a
   GitHub Discussions post, all generated from the frozen snapshots.
 - **DuckDB versus ClickHouse**, measured on the same Parquet files: see the
   [benchmark post](https://yash-814800.github.io/GH-Breakout/blog/duckdb-vs-clickhouse/) and
   [benchmarks/](benchmarks/).
 
-Quality gates: @@PYTEST@@ Python tests, 274 dbt tests, @@VITEST@@ Vitest and @@PLAYWRIGHT@@ Playwright tests (layout,
+Quality gates: 390 Python tests, 274 dbt tests, 41 Vitest and 178 Playwright tests (layout,
 content, accessibility, visual snapshots), Lighthouse 99 to 100 on performance, ruff and mypy clean.
 
 ## Reproduce it

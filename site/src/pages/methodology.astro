@@ -123,6 +123,7 @@ for (const n of ['cv_pr_curve', 'cv_precision_by_year', 'cv_reliability', 'shap_
         <li><strong>GH Archive star capture dropped in May 2025.</strong> From May 24, 2025, GH Archive records far fewer stars. Training stops at May 23, 2025, and star totals on the site come from GitHub directly. The momentum strip still shows only the stars GH Archive captured.</li>
         <li><strong>GitHub trimmed event data on October 7, 2025.</strong> Pull request authors and commit lists were removed from public events. The live model uses only signals that survive this change.</li>
         <li><strong>Star manipulation.</strong> A neutral "Unusual star pattern" label marks repos whose recent stars look different from other young repos. It is a statistical signal, not an accusation, and it never changes the model's score.</li>
+        <li><strong>Probabilities run a little high on most days.</strong> The model was calibrated on Monday snapshots. Tested on daily snapshots, about 90% of the expected breakouts happened on Mondays and about 73% on other days, so the percentages are best read as an upper estimate. The ranking is not affected.</li>
         <li><strong>Back-tests are simulations.</strong> The back-test uses out-of-sample predictions, not lists published at the time. Only the <a href={url('/track-record/')}>track record</a> counts as live.</li>
       </ul>
       <p>
