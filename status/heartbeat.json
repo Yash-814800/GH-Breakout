@@ -1,9 +1,9 @@
 {
-  "last_success_at": "2026-11-11T11:00:04.901326+00:00",
-  "snapshot_date": "2026-11-11",
+  "last_success_at": "2026-11-12T11:09:19.052936+00:00",
+  "snapshot_date": "2026-11-12",
   "model_version": "20261019-b5ff585",
-  "n_candidates": 1483,
-  "runtime_seconds": 225.9,
+  "n_candidates": 1612,
+  "runtime_seconds": 274.1,
   "freeze_conflict": false,
   "missing_hours_older_than_3d": 0,
   "dbt_freshness_passed": true,
